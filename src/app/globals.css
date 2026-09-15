@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/*
+ * Punto de Oro — tokens de diseño
+ *
+ * Escalas de marca:
+ *   noche  → azul noche (fondos oscuros, texto)
+ *   oro    → dorado (acción principal, destacados)
+ *   pista  → azul cancha (links, acentos)
+ *
+ * En los componentes preferí los tokens semánticos (primary, surface, muted...).
+ * Vista previa de todo en /ui.
+ */
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-barlow-condensed);
+}
+
+@theme static {
+  --color-noche-50: #f3f6fa;
+  --color-noche-100: #e4eaf2;
+  --color-noche-200: #c8d3e2;
+  --color-noche-300: #9fb0c9;
+  --color-noche-400: #7187a8;
+  --color-noche-500: #50668a;
+  --color-noche-600: #3c4f6f;
+  --color-noche-700: #2c3b56;
+  --color-noche-800: #1d2940;
+  --color-noche-900: #121b2e;
+  --color-noche-950: #0a101e;
+
+  --color-oro-50: #fffaeb;
+  --color-oro-100: #fff0c2;
+  --color-oro-200: #ffe08a;
+  --color-oro-300: #ffcd4d;
+  --color-oro-400: #ffbb1f;
+  --color-oro-500: #f2a100;
+  --color-oro-600: #cc7f00;
+  --color-oro-700: #a15f04;
+  --color-oro-800: #844c0b;
+  --color-oro-900: #6f3f0e;
+
+  --color-pista-50: #eef5ff;
+  --color-pista-100: #d9e9ff;
+  --color-pista-200: #bbd8ff;
+  --color-pista-300: #8cc0ff;
+  --color-pista-400: #569cff;
+  --color-pista-500: #2f78fb;
+  --color-pista-600: #1a5bf0;
+  --color-pista-700: #1446dc;
+  --color-pista-800: #173ab2;
+  --color-pista-900: #19358c;
+
+  /* Semánticos */
+  --color-background: #f7f9fc;
+  --color-foreground: var(--color-noche-950);
+  --color-surface: #ffffff;
+  --color-muted: var(--color-noche-50);
+  --color-muted-foreground: var(--color-noche-500);
+  --color-border: var(--color-noche-100);
+  --color-primary: var(--color-oro-400);
+  --color-primary-hover: var(--color-oro-300);
+  --color-primary-foreground: var(--color-noche-950);
+  --color-secondary: var(--color-noche-900);
+  --color-secondary-hover: var(--color-noche-800);
+  --color-secondary-foreground: #ffffff;
+  --color-accent: var(--color-pista-600);
+  --color-accent-foreground: #ffffff;
+  --color-ring: var(--color-pista-500);
+
+  --radius-card: 1rem;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
