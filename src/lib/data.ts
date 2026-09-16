@@ -1,8 +1,40 @@
 import { cache } from "react";
-import { demoNews, demoPlayers, demoTournaments } from "@/lib/demo-data";
+import { getCurrentUser, safeAvatarUrl } from "@/lib/auth";
+import {
+  demoNews,
+  demoPlayers,
+  demoSpots,
+  demoTournaments,
+} from "@/lib/demo-data";
+import { currentPeriod } from "@/lib/format";
+import {
+  DEFAULT_STATS,
+  STAT_KEYS,
+  type StatKey,
+  type StatSetting,
+  statLabel,
+} from "@/lib/labels";
+import {
+  GAIN_DAYS,
+  type RankingTrend,
+  rankingTrends,
+} from "@/lib/ranking-trends";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import type { NewsArticle, Player, Tournament } from "@/types/models";
+import type {
+  NewsArticle,
+  Notification,
+  Player,
+  PlayerPointChange,
+  Profile,
+  PublicProfile,
+  RankingImport,
+  Registration,
+  RegistrationWithPeople,
+  RegistrationWithProfile,
+  RegistrationWithTournament,
+  Tournament,
+} from "@/types/models";
 
 /*
  * Toda la lectura de datos del sitio pasa por acá.
@@ -45,6 +77,76 @@ export async function getRanking({
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+/** Cambios de puntos del último mes (uno por request, lo usan las dos ramas del inicio). */
+const getRecentPointChanges = cache(async () => {
+  const since = new Date(
+    Date.now() - GAIN_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("player_point_changes")
+    .select("player_id, delta, created_at")
+    .gte("created_at", since);
+  if (error) throw error;
+  return data;
+});
+
+/**
+ * Puntos ganados en el último mes y puestos subidos en la semana, calculados
+ * sobre la lista completa que se muestra (rama o categoría).
+ */
+export async function getRankingTrends(
+  players: Player[],
+): Promise<Map<number, RankingTrend>> {
+  if (isDemoMode || players.length === 0) return new Map();
+  return rankingTrends(players, await getRecentPointChanges());
+}
+
+/** Historial de puntos de un jugador, lo más nuevo primero. */
+export async function getPlayerPointChanges(
+  playerId: number,
+  limit = 20,
+): Promise<PlayerPointChange[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("player_point_changes")
+    .select("*")
+    .eq("player_id", playerId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+/** "1ra", "2da"... ordenadas por número; lo que no empieza con número va al final. */
+function sortCategories(categories: Iterable<string>) {
+  const rank = (value: string) => Number.parseInt(value, 10) || Infinity;
+  return [...new Set(categories)].toSorted(
+    (a, b) => rank(a) - rank(b) || a.localeCompare(b, "es"),
+  );
+}
+
+/** Categorías que tienen jugadores en la rama, para los filtros del ranking. */
+export async function getRankingCategories(gender: string): Promise<string[]> {
+  if (isDemoMode) {
+    return sortCategories(
+      demoPlayers
+        .filter((player) => player.gender === gender)
+        .map((player) => player.category),
+    );
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("players")
+    .select("category")
+    .eq("gender", gender);
+  if (error) throw error;
+  return sortCategories(data.map((row) => row.category));
 }
 
 /** Cuántos jugadores hay en cada categoría de una rama. */
@@ -114,20 +216,35 @@ export async function getRankingPosition(player: Player): Promise<number> {
 // Torneos
 // ---------------------------------------------------------------------
 
-/** Próximos (por fecha ascendente) o finalizados (más recientes primero). */
+/** Orden de los próximos: primero los que tienen la inscripción abierta, después los que se están jugando y al final los que vienen. */
+const UPCOMING_ORDER: Record<string, number> = {
+  inscripciones: 0,
+  en_juego: 1,
+  proximo: 2,
+};
+
+function sortUpcoming(tournaments: Tournament[]) {
+  return tournaments.toSorted(
+    (a, b) =>
+      (UPCOMING_ORDER[a.status] ?? 3) - (UPCOMING_ORDER[b.status] ?? 3) ||
+      a.starts_on.localeCompare(b.starts_on),
+  );
+}
+
+/** Próximos (abiertos primero, después por fecha) o finalizados (más recientes primero). */
 export async function getTournaments({
   finished = false,
   limit,
 }: { finished?: boolean; limit?: number } = {}): Promise<Tournament[]> {
   if (isDemoMode) {
-    return demoTournaments
-      .filter((tournament) => (tournament.status === "finalizado") === finished)
-      .toSorted((a, b) =>
-        finished
-          ? b.starts_on.localeCompare(a.starts_on)
-          : a.starts_on.localeCompare(b.starts_on),
-      )
-      .slice(0, limit);
+    const matching = demoTournaments.filter(
+      (tournament) => (tournament.status === "finalizado") === finished,
+    );
+    return (
+      finished
+        ? matching.toSorted((a, b) => b.starts_on.localeCompare(a.starts_on))
+        : sortUpcoming(matching)
+    ).slice(0, limit);
   }
 
   const supabase = await createClient();
@@ -138,11 +255,25 @@ export async function getTournaments({
   query = finished
     ? query.eq("status", "finalizado")
     : query.neq("status", "finalizado");
-  if (limit) query = query.limit(limit);
+  // Los próximos se ordenan por estado acá, así que el límite va después.
+  if (limit && finished) query = query.limit(limit);
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return finished ? data : sortUpcoming(data).slice(0, limit);
+}
+
+/** El torneo grande del inicio: el destacado más cercano o, si no hay, el primero de los próximos (ya ordenados). */
+export function pickFeaturedTournament(
+  upcoming: Tournament[],
+): Tournament | null {
+  return (
+    upcoming
+      .filter((tournament) => tournament.featured)
+      .toSorted((a, b) => a.starts_on.localeCompare(b.starts_on))[0] ??
+    upcoming[0] ??
+    null
+  );
 }
 
 export const getTournament = cache(
@@ -176,10 +307,14 @@ export async function getNews({ limit }: { limit?: number } = {}): Promise<
       .slice(0, limit);
   }
 
+  // RLS ya oculta borradores al público, pero un admin logueado los vería:
+  // el sitio público filtra siempre.
   const supabase = await createClient();
   let query = supabase
     .from("news")
     .select("*")
+    .eq("is_published", true)
+    .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false });
   if (limit) query = query.limit(limit);
 
@@ -199,8 +334,485 @@ export const getNewsArticle = cache(
       .from("news")
       .select("*")
       .eq("slug", slug)
+      .eq("is_published", true)
+      .lte("published_at", new Date().toISOString())
       .maybeSingle();
     if (error) throw error;
     return data;
   },
 );
+
+// ---------------------------------------------------------------------
+// Cupos de torneos
+// ---------------------------------------------------------------------
+
+/** Parejas anotadas (pendientes + confirmadas) por torneo. */
+export const getTournamentSpots = cache(
+  async (): Promise<Map<number, number>> => {
+    if (isDemoMode) {
+      return new Map(
+        Object.entries(demoSpots).map(([id, taken]) => [Number(id), taken]),
+      );
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("tournament_spots");
+    if (error) throw error;
+    return new Map(data.map((row) => [row.tournament_id, row.taken]));
+  },
+);
+
+// ---------------------------------------------------------------------
+// Configuración del sitio y números del inicio
+// ---------------------------------------------------------------------
+
+export type SiteSettings = {
+  heroImageUrl: string | null;
+  stats: StatSetting[];
+};
+
+function parseStatSettings(value: unknown): StatSetting[] {
+  if (!Array.isArray(value)) return DEFAULT_STATS;
+  const parsed = value
+    .filter(
+      (item): item is StatSetting =>
+        typeof item === "object" &&
+        item !== null &&
+        STAT_KEYS.includes((item as StatSetting).key),
+    )
+    .map((item) => ({
+      key: item.key,
+      label: typeof item.label === "string" && item.label ? item.label : null,
+      value:
+        typeof item.value === "number" && Number.isInteger(item.value)
+          ? item.value
+          : null,
+    }))
+    .slice(0, 4);
+  return parsed.length > 0 ? parsed : DEFAULT_STATS;
+}
+
+export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
+  if (isDemoMode) return { heroImageUrl: null, stats: DEFAULT_STATS };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("hero_image_url, stats")
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    heroImageUrl: data?.hero_image_url ?? null,
+    stats: parseStatSettings(data?.stats),
+  };
+});
+
+/** Valor automático de cada número del inicio. */
+export async function getStats(): Promise<Record<StatKey, number>> {
+  let players: Pick<Player, "city" | "club">[];
+  let tournaments: Pick<Tournament, "id" | "city" | "venue" | "starts_on">[];
+
+  if (isDemoMode) {
+    players = demoPlayers;
+    tournaments = demoTournaments;
+  } else {
+    const supabase = await createClient();
+    const [playersResult, tournamentsResult] = await Promise.all([
+      supabase.from("players").select("city, club"),
+      supabase.from("tournaments").select("id, city, venue, starts_on"),
+    ]);
+    if (playersResult.error) throw playersResult.error;
+    if (tournamentsResult.error) throw tournamentsResult.error;
+    players = playersResult.data;
+    tournaments = tournamentsResult.data;
+  }
+
+  const { year, yearMonth } = currentPeriod();
+  const spots = await getTournamentSpots();
+  const distinct = (values: (string | null)[]) =>
+    new Set(values.filter(Boolean)).size;
+  const thisYear = tournaments.filter((t) => t.starts_on.startsWith(year));
+
+  return {
+    players: players.length,
+    tournaments_year: thisYear.length,
+    tournaments_month: tournaments.filter((t) =>
+      t.starts_on.startsWith(yearMonth),
+    ).length,
+    venues: distinct(tournaments.map((t) => t.venue)),
+    cities: distinct([
+      ...players.map((p) => p.city),
+      ...tournaments.map((t) => t.city),
+    ]),
+    clubs: distinct(players.map((p) => p.club)),
+    registrations_year: thisYear.reduce(
+      (total, tournament) => total + (spots.get(tournament.id) ?? 0),
+      0,
+    ),
+  };
+}
+
+export type HomeStat = { key: StatKey; label: string; value: number };
+
+/** Los números del inicio: automáticos, con título y valor corregibles desde el panel. */
+export async function getHomeStats(): Promise<HomeStat[]> {
+  const [settings, values] = await Promise.all([getSiteSettings(), getStats()]);
+  const period = currentPeriod();
+  return settings.stats.map((stat) => ({
+    key: stat.key,
+    label: stat.label || statLabel(stat.key, period),
+    value: stat.value ?? values[stat.key],
+  }));
+}
+
+// ---------------------------------------------------------------------
+// Cuenta del usuario logueado (sin Supabase, no hay datos)
+// ---------------------------------------------------------------------
+
+export const getMyProfile = cache(async (): Promise<Profile | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+});
+
+/** Nombre, usuario, foto y categoría de otros usuarios (sin email ni teléfono). */
+async function getPublicProfiles(
+  ids: (string | null)[],
+): Promise<Map<string, PublicProfile>> {
+  const unique = [...new Set(ids.filter((id) => id !== null))];
+  if (unique.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_profiles", {
+    p_ids: unique,
+  });
+  if (error) throw error;
+  return new Map(
+    data.map((profile) => [
+      profile.id,
+      { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
+    ]),
+  );
+}
+
+async function withPeople<T extends Registration>(
+  registrations: T[],
+): Promise<(T & Pick<RegistrationWithPeople, "player" | "partner">)[]> {
+  const profiles = await getPublicProfiles(
+    registrations.flatMap((registration) => [
+      registration.user_id,
+      registration.partner_id,
+    ]),
+  );
+  return registrations.map((registration) => ({
+    ...registration,
+    player: profiles.get(registration.user_id) ?? null,
+    partner: registration.partner_id
+      ? (profiles.get(registration.partner_id) ?? null)
+      : null,
+  }));
+}
+
+/** Inscripciones donde el usuario se anotó o es la pareja (con invitaciones). */
+export async function getMyRegistrations(): Promise<
+  RegistrationWithTournament[]
+> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select("*, tournament:tournaments(*)")
+    .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return withPeople(data);
+}
+
+export type MyTournamentEntry = {
+  /** La inscripción propia (anotado, invitando, o pareja que ya aceptó). */
+  registration: RegistrationWithPeople | null;
+  /** Invitaciones de otros jugadores que falta responder. */
+  invitations: RegistrationWithPeople[];
+};
+
+export async function getMyTournamentEntry(
+  tournamentId: number,
+): Promise<MyTournamentEntry> {
+  const user = await getCurrentUser();
+  if (!user) return { registration: null, invitations: [] };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select("*")
+    .eq("tournament_id", tournamentId)
+    .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  const rows = await withPeople(data);
+  const isInvitation = (row: Registration) =>
+    row.partner_id === user.id && row.status === "invitacion";
+  return {
+    registration:
+      rows.find(
+        (row) =>
+          !isInvitation(row) &&
+          (row.user_id === user.id ||
+            row.status === "pendiente" ||
+            row.status === "confirmada"),
+      ) ?? null,
+    invitations: rows.filter(isInvitation),
+  };
+}
+
+/** Invitaciones a jugar que el usuario todavía no respondió. */
+export async function getMyInvitations(): Promise<
+  RegistrationWithTournament[]
+> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select("*, tournament:tournaments(*)")
+    .eq("partner_id", user.id)
+    .eq("status", "invitacion")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return withPeople(data);
+}
+
+export async function getMyNotifications(limit = 20): Promise<Notification[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+}
+
+/** Número de la campana: avisos sin leer o, si ya se leyeron, invitaciones sin responder. */
+export async function getUnreadNotificationsCount(): Promise<number> {
+  const user = await getCurrentUser();
+  if (!user) return 0;
+
+  const supabase = await createClient();
+  const [unread, invitations] = await Promise.all([
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null),
+    supabase
+      .from("tournament_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("partner_id", user.id)
+      .eq("status", "invitacion"),
+  ]);
+  if (unread.error) throw unread.error;
+  if (invitations.error) throw invitations.error;
+  return Math.max(unread.count ?? 0, invitations.count ?? 0);
+}
+
+// ---------------------------------------------------------------------
+// Admin (las páginas llaman antes a requireAdmin; RLS vuelve a chequear)
+// ---------------------------------------------------------------------
+
+export type TournamentWithCounts = Tournament & {
+  registrations: number;
+  pending: number;
+};
+
+/** Todos los torneos (próximos primero) con cantidad de inscriptos y pendientes. */
+export async function getAllTournaments(): Promise<TournamentWithCounts[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const [tournaments, registrations] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select("*")
+      .order("starts_on", { ascending: false }),
+    supabase.from("tournament_registrations").select("tournament_id, status"),
+  ]);
+  if (tournaments.error) throw tournaments.error;
+  if (registrations.error) throw registrations.error;
+
+  return tournaments.data.map((tournament) => {
+    const own = registrations.data.filter(
+      (registration) => registration.tournament_id === tournament.id,
+    );
+    return {
+      ...tournament,
+      registrations: own.length,
+      pending: own.filter((registration) => registration.status === "pendiente")
+        .length,
+    };
+  });
+}
+
+export async function getTournamentById(
+  id: number,
+): Promise<Tournament | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Todas las noticias, incluidas las no publicadas y programadas. */
+export async function getAllNews(): Promise<NewsArticle[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .order("published_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function getNewsById(id: number): Promise<NewsArticle | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function getPlayerById(id: number): Promise<Player | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Inscripciones de un torneo con los perfiles de los dos jugadores (email y teléfono incluidos). */
+export async function getTournamentRegistrations(
+  tournamentId: number,
+): Promise<RegistrationWithProfile[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data: registrations, error } = await supabase
+    .from("tournament_registrations")
+    .select("*")
+    .eq("tournament_id", tournamentId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  if (registrations.length === 0) return [];
+
+  // user_id y partner_id apuntan a auth.users, así que los perfiles se traen aparte.
+  const ids = [
+    ...new Set(
+      registrations.flatMap((registration) =>
+        registration.partner_id
+          ? [registration.user_id, registration.partner_id]
+          : [registration.user_id],
+      ),
+    ),
+  ];
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, phone, username, avatar_url, category")
+    .in("id", ids);
+  if (profilesError) throw profilesError;
+
+  const byId = new Map(
+    profiles.map((profile) => [
+      profile.id,
+      { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
+    ]),
+  );
+  return registrations.map((registration) => ({
+    ...registration,
+    profile: byId.get(registration.user_id) ?? null,
+    partnerProfile: registration.partner_id
+      ? (byId.get(registration.partner_id) ?? null)
+      : null,
+  }));
+}
+
+export async function getLastPointsImport(): Promise<RankingImport | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("ranking_imports")
+    .select("*")
+    .is("undone_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export type AdminDashboard = {
+  pendingRegistrations: number;
+  upcoming: TournamentWithCounts[];
+  counts: { tournaments: number; news: number; players: number };
+  lastImport: RankingImport | null;
+};
+
+export async function getAdminDashboard(): Promise<AdminDashboard> {
+  const [tournaments, news, players, lastImport] = await Promise.all([
+    getAllTournaments(),
+    getAllNews(),
+    getRanking(),
+    getLastPointsImport(),
+  ]);
+
+  return {
+    pendingRegistrations: tournaments.reduce(
+      (total, tournament) => total + tournament.pending,
+      0,
+    ),
+    upcoming: tournaments
+      .filter((tournament) => tournament.status !== "finalizado")
+      .toSorted((a, b) => a.starts_on.localeCompare(b.starts_on))
+      .slice(0, 5),
+    counts: {
+      tournaments: tournaments.length,
+      news: news.length,
+      players: players.length,
+    },
+    lastImport,
+  };
+}

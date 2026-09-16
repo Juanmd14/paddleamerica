@@ -17,16 +17,20 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
+/** "PaddleAmerica" → ["Paddle", "America"]: la segunda palabra va en dorado. */
+const [nameStart, ...nameRest] = siteConfig.name.split(/(?=[A-Z])/);
+
 /** Logo completo. Hereda el color de texto (usalo sobre fondo oscuro o claro). */
 export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <LogoMark className="size-9" />
+      <LogoMark className="size-9 shrink-0" />
       <span className="flex flex-col">
-        <span className="font-display text-xl leading-none font-bold tracking-wide uppercase">
-          {siteConfig.name}
+        <span className="font-display text-[1.375rem] leading-none font-bold tracking-wide uppercase">
+          {nameStart}
+          <span className="text-oro-400">{nameRest.join("")}</span>
         </span>
-        <span className="mt-0.5 text-[0.625rem] leading-none font-semibold tracking-[0.25em] text-oro-400 uppercase">
+        <span className="mt-1 text-[0.625rem] leading-none font-semibold tracking-[0.2em] text-noche-300 uppercase">
           {siteConfig.tagline}
         </span>
       </span>

@@ -34,3 +34,25 @@ export function paragraphs(text: string) {
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
 }
+
+/** "Copa Ciudad de Trenque Lauquen 2026" → "copa-ciudad-de-trenque-lauquen-2026". */
+export function slugify(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/**
+ * Link de WhatsApp para un teléfono argentino cargado a mano
+ * ("2392 123456", "02392-123456", "+54 9 2392 123456").
+ */
+export function whatsappUrl(phone: string, message?: string) {
+  let digits = phone.replace(/\D/g, "").replace(/^00/, "");
+  if (!digits.startsWith("54")) digits = `549${digits.replace(/^0/, "")}`;
+  const text = message ? `?text=${encodeURIComponent(message)}` : "";
+  return `https://wa.me/${digits}${text}`;
+}

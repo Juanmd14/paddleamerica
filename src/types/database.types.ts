@@ -1,218 +1,637 @@
-// Tipos de la base de datos. Escritos a mano a partir de supabase/migrations.
-// Cuando tengas el proyecto linkeado, regeneralos con: npm run db:types
-
 export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       news: {
         Row: {
-          author: string | null;
-          body: string;
-          cover_url: string | null;
-          created_at: string;
-          excerpt: string | null;
-          id: number;
-          is_published: boolean;
-          published_at: string;
-          slug: string;
-          tag: string | null;
-          title: string;
-        };
+          author: string | null
+          body: string
+          cover_url: string | null
+          created_at: string
+          excerpt: string | null
+          id: number
+          is_published: boolean
+          published_at: string
+          slug: string
+          tag: string | null
+          title: string
+        }
         Insert: {
-          author?: string | null;
-          body: string;
-          cover_url?: string | null;
-          created_at?: string;
-          excerpt?: string | null;
-          id?: never;
-          is_published?: boolean;
-          published_at?: string;
-          slug: string;
-          tag?: string | null;
-          title: string;
-        };
+          author?: string | null
+          body: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: never
+          is_published?: boolean
+          published_at?: string
+          slug: string
+          tag?: string | null
+          title: string
+        }
         Update: {
-          author?: string | null;
-          body?: string;
-          cover_url?: string | null;
-          created_at?: string;
-          excerpt?: string | null;
-          id?: never;
-          is_published?: boolean;
-          published_at?: string;
-          slug?: string;
-          tag?: string | null;
-          title?: string;
-        };
-        Relationships: [];
-      };
+          author?: string | null
+          body?: string
+          cover_url?: string | null
+          created_at?: string
+          excerpt?: string | null
+          id?: never
+          is_published?: boolean
+          published_at?: string
+          slug?: string
+          tag?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          href: string | null
+          id: number
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          href?: string | null
+          id?: never
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          href?: string | null
+          id?: never
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      player_point_changes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: number
+          player_id: number
+          points_after: number
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: never
+          player_id: number
+          points_after: number
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: never
+          player_id?: number
+          points_after?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_point_changes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
-          bio: string | null;
-          category: string;
-          city: string | null;
-          club: string | null;
-          created_at: string;
-          first_name: string;
-          gender: string;
-          id: number;
-          last_name: string;
-          matches_played: number;
-          matches_won: number;
-          photo_url: string | null;
-          ranking_points: number;
-          side: string | null;
-          slug: string;
-          titles: number;
-        };
+          bio: string | null
+          category: string
+          city: string | null
+          club: string | null
+          created_at: string
+          first_name: string
+          gender: string
+          id: number
+          last_name: string
+          matches_played: number
+          matches_won: number
+          photo_url: string | null
+          ranking_points: number
+          side: string | null
+          slug: string
+          titles: number
+        }
         Insert: {
-          bio?: string | null;
-          category: string;
-          city?: string | null;
-          club?: string | null;
-          created_at?: string;
-          first_name: string;
-          gender: string;
-          id?: never;
-          last_name: string;
-          matches_played?: number;
-          matches_won?: number;
-          photo_url?: string | null;
-          ranking_points?: number;
-          side?: string | null;
-          slug: string;
-          titles?: number;
-        };
+          bio?: string | null
+          category: string
+          city?: string | null
+          club?: string | null
+          created_at?: string
+          first_name: string
+          gender: string
+          id?: never
+          last_name: string
+          matches_played?: number
+          matches_won?: number
+          photo_url?: string | null
+          ranking_points?: number
+          side?: string | null
+          slug: string
+          titles?: number
+        }
         Update: {
-          bio?: string | null;
-          category?: string;
-          city?: string | null;
-          club?: string | null;
-          created_at?: string;
-          first_name?: string;
-          gender?: string;
-          id?: never;
-          last_name?: string;
-          matches_played?: number;
-          matches_won?: number;
-          photo_url?: string | null;
-          ranking_points?: number;
-          side?: string | null;
-          slug?: string;
-          titles?: number;
-        };
-        Relationships: [];
-      };
+          bio?: string | null
+          category?: string
+          city?: string | null
+          club?: string | null
+          created_at?: string
+          first_name?: string
+          gender?: string
+          id?: never
+          last_name?: string
+          matches_played?: number
+          matches_won?: number
+          photo_url?: string | null
+          ranking_points?: number
+          side?: string | null
+          slug?: string
+          titles?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
-          avatar_url: string | null;
-          created_at: string;
-          full_name: string | null;
-          id: string;
-          phone: string | null;
-          updated_at: string;
-        };
+          avatar_url: string | null
+          category: number | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          is_admin: boolean
+          phone: string | null
+          updated_at: string
+          username: string
+        }
         Insert: {
-          avatar_url?: string | null;
-          created_at?: string;
-          full_name?: string | null;
-          id: string;
-          phone?: string | null;
-          updated_at?: string;
-        };
+          avatar_url?: string | null
+          category?: number | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          is_admin?: boolean
+          phone?: string | null
+          updated_at?: string
+          username: string
+        }
         Update: {
-          avatar_url?: string | null;
-          created_at?: string;
-          full_name?: string | null;
-          id?: string;
-          phone?: string | null;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          avatar_url?: string | null
+          category?: number | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          is_admin?: boolean
+          phone?: string | null
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      ranking_imports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_player_ids: number[]
+          file_name: string | null
+          id: number
+          label: string | null
+          mode: string
+          previous: Json
+          rows_count: number
+          undone_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_player_ids?: number[]
+          file_name?: string | null
+          id?: never
+          label?: string | null
+          mode: string
+          previous?: Json
+          rows_count?: number
+          undone_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_player_ids?: number[]
+          file_name?: string | null
+          id?: never
+          label?: string | null
+          mode?: string
+          previous?: Json
+          rows_count?: number
+          undone_at?: string | null
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          hero_image_url: string | null
+          id: boolean
+          stats: Json
+          updated_at: string
+        }
+        Insert: {
+          hero_image_url?: string | null
+          id?: boolean
+          stats?: Json
+          updated_at?: string
+        }
+        Update: {
+          hero_image_url?: string | null
+          id?: boolean
+          stats?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tournament_registrations: {
+        Row: {
+          accepted_at: string | null
+          category: string | null
+          contact_phone: string
+          created_at: string
+          id: number
+          notes: string | null
+          partner_category: number | null
+          partner_id: string | null
+          partner_name: string
+          player_category: number | null
+          status: string
+          tournament_id: number
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          category?: string | null
+          contact_phone: string
+          created_at?: string
+          id?: never
+          notes?: string | null
+          partner_category?: number | null
+          partner_id?: string | null
+          partner_name: string
+          player_category?: number | null
+          status?: string
+          tournament_id: number
+          user_id?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          category?: string | null
+          contact_phone?: string
+          created_at?: string
+          id?: never
+          notes?: string | null
+          partner_category?: number | null
+          partner_id?: string | null
+          partner_name?: string
+          player_category?: number | null
+          status?: string
+          tournament_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_registrations_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournaments: {
         Row: {
-          category: string;
-          champions: string | null;
-          city: string;
-          cover_url: string | null;
-          created_at: string;
-          description: string | null;
-          ends_on: string;
-          gender: string;
-          id: number;
-          name: string;
-          prize: string | null;
-          slug: string;
-          starts_on: string;
-          status: string;
-          venue: string | null;
-        };
+          address: string | null
+          capacity: number | null
+          category: string
+          category_max: number | null
+          category_min: number | null
+          category_sum: number | null
+          champions: string | null
+          city: string
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          ends_on: string
+          featured: string | null
+          gender: string
+          id: number
+          maps_url: string | null
+          name: string
+          prize: string | null
+          registration_opens_on: string | null
+          slug: string
+          sponsor_name: string | null
+          starts_on: string
+          status: string
+          venue: string | null
+        }
         Insert: {
-          category: string;
-          champions?: string | null;
-          city: string;
-          cover_url?: string | null;
-          created_at?: string;
-          description?: string | null;
-          ends_on: string;
-          gender: string;
-          id?: never;
-          name: string;
-          prize?: string | null;
-          slug: string;
-          starts_on: string;
-          status?: string;
-          venue?: string | null;
-        };
+          address?: string | null
+          capacity?: number | null
+          category: string
+          category_max?: number | null
+          category_min?: number | null
+          category_sum?: number | null
+          champions?: string | null
+          city: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          ends_on: string
+          featured?: string | null
+          gender: string
+          id?: never
+          maps_url?: string | null
+          name: string
+          prize?: string | null
+          registration_opens_on?: string | null
+          slug: string
+          sponsor_name?: string | null
+          starts_on: string
+          status?: string
+          venue?: string | null
+        }
         Update: {
-          category?: string;
-          champions?: string | null;
-          city?: string;
-          cover_url?: string | null;
-          created_at?: string;
-          description?: string | null;
-          ends_on?: string;
-          gender?: string;
-          id?: never;
-          name?: string;
-          prize?: string | null;
-          slug?: string;
-          starts_on?: string;
-          status?: string;
-          venue?: string | null;
-        };
-        Relationships: [];
-      };
-    };
+          address?: string | null
+          capacity?: number | null
+          category?: string
+          category_max?: number | null
+          category_min?: number | null
+          category_sum?: number | null
+          champions?: string | null
+          city?: string
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          ends_on?: string
+          featured?: string | null
+          gender?: string
+          id?: never
+          maps_url?: string | null
+          name?: string
+          prize?: string | null
+          registration_opens_on?: string | null
+          slug?: string
+          sponsor_name?: string | null
+          starts_on?: string
+          status?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
-      [_ in never]: never;
-    };
+      adjust_player_points: {
+        Args: { p_delta: number; p_player_id: number; p_reason: string }
+        Returns: number
+      }
+      apply_points_import: {
+        Args: {
+          p_file_name: string
+          p_label: string
+          p_mode: string
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      cancel_registration: {
+        Args: { p_registration_id: number }
+        Returns: string
+      }
+      get_public_profiles: {
+        Args: { p_ids: string[] }
+        Returns: {
+          avatar_url: string
+          category: number
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_in_tournament: {
+        Args: {
+          p_except_id?: number
+          p_tournament_id: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      pair_category_error: {
+        Args: {
+          p_partner: number
+          p_player: number
+          p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
+        }
+        Returns: string
+      }
+      profile_display_name: {
+        Args: { p_profile: Database["public"]["Tables"]["profiles"]["Row"] }
+        Returns: string
+      }
+      register_pair: {
+        Args: {
+          p_contact_phone: string
+          p_notes?: string
+          p_partner_username: string
+          p_tournament_id: number
+        }
+        Returns: number
+      }
+      respond_invitation: {
+        Args: { p_accept: boolean; p_registration_id: number }
+        Returns: string
+      }
+      search_profiles: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_url: string
+          category: number
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
+      tournament_spots: {
+        Args: never
+        Returns: {
+          taken: number
+          tournament_id: number
+        }[]
+      }
+      tournament_taken: { Args: { p_tournament_id: number }; Returns: number }
+      undo_last_points_import: { Args: never; Returns: Json }
+      unique_username: { Args: { p_base: string }; Returns: string }
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type PublicSchema = Database["public"];
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-export type Tables<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Row"];
-export type TablesInsert<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Insert"];
-export type TablesUpdate<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Update"];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

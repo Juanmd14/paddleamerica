@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { Net } from "@/components/net";
+import {
+  ClimbBadge,
+  PointsGain,
+  TREND_BADGE,
+  TREND_GAIN,
+} from "@/components/ranking-trend";
 import { Avatar } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/format";
 import { playerName } from "@/lib/labels";
+import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
 
@@ -21,7 +28,6 @@ const CORTE = 10;
 const COL_PG = "w-16 shrink-0 text-right tabular-nums";
 const COL_TITULOS = "w-16 shrink-0 text-right tabular-nums";
 const COL_PUNTOS = "w-20 shrink-0 text-right tabular-nums";
-
 function ColumnHeaders() {
   return (
     <div className="flex items-center gap-3 border-b border-vidrio-linea px-4 py-2.5 font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase sm:px-6">
@@ -39,10 +45,13 @@ export function RankingTable({
   players,
   /** Puesto de la primera fila. Con el hero arriba, arranca en 5. */
   startAt = 1,
+  trends,
   className,
 }: {
   players: Player[];
   startAt?: number;
+  /** Puntos del último mes y puestos subidos, por id de jugador. */
+  trends?: Map<number, RankingTrend>;
   className?: string;
 }) {
   return (
@@ -76,8 +85,12 @@ export function RankingTable({
                     className="rounded-none bg-vidrio-panel text-vidrio-pelota"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-dato font-semibold">
-                      {playerName(player)}
+                    <p className="flex items-center gap-2 font-dato font-semibold">
+                      <span className="truncate">{playerName(player)}</span>
+                      <ClimbBadge
+                        trend={trends?.get(player.id)}
+                        className={TREND_BADGE}
+                      />
                     </p>
                     <p className="truncate font-dato text-xs text-vidrio-tenue">
                       {[player.club, player.city].filter(Boolean).join(" · ")}
@@ -91,14 +104,19 @@ export function RankingTable({
                   >
                     {player.titles}
                   </span>
-                  <span
+                  <div
                     className={cn(
                       COL_PUNTOS,
                       "font-dato text-lg leading-none font-bold",
                     )}
                   >
                     {formatNumber(player.ranking_points)}
-                  </span>
+                    <PointsGain
+                      trend={trends?.get(player.id)}
+                      compact
+                      className={cn("mt-1", TREND_GAIN)}
+                    />
+                  </div>
                 </Link>
               </li>
             </Fragment>

@@ -57,6 +57,39 @@ values
    'Torneo femenino por el aniversario de Pádel Oeste, con cuadros de 2da y 3ra.',
    'Salliqueló', 'Pádel Oeste', '2026-08-14', '2026-08-16', '7ma y 8va', 'femenino', 'finalizado', null, 'Castro / Molina');
 
+-- Ubicación, cupos y apertura de inscripciones
+update public.tournaments t
+set address = v.address, capacity = v.capacity, registration_opens_on = v.opens
+from (values
+  ('abierto-de-primavera-2026', 'América, Rivadavia, Buenos Aires', 24, null::date),
+  ('copa-ciudad-de-trenque-lauquen-2026', 'Trenque Lauquen, Buenos Aires', 16, null::date),
+  ('torneo-mixto-nocturno-2026', 'Pehuajó, Buenos Aires', 20, date '2026-10-20'),
+  ('master-de-fin-de-ano-2026', 'América, Rivadavia, Buenos Aires', null, null::date),
+  ('clasico-del-oeste-2026', 'Carlos Tejedor, Buenos Aires', null, null::date),
+  ('invierno-padel-tour-2026', 'General Villegas, Buenos Aires', null, null::date),
+  ('copa-aniversario-padel-oeste-2026', 'Salliqueló, Buenos Aires', null, null::date)
+) as v(slug, address, capacity, opens)
+where t.slug = v.slug;
+
+-- Destacados en el inicio y reglas de categoría (1 = 1ra … 8 = 8va)
+update public.tournaments t
+set
+  featured = v.featured,
+  sponsor_name = v.sponsor,
+  category_min = v.min,
+  category_max = v.max,
+  category_sum = v.sum
+from (values
+  ('abierto-de-primavera-2026', 'principal'::text, null::text, 6::smallint, 7::smallint, null::smallint),
+  ('copa-ciudad-de-trenque-lauquen-2026', null, null, 6, 8, null),
+  ('torneo-mixto-nocturno-2026', 'sponsor', 'Bandeja Club', null, null, 13),
+  ('master-de-fin-de-ano-2026', null, null, null, null, null),
+  ('clasico-del-oeste-2026', null, null, 6, 6, null),
+  ('invierno-padel-tour-2026', null, null, 6, 6, null),
+  ('copa-aniversario-padel-oeste-2026', null, null, 7, 8, null)
+) as v(slug, featured, sponsor, min, max, sum)
+where t.slug = v.slug;
+
 insert into public.news
   (slug, title, excerpt, body, tag, author, published_at)
 values
@@ -64,24 +97,24 @@ values
    'Abrieron las inscripciones para el Abierto de Primavera',
    'Del 9 al 11 de octubre en el Complejo El Remate de América, con cuadros de 1ra y 2da masculino y $1.500.000 en premios.',
    E'Ya están abiertas las inscripciones para el Abierto de Primavera, el torneo que da inicio a la segunda mitad de la temporada del circuito regional. Se jugará del 9 al 11 de octubre en las canchas del Complejo El Remate, en América.\n\nHabrá cuadros de 1ra y 2da categoría masculina, con un cupo de 24 parejas por categoría. El torneo reparte $1.500.000 en premios y suma puntos para el ranking regional.\n\nPara anotarte, creá tu cuenta en el sitio y completá la inscripción desde la página del torneo.',
-   'Torneos', 'Redacción Punto de Oro', '2026-09-10 15:00:00+00'),
+   'Torneos', 'Redacción PaddleAmerica', '2026-09-10 15:00:00+00'),
   ('bandeja-club-estrena-cancha-panoramica',
    'Bandeja Club estrena cancha panorámica en Pehuajó',
    'Es la primera cancha 100% de vidrio de la zona y va a ser sede del Torneo Mixto Nocturno.',
    E'Bandeja Club inauguró su nueva cancha panorámica, la primera de la región con paredes completamente de vidrio y sin columnas en los laterales.\n\nLa cancha cuenta con iluminación LED y gradas para 120 personas, y será la sede del Torneo Mixto Nocturno de noviembre.',
-   'Clubes', 'Redacción Punto de Oro', '2026-09-05 13:00:00+00'),
+   'Clubes', 'Redacción PaddleAmerica', '2026-09-05 13:00:00+00'),
   ('ranking-despues-de-agosto',
    'Así quedó el ranking regional después de agosto',
    'Martín Gómez y Camila Rodríguez siguen al frente. Tomás Aguirre, la gran sorpresa del mes.',
    E'Con los puntos de la Copa Aniversario ya sumados, se actualizó el ranking regional. Martín Gómez sigue siendo el número uno en masculino y Camila Rodríguez lidera el femenino por segundo mes consecutivo.\n\nEl gran salto lo dio Tomás Aguirre, que tras ganar el Clásico del Oeste junto a Lucas Ferreyra ya es tercero en el ranking masculino.\n\nEl próximo movimiento llegará después del Abierto de Primavera, en octubre.',
-   'Ranking', 'Redacción Punto de Oro', '2026-09-01 12:00:00+00'),
+   'Ranking', 'Redacción PaddleAmerica', '2026-09-01 12:00:00+00'),
   ('castro-molina-campeonas-copa-aniversario',
    'Castro y Molina, campeonas de la Copa Aniversario',
    'Vencieron en la final a Rodríguez y Benítez en un partido que se definió en el tercer set.',
    E'Valentina Castro y Florencia Molina se quedaron con la Copa Aniversario de Pádel Oeste tras vencer en la final a Camila Rodríguez y Sofía Benítez por 6-4, 3-6 y 7-5.\n\nFue el primer título de la temporada para la pareja, que venía de perder dos semifinales seguidas. Con este resultado, ambas suben posiciones en el ranking femenino.',
-   'Torneos', 'Redacción Punto de Oro', '2026-08-17 10:00:00+00'),
+   'Torneos', 'Redacción PaddleAmerica', '2026-08-17 10:00:00+00'),
   ('gomez-ibarra-campeones-invierno-padel-tour',
    'Gómez e Ibarra ganaron el Invierno Pádel Tour',
    'La pareja de América no perdió ningún set en todo el torneo disputado en General Villegas.',
    E'Martín Gómez y Nicolás Ibarra fueron los campeones del Invierno Pádel Tour, que reunió a 20 parejas de 1ra categoría en las canchas de La Blindex, en General Villegas.\n\nEn la final superaron a Lucas Ferreyra y Tomás Aguirre por 6-3 y 6-2, cerrando un torneo en el que no cedieron ningún set.',
-   'Torneos', 'Redacción Punto de Oro', '2026-07-20 10:00:00+00');
+   'Torneos', 'Redacción PaddleAmerica', '2026-07-20 10:00:00+00');

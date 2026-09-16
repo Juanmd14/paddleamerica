@@ -5,8 +5,8 @@ const tones = {
   neutral: "bg-noche-100 text-noche-700",
   primary: "bg-oro-100 text-oro-800",
   accent: "bg-pista-50 text-pista-700",
-  success: "bg-emerald-50 text-emerald-700",
-  danger: "bg-red-50 text-red-700",
+  success: "bg-success-soft text-success",
+  danger: "bg-danger-soft text-danger",
   dark: "bg-noche-900 text-white",
   inverse: "bg-white/10 text-white",
 };

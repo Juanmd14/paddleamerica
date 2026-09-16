@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 const variants = {
   primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
-  accent: "bg-accent text-accent-foreground hover:bg-pista-700",
-  outline: "border border-noche-200 bg-surface text-foreground hover:bg-muted",
+  accent: "bg-accent text-accent-foreground hover:bg-accent-hover",
+  outline:
+    "border border-border-strong bg-surface text-foreground hover:bg-muted",
   ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
   inverse: "border border-white/20 text-white hover:bg-white/10",
 };

@@ -10,6 +10,8 @@ type NavLinkProps = {
   children: ReactNode;
   className?: string;
   activeClassName?: string;
+  /** Marcar activa solo en la ruta exacta (no en sus subrutas). */
+  exact?: boolean;
 };
 
 /** Link de navegación que se marca cuando estás en esa sección. */
@@ -18,9 +20,11 @@ export function NavLink({
   children,
   className,
   activeClassName,
+  exact = false,
 }: NavLinkProps) {
   const pathname = usePathname();
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  const isActive =
+    pathname === href || (!exact && pathname.startsWith(`${href}/`));
 
   return (
     <Link

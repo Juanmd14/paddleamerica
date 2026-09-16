@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CourtPodium } from "@/components/court-podium";
 import { RankingTable } from "@/components/ranking-table";
-import { getCategoryCounts, getRanking } from "@/lib/data";
+import {
+  getCategoryCounts,
+  getRanking,
+  getRankingTrends,
+} from "@/lib/data";
 import {
   branchLabel,
   CATEGORIES,
@@ -36,6 +40,9 @@ export default async function PlayersPage({
     getRanking({ gender, category }),
     getCategoryCounts(gender),
   ]);
+
+  // Sobre la categoría entera, para que los puestos subidos sean los reales.
+  const trends = await getRankingTrends(players);
 
   const podio = players.slice(0, EN_LA_CANCHA);
   const resto = players.slice(EN_LA_CANCHA);
@@ -142,6 +149,7 @@ export default async function PlayersPage({
           players={podio}
           title={rankingTitle(category, gender)}
           eyebrow={`Actualizado al ${ACTUALIZADO}`}
+          trends={trends}
         />
 
         {players.length === 0 ? (
@@ -155,6 +163,7 @@ export default async function PlayersPage({
           <RankingTable
             players={resto}
             startAt={EN_LA_CANCHA + 1}
+            trends={trends}
             className="border-t border-vidrio-linea"
           />
         ) : null}

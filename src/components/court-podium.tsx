@@ -1,6 +1,13 @@
 import Image from "next/image";
+import {
+  ClimbBadge,
+  PointsGain,
+  TREND_BADGE,
+  TREND_GAIN,
+} from "@/components/ranking-trend";
 import { formatNumber } from "@/lib/format";
 import { playerName, shortPlayerName } from "@/lib/labels";
+import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
 
@@ -95,6 +102,8 @@ export type CourtPodiumProps = {
   eyebrow?: string;
   /** Foto cenital de la cancha. Se usa entera. */
   photo?: string;
+  /** Puntos del último mes y puestos subidos, por id de jugador. */
+  trends?: Map<number, RankingTrend>;
   className?: string;
 };
 
@@ -103,6 +112,7 @@ export function CourtPodium({
   title,
   eyebrow,
   photo = CANCHA,
+  trends,
   className,
 }: CourtPodiumProps) {
   return (
@@ -166,7 +176,7 @@ export function CourtPodium({
                 {player ? (
                   <>
                     <PlayerTile player={player} position={position} />
-                    <span className="min-w-0">
+                    <div className="min-w-0">
                       <span
                         className={cn(
                           "block font-titulo text-2xl leading-[0.88] font-extrabold sm:text-[26px] md:text-[30px]",
@@ -175,19 +185,35 @@ export function CourtPodium({
                       >
                         {position}
                       </span>
-                      <span className="mt-1 block truncate font-dato text-xs leading-none font-semibold sm:mt-1.5 sm:text-sm md:text-[15px]">
-                        <span className="sm:hidden">
-                          {shortPlayerName(player)}
+                      <span
+                        className={cn(
+                          "mt-1 flex items-center gap-1.5 font-dato text-xs leading-none font-semibold sm:mt-1.5 sm:text-sm md:text-[15px]",
+                          derecha && "justify-end",
+                        )}
+                      >
+                        <span className="min-w-0 truncate">
+                          <span className="sm:hidden">
+                            {shortPlayerName(player)}
+                          </span>
+                          <span className="hidden sm:inline">
+                            {playerName(player)}
+                          </span>
                         </span>
-                        <span className="hidden sm:inline">
-                          {playerName(player)}
-                        </span>
+                        <ClimbBadge
+                          trend={trends?.get(player.id)}
+                          className={cn(TREND_BADGE, "bg-vidrio-noche/80")}
+                        />
                       </span>
                       <span className="mt-1 block font-dato text-[11px] leading-none font-bold text-vidrio-texto/75 sm:mt-1.5 sm:text-[13px]">
                         {formatNumber(player.ranking_points)}
                         <span className="hidden sm:inline"> PTS</span>
                       </span>
-                    </span>
+                      <PointsGain
+                        trend={trends?.get(player.id)}
+                        compact
+                        className={cn("mt-1", TREND_GAIN)}
+                      />
+                    </div>
                   </>
                 ) : (
                   <span className="font-dato text-[10px] font-bold tracking-[0.18em] text-vidrio-texto/60 uppercase">

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import type { ReactNode } from "react";
 import { CourtPodium } from "@/components/court-podium";
 import { Net, type NetSize, netSizes } from "@/components/net";
@@ -48,10 +50,12 @@ const netUsage: Record<NetSize, string> = {
 const semanticColors = [
   "background",
   "foreground",
+  "foreground-soft",
   "surface",
   "muted",
   "muted-foreground",
   "border",
+  "border-strong",
   "primary",
   "primary-foreground",
   "secondary",
@@ -59,6 +63,12 @@ const semanticColors = [
   "accent",
   "accent-foreground",
   "ring",
+  "success",
+  "success-soft",
+  "warning",
+  "warning-soft",
+  "danger",
+  "danger-soft",
 ];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -84,7 +94,11 @@ function Swatch({ color, label }: { color: string; label: string }) {
   );
 }
 
-export default function DesignSystemPage() {
+export default async function DesignSystemPage() {
+  // Página interna: solo existe en desarrollo (en producción responde 404).
+  await connection();
+  if (process.env.NODE_ENV === "production") notFound();
+
   const upcoming = demoTournaments.find((t) => t.status !== "finalizado");
   const finished = demoTournaments.find((t) => t.champions);
   const topPlayers = demoPlayers.filter((p) => p.gender === "masculino");
@@ -94,7 +108,7 @@ export default function DesignSystemPage() {
       <PageHeader
         eyebrow="Interno"
         title="Sistema de diseño"
-        description="Tokens y componentes del sitio. Los tokens están en src/app/globals.css y los componentes base en src/components/ui."
+        description="Tokens y componentes del sitio. Los tokens están en src/app/globals.css y los componentes base en src/components/ui. Esta página no existe en producción."
       />
 
       <Container className="space-y-16 py-12 sm:py-16">
@@ -179,7 +193,7 @@ export default function DesignSystemPage() {
             <p className="text-2xl font-bold tracking-tight">
               Geist — títulos de noticias
             </p>
-            <p className="max-w-2xl text-lg leading-8 text-noche-700">
+            <p className="max-w-2xl text-lg leading-8 text-foreground-soft">
               Geist — cuerpo de texto. Martín Gómez y Nicolás Ibarra fueron los
               campeones del Invierno Pádel Tour.
             </p>
