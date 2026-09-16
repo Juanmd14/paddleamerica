@@ -1,0 +1,110 @@
+import Link from "next/link";
+import { Fragment } from "react";
+import { Net } from "@/components/net";
+import { Avatar } from "@/components/ui/avatar";
+import { formatNumber } from "@/lib/format";
+import { playerName } from "@/lib/labels";
+import { cn } from "@/lib/utils";
+import type { Player } from "@/types/models";
+
+/**
+ * La tabla del ranking de una categoría, en Nocturno de vidrio.
+ *
+ * Arranca en el puesto que le pasen (los primeros ya están en la cancha del
+ * hero) y la red la corta cada 10 puestos, para ubicarse rápido al scrollear.
+ * Nunca entre filas consecutivas: ese es el único uso de la red de 7px.
+ */
+
+const CORTE = 10;
+
+/** Ancho fijo para que los números queden alineados columna a columna. */
+const COL_PG = "w-16 shrink-0 text-right tabular-nums";
+const COL_TITULOS = "w-16 shrink-0 text-right tabular-nums";
+const COL_PUNTOS = "w-20 shrink-0 text-right tabular-nums";
+
+function ColumnHeaders() {
+  return (
+    <div className="flex items-center gap-3 border-b border-vidrio-linea px-4 py-2.5 font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase sm:px-6">
+      <span className="w-7 shrink-0 text-center">Pos</span>
+      <span className="w-9 shrink-0" aria-hidden="true" />
+      <span className="flex-1">Jugador</span>
+      <span className={cn(COL_PG, "hidden sm:block")}>PG / PJ</span>
+      <span className={cn(COL_TITULOS, "hidden md:block")}>Títulos</span>
+      <span className={COL_PUNTOS}>Puntos</span>
+    </div>
+  );
+}
+
+export function RankingTable({
+  players,
+  /** Puesto de la primera fila. Con el hero arriba, arranca en 5. */
+  startAt = 1,
+  className,
+}: {
+  players: Player[];
+  startAt?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("bg-vidrio-noche text-vidrio-texto", className)}>
+      <ColumnHeaders />
+      <ol>
+        {players.map((player, index) => {
+          const position = startAt + index;
+          // La red corta cada 10 puestos, nunca arriba de la primera fila.
+          const corta = index > 0 && position % CORTE === 1;
+
+          return (
+            <Fragment key={player.id}>
+              {corta ? (
+                <li aria-hidden="true">
+                  <Net size="tabla" />
+                </li>
+              ) : null}
+              <li className="border-b border-vidrio-linea/50 last:border-b-0">
+                <Link
+                  href={`/jugadores/${player.slug}`}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-vidrio-panel sm:px-6"
+                >
+                  <span className="w-7 shrink-0 text-center font-titulo text-xl font-extrabold text-vidrio-tenue tabular-nums">
+                    {position}
+                  </span>
+                  <Avatar
+                    name={playerName(player)}
+                    src={player.photo_url}
+                    size="sm"
+                    className="rounded-none bg-vidrio-panel text-vidrio-pelota"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-dato font-semibold">
+                      {playerName(player)}
+                    </p>
+                    <p className="truncate font-dato text-xs text-vidrio-tenue">
+                      {[player.club, player.city].filter(Boolean).join(" · ")}
+                    </p>
+                  </div>
+                  <span className={cn(COL_PG, "hidden font-dato sm:block")}>
+                    {player.matches_won}/{player.matches_played}
+                  </span>
+                  <span
+                    className={cn(COL_TITULOS, "hidden font-dato md:block")}
+                  >
+                    {player.titles}
+                  </span>
+                  <span
+                    className={cn(
+                      COL_PUNTOS,
+                      "font-dato text-lg leading-none font-bold",
+                    )}
+                  >
+                    {formatNumber(player.ranking_points)}
+                  </span>
+                </Link>
+              </li>
+            </Fragment>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}

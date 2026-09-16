@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { EmptyState } from "@/components/empty-state";
-import { PageHeader } from "@/components/page-header";
-import { RankingList } from "@/components/ranking-list";
-import { Card } from "@/components/ui/card";
-import { Container } from "@/components/ui/container";
-import { getRanking } from "@/lib/data";
-import { genderLabel } from "@/lib/labels";
+import { CourtPodium } from "@/components/court-podium";
+import { RankingTable } from "@/components/ranking-table";
+import { getCategoryCounts, getRanking } from "@/lib/data";
+import {
+  branchLabel,
+  CATEGORIES,
+  isCategory,
+  rankingTitle,
+} from "@/lib/labels";
 import { cn, firstParam } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -15,48 +17,170 @@ export const metadata: Metadata = {
 
 const GENDERS = ["masculino", "femenino"] as const;
 
+/** Cuántos entran en la cancha del hero. El resto va a la tabla. */
+const EN_LA_CANCHA = 4;
+
+const TEMPORADA = "2026";
+const ACTUALIZADO = "10 de septiembre de 2026";
+
 export default async function PlayersPage({
   searchParams,
 }: PageProps<"/jugadores">) {
-  const { rama } = await searchParams;
+  const { rama, categoria } = await searchParams;
+
   const gender = firstParam(rama) === "femenino" ? "femenino" : "masculino";
-  const players = await getRanking({ gender });
+  const raw = firstParam(categoria);
+  const category = isCategory(raw) ? raw : CATEGORIES[0];
+
+  const [players, counts] = await Promise.all([
+    getRanking({ gender, category }),
+    getCategoryCounts(gender),
+  ]);
+
+  const podio = players.slice(0, EN_LA_CANCHA);
+  const resto = players.slice(EN_LA_CANCHA);
+
+  const href = (next: { rama?: string; categoria?: string }) =>
+    `/jugadores?rama=${next.rama ?? gender}&categoria=${next.categoria ?? category}`;
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Ranking regional"
-        title="Jugadores"
-        description="Ranking actualizado después de cada torneo del circuito."
-      >
-        <div className="inline-flex rounded-full bg-white/10 p-1">
-          {GENDERS.map((option) => (
-            <Link
-              key={option}
-              href={`/jugadores?rama=${option}`}
-              aria-current={option === gender ? "page" : undefined}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold transition-colors",
-                option === gender
-                  ? "bg-primary text-primary-foreground"
-                  : "text-noche-300 hover:text-white",
-              )}
-            >
-              {genderLabel(option)}
-            </Link>
-          ))}
-        </div>
-      </PageHeader>
+    <div className="bg-vidrio-noche pb-20 text-vidrio-texto">
+      <div className="mx-auto w-full max-w-5xl">
+        <h1 className="sr-only">Ranking del circuito</h1>
 
-      <Container className="py-12 sm:py-16">
-        {players.length > 0 ? (
-          <Card className="overflow-hidden">
-            <RankingList players={players} />
-          </Card>
-        ) : (
-          <EmptyState title="Todavía no hay jugadores en el ranking" />
-        )}
-      </Container>
-    </>
+        <section
+          aria-label="Filtros del ranking"
+          className="border-b border-vidrio-linea px-4 pt-8 pb-7 sm:px-6"
+        >
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="font-dato text-[10px] font-bold tracking-[0.18em] text-vidrio-pelota uppercase">
+              Ranking regional
+            </p>
+            <p className="font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase">
+              Temporada {TEMPORADA}
+            </p>
+          </div>
+
+          {/*
+            La rama es la decisión de más arriba: son dos rankings distintos, no
+            un filtro más. Por eso va sola, como interruptor redondeado, bien
+            separada de las fichas cuadradas de categoría.
+          */}
+          <div
+            role="group"
+            aria-label="Rama"
+            className="mt-5 flex rounded-full border border-vidrio-linea bg-vidrio-panel p-1 sm:inline-flex"
+          >
+            {GENDERS.map((option) => {
+              const activa = option === gender;
+              return (
+                <Link
+                  key={option}
+                  href={href({ rama: option })}
+                  aria-current={activa ? "page" : undefined}
+                  className={cn(
+                    "flex-1 rounded-full px-6 py-2.5 text-center font-dato text-sm font-bold tracking-[0.06em] uppercase transition-colors sm:px-12",
+                    activa
+                      ? "bg-vidrio-texto text-vidrio-noche"
+                      : "text-vidrio-tenue hover:text-vidrio-texto",
+                  )}
+                >
+                  {branchLabel(option)}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-7">
+            <p className="font-dato text-[10px] font-bold tracking-[0.16em] text-vidrio-tenue uppercase">
+              Categoría
+            </p>
+            <div
+              role="group"
+              aria-label="Categoría"
+              className="mt-2.5 flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1"
+            >
+              {CATEGORIES.map((option) => {
+                const activa = option === category;
+                const cuantos = counts[option] ?? 0;
+
+                return (
+                  <Link
+                    key={option}
+                    href={href({ categoria: option })}
+                    aria-current={activa ? "page" : undefined}
+                    className={cn(
+                      "flex min-w-[4.25rem] flex-1 flex-col items-center gap-0.5 rounded-lg border-2 px-3 py-2.5 transition-colors",
+                      activa
+                        ? "border-vidrio-pelota bg-vidrio-pelota text-vidrio-noche"
+                        : cuantos === 0
+                          ? "border-vidrio-linea/60 text-vidrio-tenue/45 hover:border-vidrio-linea hover:text-vidrio-tenue"
+                          : "border-vidrio-linea text-vidrio-texto hover:border-vidrio-tenue hover:bg-vidrio-panel",
+                    )}
+                  >
+                    <span className="font-titulo text-lg leading-none font-extrabold">
+                      {option}
+                    </span>
+                    <span
+                      className={cn(
+                        "font-dato text-[10px] leading-none font-bold tracking-[0.08em] uppercase",
+                        activa ? "text-vidrio-noche/70" : "text-vidrio-tenue",
+                      )}
+                    >
+                      {cuantos === 0
+                        ? "—"
+                        : `${cuantos} ${cuantos === 1 ? "jug" : "jugs"}`}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <CourtPodium
+          players={podio}
+          title={rankingTitle(category, gender)}
+          eyebrow={`Actualizado al ${ACTUALIZADO}`}
+        />
+
+        {players.length === 0 ? (
+          <p className="border-t border-vidrio-linea px-4 py-10 text-center font-dato text-sm text-vidrio-tenue sm:px-6">
+            Todavía no hay jugadores cargados en{" "}
+            {rankingTitle(category, gender)}.
+          </p>
+        ) : null}
+
+        {resto.length > 0 ? (
+          <RankingTable
+            players={resto}
+            startAt={EN_LA_CANCHA + 1}
+            className="border-t border-vidrio-linea"
+          />
+        ) : null}
+
+        {/* Ficha de cierre: los datos que hacen falta para confiar en la tabla. */}
+        <dl className="grid grid-cols-2 border-t border-vidrio-linea md:grid-cols-4">
+          <Dato termino="Jugadores" valor={String(players.length)} />
+          <Dato termino="Categoría" valor={rankingTitle(category, gender)} />
+          <Dato termino="Actualizado" valor={ACTUALIZADO} />
+          <Dato
+            termino="Se actualiza"
+            valor="Después de cada torneo del circuito"
+          />
+        </dl>
+      </div>
+    </div>
+  );
+}
+
+function Dato({ termino, valor }: { termino: string; valor: string }) {
+  return (
+    <div className="border-b border-vidrio-linea px-4 py-4 not-last:border-r sm:px-6">
+      <dt className="font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase">
+        {termino}
+      </dt>
+      <dd className="mt-1.5 font-dato text-sm font-semibold">{valor}</dd>
+    </div>
   );
 }

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { CourtPodium } from "@/components/court-podium";
+import { Net, type NetSize, netSizes } from "@/components/net";
 import { NewsCard } from "@/components/news-card";
+import { RankingTable } from "@/components/ranking-table";
 import { PageHeader } from "@/components/page-header";
 import { RankingList } from "@/components/ranking-list";
 import { TournamentCard } from "@/components/tournament-card";
@@ -21,6 +24,25 @@ const colorScales = {
   noche: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950],
   oro: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900],
   pista: [50, 100, 200, 300, 400, 500, 600, 700, 800, 900],
+};
+
+const vidrioColors = [
+  "vidrio-noche",
+  "vidrio-panel",
+  "vidrio-linea",
+  "vidrio-pelota",
+  "vidrio-dato",
+  "vidrio-texto",
+  "vidrio-tenue",
+  "vidrio-red-cinta",
+  "vidrio-red-malla",
+  "vidrio-red-fondo",
+];
+
+const netUsage: Record<NetSize, string> = {
+  hero: "18px, con postes. Reservada para separadores fuertes.",
+  seccion: "separador entre bloques del home y del perfil.",
+  tabla: "corta el ranking cada 10 puestos. Nunca entre filas seguidas.",
 };
 
 const semanticColors = [
@@ -76,6 +98,51 @@ export default function DesignSystemPage() {
       />
 
       <Container className="space-y-16 py-12 sm:py-16">
+        <Section title="Nocturno de vidrio">
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Dirección 1b del concepto de Padel Pocho. La cancha es la grilla, no
+            la decoración: sus cuatro zonas reales son las cuatro posiciones del
+            podio y la jerarquía es la distancia a la red. La foto se usa
+            entera: recortarla le come el fondo y la cancha se ve cortada.
+          </p>
+
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-7">
+            {vidrioColors.map((color) => (
+              <Swatch key={color} color={color} label={color} />
+            ))}
+          </div>
+
+          <CourtPodium
+            players={topPlayers.slice(0, 4)}
+            title="8va caballeros"
+            eyebrow="Ranking · act. 10 sep"
+            className="border border-border"
+          />
+
+          <div>
+            <h3 className="mb-3 text-sm font-semibold">
+              Tabla del ranking · la red corta cada 10 puestos
+            </h3>
+            <RankingTable players={topPlayers} startAt={5} />
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-semibold">
+              La red · tres tamaños, un solo uso cada uno
+            </h3>
+            <div className="space-y-6 bg-vidrio-noche p-6">
+              {netSizes.map((size) => (
+                <div key={size}>
+                  <Net size={size} postes={size === "hero"} />
+                  <p className="mt-2 font-mono text-xs text-vidrio-tenue">
+                    {size} — {netUsage[size]}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Section>
+
         <Section title="Colores de marca">
           {Object.entries(colorScales).map(([scale, steps]) => (
             <div key={scale}>

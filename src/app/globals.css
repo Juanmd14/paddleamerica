@@ -16,6 +16,10 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-barlow-condensed);
+
+  /* Nocturno de vidrio */
+  --font-titulo: var(--font-bricolage);
+  --font-dato: var(--font-archivo);
 }
 
 @theme static {
@@ -69,6 +73,27 @@
   --color-accent: var(--color-pista-600);
   --color-accent-foreground: #ffffff;
   --color-ring: var(--color-pista-500);
+
+  /*
+   * Nocturno de vidrio — dirección 1b del concepto de Padel Pocho.
+   * "El torneo del sábado a la noche, con las luces prendidas."
+   *
+   * Regla: la cancha es la grilla, no la decoración. Estos tokens los usan
+   * <Net> y <CourtPodium>; el resto del sitio sigue con noche/oro/pista.
+   */
+  --color-vidrio-noche: #171327;
+  --color-vidrio-panel: #221c38;
+  --color-vidrio-linea: #3b3357;
+  --color-vidrio-pelota: #ffd84d;
+  --color-vidrio-dato: #56e0d0;
+  --color-vidrio-texto: #f4f1ff;
+  --color-vidrio-tenue: #a79fc4;
+
+  /* Red: cinta, malla y postes. Los cuatro colores de <Net>. */
+  --color-vidrio-red-cinta: #f4f1ff;
+  --color-vidrio-red-malla: #d6d0ef;
+  --color-vidrio-red-fondo: rgb(23 19 39 / 0.5);
+  --color-vidrio-red-poste: #f4f1ff;
 
   --radius-card: 1rem;
 }

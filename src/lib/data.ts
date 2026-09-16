@@ -17,11 +17,18 @@ export const isDemoMode = !isSupabaseConfigured;
 
 export async function getRanking({
   gender,
+  category,
   limit,
-}: { gender?: string; limit?: number } = {}): Promise<Player[]> {
+}: {
+  gender?: string;
+  /** "1ra", "5ta"... El ranking del circuito es por categoría y rama. */
+  category?: string;
+  limit?: number;
+} = {}): Promise<Player[]> {
   if (isDemoMode) {
     return demoPlayers
       .filter((player) => !gender || player.gender === gender)
+      .filter((player) => !category || player.category === category)
       .toSorted((a, b) => b.ranking_points - a.ranking_points)
       .slice(0, limit);
   }
@@ -32,11 +39,39 @@ export async function getRanking({
     .select("*")
     .order("ranking_points", { ascending: false });
   if (gender) query = query.eq("gender", gender);
+  if (category) query = query.eq("category", category);
   if (limit) query = query.limit(limit);
 
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+/** Cuántos jugadores hay en cada categoría de una rama. */
+export async function getCategoryCounts(
+  gender: string,
+): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+
+  if (isDemoMode) {
+    for (const player of demoPlayers) {
+      if (player.gender !== gender) continue;
+      counts[player.category] = (counts[player.category] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("players")
+    .select("category")
+    .eq("gender", gender);
+  if (error) throw error;
+
+  for (const { category } of data) {
+    counts[category] = (counts[category] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export const getPlayer = cache(async (slug: string): Promise<Player | null> => {

@@ -3,28 +3,44 @@
 insert into public.players
   (slug, first_name, last_name, city, club, category, gender, side, ranking_points, matches_played, matches_won, titles, bio)
 values
-  ('martin-gomez', 'Martín', 'Gómez', 'América', 'Complejo El Remate', '1ra', 'masculino', 'drive', 2480, 38, 29, 4, 'Número uno del ranking regional. Drive agresivo, juega en pareja con Nicolás Ibarra desde 2024.'),
-  ('lucas-ferreyra', 'Lucas', 'Ferreyra', 'Trenque Lauquen', 'Pádel Norte', '1ra', 'masculino', 'reves', 2315, 35, 25, 3, 'Especialista en la bandeja y la víbora. Campeón del Clásico del Oeste 2026.'),
-  ('tomas-aguirre', 'Tomás', 'Aguirre', 'Pehuajó', 'Bandeja Club', '2da', 'masculino', 'drive', 2140, 33, 22, 2, 'La revelación de la temporada: subió de 3ra a 2da en un año.'),
-  ('nicolas-ibarra', 'Nicolás', 'Ibarra', 'América', 'Complejo El Remate', '2da', 'masculino', 'reves', 1985, 30, 19, 1, 'Revés sólido y mucha lectura de juego. Compañero de Martín Gómez.'),
-  ('franco-medina', 'Franco', 'Medina', 'General Villegas', 'La Blindex', '3ra', 'masculino', 'drive', 1720, 28, 16, 1, 'Fijo en todos los torneos del circuito desde hace tres temporadas.'),
-  ('joaquin-sosa', 'Joaquín', 'Sosa', 'Salliqueló', 'Pádel Oeste', '3ra', 'masculino', 'reves', 1590, 26, 14, 0, 'Debutó en el circuito en 2025 y ya pelea los primeros puestos de 3ra.'),
-  ('camila-rodriguez', 'Camila', 'Rodríguez', 'América', 'Bandeja Club', '1ra', 'femenino', 'reves', 2390, 36, 28, 5, 'Líder del ranking femenino con cinco títulos regionales.'),
-  ('sofia-benitez', 'Sofía', 'Benítez', 'Trenque Lauquen', 'Pádel Norte', '1ra', 'femenino', 'drive', 2270, 34, 24, 3, 'Drive potente y gran definición por arriba. Finalista de la Copa Aniversario.'),
-  ('valentina-castro', 'Valentina', 'Castro', 'Pehuajó', 'La Blindex', '2da', 'femenino', 'reves', 2050, 31, 21, 2, 'Campeona de la Copa Aniversario 2026 junto a Florencia Molina.'),
-  ('florencia-molina', 'Florencia', 'Molina', 'Carlos Tejedor', 'Pádel Oeste', '2da', 'femenino', 'drive', 1890, 29, 18, 1, 'Campeona de la Copa Aniversario 2026 y referente del pádel en Carlos Tejedor.'),
-  ('julieta-paz', 'Julieta', 'Paz', 'América', 'Complejo El Remate', '3ra', 'femenino', 'reves', 1705, 27, 15, 1, 'Juega en América desde chica y es una de las promesas del circuito.'),
-  ('agustina-rios', 'Agustina', 'Ríos', 'General Villegas', 'Bandeja Club', '3ra', 'femenino', 'drive', 1560, 25, 13, 0, 'Constancia pura: no se perdió ningún torneo de la temporada.');
+  ('martin-gomez', 'Martín', 'Gómez', 'América', 'Complejo El Remate', '6ta', 'masculino', 'drive', 2480, 38, 29, 4, 'Número uno del ranking regional. Drive agresivo, juega en pareja con Nicolás Ibarra desde 2024.'),
+  ('lucas-ferreyra', 'Lucas', 'Ferreyra', 'Trenque Lauquen', 'Pádel Norte', '6ta', 'masculino', 'reves', 2315, 35, 25, 3, 'Especialista en la bandeja y la víbora. Campeón del Clásico del Oeste 2026.'),
+  ('tomas-aguirre', 'Tomás', 'Aguirre', 'Pehuajó', 'Bandeja Club', '7ma', 'masculino', 'drive', 2140, 33, 22, 2, 'La revelación de la temporada: subió de 8va a 7ma en un año.'),
+  ('nicolas-ibarra', 'Nicolás', 'Ibarra', 'América', 'Complejo El Remate', '7ma', 'masculino', 'reves', 1985, 30, 19, 1, 'Revés sólido y mucha lectura de juego. Compañero de Martín Gómez.'),
+  ('franco-medina', 'Franco', 'Medina', 'General Villegas', 'La Blindex', '8va', 'masculino', 'drive', 1720, 28, 16, 1, 'Fijo en todos los torneos del circuito desde hace tres temporadas.'),
+  ('joaquin-sosa', 'Joaquín', 'Sosa', 'Salliqueló', 'Pádel Oeste', '8va', 'masculino', 'reves', 1590, 26, 14, 0, 'Debutó en el circuito en 2025 y ya pelea los primeros puestos de 8va.'),
+  ('camila-rodriguez', 'Camila', 'Rodríguez', 'América', 'Bandeja Club', '6ta', 'femenino', 'reves', 2390, 36, 28, 5, 'Líder del ranking femenino con cinco títulos regionales.'),
+  ('sofia-benitez', 'Sofía', 'Benítez', 'Trenque Lauquen', 'Pádel Norte', '6ta', 'femenino', 'drive', 2270, 34, 24, 3, 'Drive potente y gran definición por arriba. Finalista de la Copa Aniversario.'),
+  ('valentina-castro', 'Valentina', 'Castro', 'Pehuajó', 'La Blindex', '7ma', 'femenino', 'reves', 2050, 31, 21, 2, 'Campeona de la Copa Aniversario 2026 junto a Florencia Molina.'),
+  ('florencia-molina', 'Florencia', 'Molina', 'Carlos Tejedor', 'Pádel Oeste', '7ma', 'femenino', 'drive', 1890, 29, 18, 1, 'Campeona de la Copa Aniversario 2026 y referente del pádel en Carlos Tejedor.'),
+  ('julieta-paz', 'Julieta', 'Paz', 'América', 'Complejo El Remate', '8va', 'femenino', 'reves', 1705, 27, 15, 1, 'Juega en América desde chica y es una de las promesas del circuito.'),
+  ('agustina-rios', 'Agustina', 'Ríos', 'General Villegas', 'Bandeja Club', '8va', 'femenino', 'drive', 1560, 25, 13, 0, 'Constancia pura: no se perdió ningún torneo de la temporada.'),
+  ('ezequiel-navarro', 'Ezequiel', 'Navarro', 'América', 'Complejo El Remate', '8va', 'masculino', 'drive', 1480, 24, 12, 0, 'Arrancó a jugar en 2026 y no se pierde una fecha del circuito.'),
+  ('gaston-peralta', 'Gastón', 'Peralta', 'Trenque Lauquen', 'Pádel Norte', '8va', 'masculino', 'reves', 1345, 22, 11, 0, 'Revés paciente. Juega siempre con Ezequiel Navarro.'),
+  ('rodrigo-cabrera', 'Rodrigo', 'Cabrera', 'Pehuajó', 'Bandeja Club', '8va', 'masculino', 'drive', 1210, 20, 9, 0, 'Viene del tenis y se está acostumbrando a jugar con las paredes.'),
+  ('leandro-britos', 'Leandro', 'Britos', 'General Villegas', 'La Blindex', '8va', 'masculino', 'reves', 1075, 18, 7, 0, 'El más regular de los que arrancaron este año en La Blindex.'),
+  ('matias-olivera', 'Matías', 'Olivera', 'Salliqueló', 'Pádel Oeste', '8va', 'masculino', 'drive', 940, 16, 6, 0, 'Debutó en el Abierto de Primavera y sumó sus primeros puntos.'),
+  ('santiago-ferrari', 'Santiago', 'Ferrari', 'América', 'Complejo El Remate', '8va', 'masculino', 'reves', 820, 14, 4, 0, 'Juega los martes a la noche y se anotó a su primer torneo.'),
+  ('micaela-duarte', 'Micaela', 'Duarte', 'América', 'Complejo El Remate', '8va', 'femenino', 'drive', 1395, 23, 11, 0, 'Empezó en la escuelita del club y ya juega todos los torneos.'),
+  ('lucia-ferreyra', 'Lucía', 'Ferreyra', 'Trenque Lauquen', 'Pádel Norte', '8va', 'femenino', 'reves', 1150, 19, 8, 0, 'Hermana de Lucas Ferreyra. Arrancó en 2026 y sube rápido.'),
+  ('diego-sanchez', 'Diego', 'Sánchez', 'General Villegas', 'La Blindex', '5ta', 'masculino', 'drive', 2210, 34, 24, 2, 'El de más experiencia del circuito: juega desde que abrió La Blindex.'),
+  ('pablo-iriarte', 'Pablo', 'Iriarte', 'Pehuajó', 'Bandeja Club', '5ta', 'masculino', 'reves', 2035, 31, 21, 1, 'Bandeja prolija y mucho oficio. Compañero de Diego Sánchez.');
+
+-- Fotos de los cuatro del podio. Son los recortes de la maqueta original que
+-- genera scripts/cortar-cancha.mjs en public/fotos. Cuando estén las fotos
+-- reales, se suben a Supabase Storage y se reemplazan estas URLs.
+update public.players set photo_url = '/fotos/' || slug || '.jpg'
+where slug in ('martin-gomez', 'lucas-ferreyra', 'tomas-aguirre', 'nicolas-ibarra');
 
 insert into public.tournaments
   (slug, name, description, city, venue, starts_on, ends_on, category, gender, status, prize, champions)
 values
   ('abierto-de-primavera-2026', 'Abierto de Primavera',
    E'El torneo que abre la temporada de primavera en América. Tres días de pádel en las canchas del Complejo El Remate, con cuadros de 1ra y 2da masculino y puntos para el ranking regional.\n\nLas parejas se arman libremente. Cupo limitado a 24 parejas por categoría.',
-   'América', 'Complejo El Remate', '2026-10-09', '2026-10-11', '1ra y 2da', 'masculino', 'inscripciones', '$1.500.000 en premios', null),
+   'América', 'Complejo El Remate', '2026-10-09', '2026-10-11', '6ta y 7ma', 'masculino', 'inscripciones', '$1.500.000 en premios', null),
   ('copa-ciudad-de-trenque-lauquen-2026', 'Copa Ciudad de Trenque Lauquen',
    E'Torneo femenino de 3ra a 5ta categoría con fase de grupos y playoffs. Ideal para jugadoras que quieren sumar sus primeros puntos en el ranking.\n\nIncluye cena de camaradería el sábado a la noche.',
-   'Trenque Lauquen', 'Pádel Norte', '2026-10-23', '2026-10-25', '3ra a 5ta', 'femenino', 'inscripciones', 'Trofeos y $800.000 en premios', null),
+   'Trenque Lauquen', 'Pádel Norte', '2026-10-23', '2026-10-25', '6ta a 8va', 'femenino', 'inscripciones', 'Trofeos y $800.000 en premios', null),
   ('torneo-mixto-nocturno-2026', 'Torneo Mixto Nocturno',
    E'Partidos de 20 a 2 h en la nueva cancha panorámica de Bandeja Club. Parejas mixtas, categoría suma 13.\n\nLas inscripciones abren el 20 de octubre.',
    'Pehuajó', 'Bandeja Club', '2026-11-13', '2026-11-14', 'Suma 13', 'mixto', 'proximo', null, null),
@@ -33,13 +49,13 @@ values
    'América', 'Complejo El Remate', '2026-12-11', '2026-12-13', 'Top 8 del ranking', 'masculino', 'proximo', '$3.000.000 en premios', null),
   ('clasico-del-oeste-2026', 'Clásico del Oeste',
    'El clásico de mitad de año, con parejas de toda la región en Carlos Tejedor.',
-   'Carlos Tejedor', 'Polideportivo Municipal', '2026-06-12', '2026-06-14', '1ra', 'masculino', 'finalizado', null, 'Ferreyra / Aguirre'),
+   'Carlos Tejedor', 'Polideportivo Municipal', '2026-06-12', '2026-06-14', '6ta', 'masculino', 'finalizado', null, 'Ferreyra / Aguirre'),
   ('invierno-padel-tour-2026', 'Invierno Pádel Tour',
    'Fecha única del tour de invierno, con 20 parejas de 1ra categoría de toda la zona.',
-   'General Villegas', 'La Blindex', '2026-07-17', '2026-07-19', '1ra', 'masculino', 'finalizado', null, 'Gómez / Ibarra'),
+   'General Villegas', 'La Blindex', '2026-07-17', '2026-07-19', '6ta', 'masculino', 'finalizado', null, 'Gómez / Ibarra'),
   ('copa-aniversario-padel-oeste-2026', 'Copa Aniversario Pádel Oeste',
    'Torneo femenino por el aniversario de Pádel Oeste, con cuadros de 2da y 3ra.',
-   'Salliqueló', 'Pádel Oeste', '2026-08-14', '2026-08-16', '2da y 3ra', 'femenino', 'finalizado', null, 'Castro / Molina');
+   'Salliqueló', 'Pádel Oeste', '2026-08-14', '2026-08-16', '7ma y 8va', 'femenino', 'finalizado', null, 'Castro / Molina');
 
 insert into public.news
   (slug, title, excerpt, body, tag, author, published_at)
