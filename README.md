@@ -39,6 +39,7 @@ Abrí [http://localhost:3000](http://localhost:3000).
 | `/login/recuperar`      | Pedir link para una contraseña nueva                           |
 | `/mi-cuenta`            | Mis inscripciones y mis datos (privada)                        |
 | `/mi-cuenta/contrasena` | Cambiar contraseña (privada)                                   |
+| `/admin`                | Panel de administración (solo admins, ver abajo)               |
 | `/ui`                   | Sistema de diseño (solo desarrollo)                            |
 
 ## Conectar Supabase
@@ -57,7 +58,7 @@ npm run db:types
 
 El token puede ser de acceso limitado al proyecto. Necesita: _Project Settings_, _Connection Pooling_, _API Keys_, _API Key Secrets_, _Auth Config_ y _Data API Config_ en lectura, y _Database_ y _Migrations_ en lectura y escritura. `link` lee las claves del proyecto, así que sin _API Key Secrets_ falla.
 
-O pegá en el **SQL Editor** del dashboard, en orden: `supabase/migrations/20260915000000_initial_schema.sql`, `supabase/migrations/20260916000000_tournament_registrations.sql` y `supabase/seed.sql`.
+O pegá en el **SQL Editor** del dashboard, en orden, todos los archivos de `supabase/migrations/` y después `supabase/seed.sql`.
 
 5. Reiniciá `npm run dev`.
 
@@ -80,9 +81,28 @@ El servicio de email que trae Supabase solo manda mails a los miembros de tu org
 ## Inscripciones
 
 - Cualquier usuario con cuenta se anota con su pareja en los torneos con `status = inscripciones`. Queda **pendiente**.
-- El organizador las ve en **Table Editor → tournament_registrations** y cambia `status` a `confirmada` o `cancelada`.
-- El usuario ve el estado en **Mi cuenta** y puede darse de baja mientras las inscripciones sigan abiertas (la baja borra la fila, así puede volver a anotarse).
-- Las reglas están en las políticas RLS de la migración: nadie ve inscripciones ajenas ni se anota en torneos cerrados.
+- El admin la confirma o rechaza en **Panel → Torneos → Inscripciones**. El jugador recibe un aviso en **Mi cuenta** (campanita en el header) y un email si Resend está configurado.
+- El usuario puede darse de baja mientras las inscripciones sigan abiertas y la inscripción no esté rechazada (la baja borra la fila, así puede volver a anotarse).
+- Las reglas están en las políticas RLS de las migraciones: nadie ve inscripciones ajenas, nadie se anota en torneos cerrados y solo los admins cambian estados.
+
+## Panel de administración
+
+En `/admin`, solo para cuentas marcadas como admin:
+
+- **Torneos:** crear, editar y borrar (con flyer). Un torneo con inscripciones no se puede borrar: pasalo a _Finalizado_. Desde cada torneo: inscripciones, confirmar o rechazar, WhatsApp con un toque y CSV para Excel.
+- **Noticias:** borrador, publicada o programada (fecha futura), con portada.
+- **Jugadores:** alta, edición y foto.
+- **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
+
+**Marcar a alguien como admin:** la persona se registra en el sitio y después, en el **SQL Editor** de Supabase (o con el CLI):
+
+```bash
+npx supabase db query --linked "update public.profiles set is_admin = true where email = 'su-email@ejemplo.com'"
+```
+
+Las imágenes se guardan en el bucket público `media` de Supabase Storage (solo los admins pueden subir).
+
+**Emails de avisos (opcional):** con `RESEND_API_KEY` y `EMAIL_FROM` en las variables de entorno, al confirmar o rechazar una inscripción también se manda un email. Sin dominio verificado, Resend solo envía desde `onboarding@resend.dev` al email de tu cuenta de Resend.
 
 ## Scripts
 
@@ -101,13 +121,17 @@ El servicio de email que trae Supabase solo manda mails a los miembros de tu org
 
 ```
 src/
-├── proxy.ts                 # Refresca la sesión y protege /mi-cuenta
+├── proxy.ts                 # Refresca la sesión y protege /mi-cuenta y /admin
 ├── app/                     # Páginas (App Router); los listados usan grupos (lista)/(ranking) para su loading.tsx
+│   └── admin/               # Panel de administración (cada página y acción llama a requireAdmin)
 ├── components/
 │   ├── ui/                  # Componentes base del sistema de diseño
+│   ├── admin/               # Formularios, subida de imágenes y carga de puntos del panel
 │   └── *.tsx                # Header, footer, tarjetas de torneo/noticia, ranking...
 ├── lib/
-│   ├── auth.ts              # getCurrentUser(): usuario logueado (getClaims, memoizado)
+│   ├── auth.ts              # getCurrentUser() y requireAdmin()
+│   ├── email.ts             # Envío de emails con Resend (opcional)
+│   ├── points-import.ts     # Lectura de Excel/CSV y detección de columnas para la carga de puntos
 │   ├── data.ts              # Lectura de datos (Supabase o datos de ejemplo)
 │   ├── demo-data.ts         # Datos de ejemplo
 │   ├── site.ts              # Nombre, descripción y navegación
@@ -116,7 +140,8 @@ src/
 │   └── supabase/            # Clientes de Supabase (server, client, proxy)
 └── types/                   # Tipos de la base de datos
 supabase/
-├── migrations/              # Esquema: profiles, players, tournaments, news, tournament_registrations
+├── migrations/              # Esquema, RLS, rol admin, avisos, Storage y carga de puntos
+├── templates/               # Plantillas de email de Supabase Auth en castellano
 └── seed.sql                 # Datos de ejemplo
 ```
 
@@ -124,6 +149,5 @@ supabase/
 
 - **Rendimiento:** las lecturas públicas usan el cliente con cookies, así que todas las páginas se generan en cada request. Conviene leerlas con un cliente sin cookies y cachearlas.
 - Separar **Jugadores** (buscador) de **Ranking** (tabla + resultados).
-- Panel de administración para cargar torneos, noticias y flyers (Supabase Storage) y confirmar inscripciones.
 - Vincular la cuenta con el jugador del ranking e historial de torneos por jugador.
 - Deploy en Vercel (completá `NEXT_PUBLIC_SITE_URL` con el dominio final).

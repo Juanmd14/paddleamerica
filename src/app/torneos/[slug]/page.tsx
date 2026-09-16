@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   CalendarDays,
   CircleCheck,
+  CircleX,
   type LucideIcon,
   MapPin,
   Medal,
@@ -222,14 +223,28 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
 
   if (registration) {
     const status = registrationStatus(registration.status);
+    const rejected = registration.status === "rechazada";
     return (
       <div>
-        <div className="flex items-start gap-3 rounded-lg bg-success-soft p-4 text-success">
-          <CircleCheck className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-          <p className="font-medium">
-            Ya estás inscripto con {registration.partner_name}.
-          </p>
-        </div>
+        {rejected ? (
+          <div className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger">
+            <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p className="font-medium">
+              Tu inscripción con {registration.partner_name} fue rechazada. Si
+              tenés dudas, escribile a la organización.
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 rounded-lg bg-success-soft p-4 text-success">
+            <CircleCheck
+              className="mt-0.5 size-5 shrink-0"
+              aria-hidden="true"
+            />
+            <p className="font-medium">
+              Ya estás inscripto con {registration.partner_name}.
+            </p>
+          </div>
+        )}
         <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Estado</dt>
@@ -248,18 +263,20 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
             </div>
           )}
         </dl>
-        <form
-          action={cancelRegistration.bind(
-            null,
-            registration.id,
-            tournament.slug,
-          )}
-          className="mt-6 border-t border-border pt-6"
-        >
-          <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
-            Cancelar inscripción
-          </SubmitButton>
-        </form>
+        {!rejected && (
+          <form
+            action={cancelRegistration.bind(
+              null,
+              registration.id,
+              tournament.slug,
+            )}
+            className="mt-6 border-t border-border pt-6"
+          >
+            <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
+              Cancelar inscripción
+            </SubmitButton>
+          </form>
+        )}
       </div>
     );
   }

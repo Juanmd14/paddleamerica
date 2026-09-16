@@ -23,5 +23,6 @@ When those two histories meet (a `git pull` with conflicts, or a merge):
 - All data reads go through `src/lib/data.ts`. Without Supabase env vars it falls back to `src/lib/demo-data.ts`; keep `supabase/seed.sql` in sync with it.
 - Supabase clients: `@/lib/supabase/server` (server) and `@/lib/supabase/client` (client components). Use `getCurrentUser()` from `@/lib/auth` (wraps `supabase.auth.getClaims()`, memoized per request) for auth checks.
 - Session refresh and protected routes: `src/proxy.ts` → `src/lib/supabase/proxy.ts`. Still verify auth inside pages and Server Actions.
-- Schema changes: new file in `supabase/migrations/` with RLS policies, then update `src/types/database.types.ts`.
+- Admin panel lives in `src/app/admin`. Call `requireAdmin()` from `@/lib/auth` at the top of **every** admin page, route handler (use `getCurrentUser()` and return 404) and Server Action; the layout is visual only. Admin reads also go through `src/lib/data.ts`. Admin forms use `useAdminForm` (no React form reset) and `ImageUpload` (Storage bucket `media`).
+- Schema changes: new file in `supabase/migrations/` with RLS policies, apply with `npx supabase db push`, then `npm run db:types`. Never edit an applied migration.
 - Verify with `npm run lint`, `npm run typecheck` and `npm run build`.

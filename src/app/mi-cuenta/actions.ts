@@ -44,3 +44,17 @@ export async function updateProfile(
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+/** Marca como leídos los avisos del usuario (se llama al mostrarlos en Mi cuenta). */
+export async function markNotificationsRead(): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null);
+  if (error) console.error("[avisos]", error);
+}

@@ -1,10 +1,19 @@
-import { CalendarDays, KeyRound, MapPin, Trophy, Users } from "lucide-react";
+import {
+  Bell,
+  CalendarDays,
+  KeyRound,
+  LayoutDashboard,
+  MapPin,
+  Trophy,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
 import { EmptyState } from "@/components/empty-state";
+import { MarkNotificationsRead } from "@/components/mark-notifications-read";
 import { ProfileForm } from "@/components/profile-form";
 import { SubmitButton } from "@/components/submit-button";
 import { SupabaseNotice } from "@/components/supabase-notice";
@@ -15,12 +24,16 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { getCurrentUser } from "@/lib/auth";
-import { getMyProfile, getMyRegistrations } from "@/lib/data";
-import { formatDateRange } from "@/lib/format";
+import {
+  getMyNotifications,
+  getMyProfile,
+  getMyRegistrations,
+} from "@/lib/data";
+import { formatDate, formatDateRange } from "@/lib/format";
 import { registrationStatus, tournamentStatus } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { firstParam } from "@/lib/utils";
-import type { RegistrationWithTournament } from "@/types/models";
+import { cn, firstParam } from "@/lib/utils";
+import type { Notification, RegistrationWithTournament } from "@/types/models";
 
 export const metadata: Metadata = {
   title: "Mi cuenta",
@@ -42,9 +55,10 @@ export default async function AccountPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/mi-cuenta");
 
-  const [profile, registrations, params] = await Promise.all([
+  const [profile, registrations, notifications, params] = await Promise.all([
     getMyProfile(),
     getMyRegistrations(),
+    getMyNotifications(),
     searchParams,
   ]);
   const message = firstParam(params.message);
@@ -83,31 +97,49 @@ export default async function AccountPage({
           </Alert>
         )}
 
-        <section className="lg:col-span-2">
-          <h2 className="font-display text-3xl font-bold uppercase">
-            Mis inscripciones
-          </h2>
-          {registrations.length > 0 ? (
-            <ul className="mt-6 space-y-4">
-              {registrations.map((registration) => (
-                <li key={registration.id}>
-                  <RegistrationCard registration={registration} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="mt-6">
-              <EmptyState
-                icon={Trophy}
-                title="Todavía no te anotaste en ningún torneo"
-                description="Elegí un torneo con inscripciones abiertas y anotate con tu pareja."
-                action={<ButtonLink href="/torneos">Ver torneos</ButtonLink>}
-              />
-            </div>
-          )}
-        </section>
+        <div className="space-y-12 lg:col-span-2">
+          <Notifications notifications={notifications} />
+
+          <section>
+            <h2 className="font-display text-3xl font-bold uppercase">
+              Mis inscripciones
+            </h2>
+            {registrations.length > 0 ? (
+              <ul className="mt-6 space-y-4">
+                {registrations.map((registration) => (
+                  <li key={registration.id}>
+                    <RegistrationCard registration={registration} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-6">
+                <EmptyState
+                  icon={Trophy}
+                  title="Todavía no te anotaste en ningún torneo"
+                  description="Elegí un torneo con inscripciones abiertas y anotate con tu pareja."
+                  action={<ButtonLink href="/torneos">Ver torneos</ButtonLink>}
+                />
+              </div>
+            )}
+          </section>
+        </div>
 
         <aside className="space-y-6">
+          {user.isAdmin && (
+            <Card className="flex items-center justify-between gap-4 border-oro-300 bg-oro-50 p-6">
+              <div>
+                <h2 className="font-semibold">Panel de administración</h2>
+                <p className="text-sm text-muted-foreground">
+                  Torneos, noticias, jugadores y puntos.
+                </p>
+              </div>
+              <ButtonLink href="/admin" size="sm">
+                <LayoutDashboard className="size-4" aria-hidden="true" />
+                Abrir
+              </ButtonLink>
+            </Card>
+          )}
           <Card className="p-6">
             <h2 className="font-display text-2xl font-bold uppercase">
               Mis datos
@@ -149,7 +181,10 @@ function RegistrationCard({
 }) {
   const { tournament } = registration;
   const status = registrationStatus(registration.status);
-  const canCancel = tournament.status === "inscripciones";
+  const canCancel =
+    tournament.status === "inscripciones" &&
+    (registration.status === "pendiente" ||
+      registration.status === "confirmada");
 
   return (
     <Card className="p-5 sm:p-6">
@@ -207,5 +242,77 @@ function RegistrationCard({
         </form>
       )}
     </Card>
+  );
+}
+
+function Notifications({ notifications }: { notifications: Notification[] }) {
+  const hasUnread = notifications.some((notification) => !notification.read_at);
+
+  return (
+    <section id="avisos" className="scroll-mt-24">
+      <h2 className="font-display text-3xl font-bold uppercase">Avisos</h2>
+      {notifications.length > 0 ? (
+        <Card className="mt-6 overflow-hidden">
+          {hasUnread && <MarkNotificationsRead />}
+          <ul className="divide-y divide-border">
+            {notifications.map((notification) => {
+              const unread = !notification.read_at;
+              const content = (
+                <>
+                  <span
+                    className={cn(
+                      "mt-1.5 size-2 shrink-0 rounded-full",
+                      unread ? "bg-primary" : "bg-transparent",
+                    )}
+                    aria-hidden="true"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">
+                        {notification.title}
+                      </span>
+                      {unread && <Badge tone="primary">Nuevo</Badge>}
+                    </span>
+                    {notification.body && (
+                      <span className="mt-0.5 block text-sm text-foreground-soft">
+                        {notification.body}
+                      </span>
+                    )}
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {formatDate(notification.created_at)}
+                    </span>
+                  </span>
+                </>
+              );
+              return (
+                <li
+                  key={notification.id}
+                  className={cn(unread && "bg-oro-50/60")}
+                >
+                  {notification.href && notification.href !== "/mi-cuenta" ? (
+                    <Link
+                      href={notification.href}
+                      className="flex gap-3 px-5 py-4 hover:bg-muted"
+                    >
+                      {content}
+                    </Link>
+                  ) : (
+                    <div className="flex gap-3 px-5 py-4">{content}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      ) : (
+        <div className="mt-6">
+          <EmptyState
+            icon={Bell}
+            title="No tenés avisos"
+            description="Te avisamos acá (y por email) cuando confirmen o rechacen una inscripción."
+          />
+        </div>
+      )}
+    </section>
   );
 }
