@@ -1,24 +1,52 @@
 import { CalendarDays, MapPin, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Cover } from "@/components/cover";
-import { Badge } from "@/components/ui/badge";
-import { formatDateRange, formatFlyerDate } from "@/lib/format";
-import { genderLabel, tournamentStatus } from "@/lib/labels";
+import { TournamentStatusBadge } from "@/components/tournament-status-badge";
+import {
+  formatDateRange,
+  formatFlyerDate,
+  formatShortDate,
+} from "@/lib/format";
+import { genderLabel, spotsInfo } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { Tournament } from "@/types/models";
 
 type TournamentCardProps = {
   tournament: Tournament;
+  /** Parejas anotadas (pendientes + confirmadas), para mostrar los lugares libres. */
+  taken?: number;
   className?: string;
 };
 
 /** Tarjeta de torneo con el flyer (4:5). Sin flyer, arma uno con la fecha y la sede. */
-export function TournamentCard({ tournament, className }: TournamentCardProps) {
-  const status = tournamentStatus(tournament.status);
+export function TournamentCard({
+  tournament,
+  taken = 0,
+  className,
+}: TournamentCardProps) {
+  const isOpen = tournament.status === "inscripciones";
+  const spots = spotsInfo(tournament.capacity, taken);
+  const chip =
+    isOpen && spots
+      ? spots.full
+        ? "Cupo completo"
+        : spots.left === 1
+          ? "Queda 1 lugar"
+          : `Quedan ${spots.left} lugares`
+      : tournament.status === "proximo" && tournament.registration_opens_on
+        ? `Abre el ${formatShortDate(tournament.registration_opens_on)}`
+        : null;
 
   return (
     <article className={cn("group relative flex flex-col", className)}>
-      <div className="relative overflow-hidden rounded-card ring-1 ring-noche-900/5 transition-shadow group-hover:shadow-xl group-hover:shadow-noche-900/10">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-card transition-shadow group-hover:shadow-xl",
+          isOpen
+            ? "shadow-lg ring-2 shadow-oro-400/25 ring-oro-400 group-hover:shadow-oro-400/40"
+            : "ring-1 ring-noche-900/5 group-hover:shadow-noche-900/10",
+        )}
+      >
         <Cover
           src={tournament.cover_url}
           alt={`Flyer de ${tournament.name}`}
@@ -28,9 +56,21 @@ export function TournamentCard({ tournament, className }: TournamentCardProps) {
           className="transition-transform duration-300 group-hover:scale-[1.02] motion-reduce:transition-none"
           placeholder={<FlyerPlaceholder tournament={tournament} />}
         />
-        <Badge tone={status.tone} className="absolute top-3 left-3 shadow-sm">
-          {status.label}
-        </Badge>
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+          <TournamentStatusBadge status={tournament.status} />
+          {chip && (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm",
+                spots?.full
+                  ? "bg-danger text-white"
+                  : "bg-white/95 text-noche-950",
+              )}
+            >
+              {chip}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-1 flex-col">

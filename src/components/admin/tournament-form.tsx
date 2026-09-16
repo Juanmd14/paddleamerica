@@ -33,6 +33,28 @@ export function TournamentForm({
   const [slugTouched, setSlugTouched] = useState(Boolean(tournament));
   const suggestedSlug = slugify(`${name} ${startsOn.slice(0, 4)}`);
 
+  // Vista previa del mapa: se actualiza al salir de dirección, sede o ciudad.
+  const placeOf = (
+    address?: string | null,
+    venue?: string | null,
+    city?: string | null,
+  ) =>
+    address?.trim() || [venue, city].filter((part) => part?.trim()).join(", ");
+  const [mapQuery, setMapQuery] = useState(() =>
+    placeOf(tournament?.address, tournament?.venue, tournament?.city),
+  );
+  function refreshMap(form: HTMLFormElement | null) {
+    if (!form) return;
+    const data = new FormData(form);
+    setMapQuery(
+      placeOf(
+        String(data.get("address") ?? ""),
+        String(data.get("venue") ?? ""),
+        String(data.get("city") ?? ""),
+      ),
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
@@ -90,6 +112,7 @@ export function TournamentForm({
             <Input
               {...fieldProps("city", errors.city)}
               defaultValue={tournament?.city}
+              onBlur={(event) => refreshMap(event.currentTarget.form)}
               required
             />
           </Field>
@@ -97,6 +120,7 @@ export function TournamentForm({
             <Input
               {...fieldProps("venue", errors.venue)}
               defaultValue={tournament?.venue ?? ""}
+              onBlur={(event) => refreshMap(event.currentTarget.form)}
             />
           </Field>
           <Field
@@ -154,6 +178,57 @@ export function TournamentForm({
             />
           </Field>
         </Card>
+
+        <Card className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+          <div className="sm:col-span-2">
+            <h2 className="font-display text-2xl font-bold uppercase">
+              Ubicación
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Se muestra en un mapa con el botón “Cómo llegar”.
+            </p>
+          </div>
+          <Field
+            name="address"
+            label="Dirección"
+            optional
+            error={errors.address}
+            hint="Ej. Av. Rivadavia 1234, América. Si la dejás vacía, se usa la sede y la ciudad."
+          >
+            <Input
+              {...fieldProps("address", errors.address)}
+              defaultValue={tournament?.address ?? ""}
+              onBlur={(event) => refreshMap(event.currentTarget.form)}
+              autoComplete="off"
+            />
+          </Field>
+          <Field
+            name="maps_url"
+            label="Link de Google Maps"
+            optional
+            error={errors.maps_url}
+            hint="En Google Maps: Compartir → Copiar vínculo. Lo usa “Cómo llegar”."
+          >
+            <Input
+              {...fieldProps("maps_url", errors.maps_url)}
+              type="url"
+              inputMode="url"
+              placeholder="https://maps.app.goo.gl/…"
+              defaultValue={tournament?.maps_url ?? ""}
+            />
+          </Field>
+          {mapQuery && (
+            <div className="overflow-hidden rounded-lg border border-border sm:col-span-2">
+              <iframe
+                key={mapQuery}
+                title="Vista previa del mapa"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`}
+                loading="lazy"
+                className="aspect-[16/7] w-full border-0"
+              />
+            </div>
+          )}
+        </Card>
       </div>
 
       <div className="space-y-6">
@@ -174,6 +249,38 @@ export function TournamentForm({
                 </option>
               ))}
             </Select>
+          </Field>
+          <Field
+            name="capacity"
+            label="Cupo (parejas)"
+            optional
+            error={errors.capacity}
+            hint="Al llenarse se cierran las inscripciones. Vacío = sin límite."
+          >
+            <Input
+              {...fieldProps("capacity", errors.capacity)}
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              defaultValue={tournament?.capacity ?? ""}
+            />
+          </Field>
+          <Field
+            name="registration_opens_on"
+            label="Abren las inscripciones"
+            optional
+            error={errors.registration_opens_on}
+            hint="Se muestra como “Abre el …” mientras esté en Próximamente."
+          >
+            <Input
+              {...fieldProps(
+                "registration_opens_on",
+                errors.registration_opens_on,
+              )}
+              type="date"
+              defaultValue={tournament?.registration_opens_on ?? ""}
+            />
           </Field>
           <SubmitButton
             className="w-full"

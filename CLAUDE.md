@@ -11,7 +11,7 @@ The owner works from two computers. On 2026-09-16 a redesign of the **public ran
 When those two histories meet (a `git pull` with conflicts, or a merge):
 
 - **The home computer's ranking wins.** For the public ranking UI, keep the home version: `src/app/jugadores/page.tsx` there. Here that page moved to `src/app/jugadores/(ranking)/page.tsx` (a route group so its `loading.tsx` doesn't turn missing player slugs into soft 404s). Also keep the home versions of `ranking-list.tsx` and `ranking-table.tsx` if they exist. Put the home page at the `(ranking)/` path, or delete the route group and its `loading.tsx`.
-- `src/components/ranking-court.tsx` and `src/assets/ranking-cancha.webp` were a stand-in built here from `public/imagen hero test 1.png`. Delete them if the home version doesn't use them.
+- `src/components/ranking-court.tsx` was a stand-in built here from `public/imagen hero test 1.png`. Delete it if the home version doesn't use it. **Keep `src/assets/cancha-aerea.webp`**: the home hero uses it as the default background.
 - **Keep everything else from this computer:** Supabase migrations, `src/lib/data.ts` (`getRanking({ gender, category })` and the admin reads), auth, registrations, the admin panel (`src/app/admin`), header and footer, and the other pages. If the home ranking needs different data, adapt `data.ts` or add a migration. Don't revert.
 - If the home version changed the `players` table, write a new migration. Never edit the already-applied ones.
 - After merging, run `npm run lint`, `npm run typecheck` and `npm run build`, check `/jugadores` and `/admin/jugadores`, then **delete this section**.

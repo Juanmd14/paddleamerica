@@ -41,6 +41,20 @@ values
    'Torneo femenino por el aniversario de Pádel Oeste, con cuadros de 2da y 3ra.',
    'Salliqueló', 'Pádel Oeste', '2026-08-14', '2026-08-16', '2da y 3ra', 'femenino', 'finalizado', null, 'Castro / Molina');
 
+-- Ubicación, cupos y apertura de inscripciones
+update public.tournaments t
+set address = v.address, capacity = v.capacity, registration_opens_on = v.opens
+from (values
+  ('abierto-de-primavera-2026', 'América, Rivadavia, Buenos Aires', 24, null::date),
+  ('copa-ciudad-de-trenque-lauquen-2026', 'Trenque Lauquen, Buenos Aires', 16, null::date),
+  ('torneo-mixto-nocturno-2026', 'Pehuajó, Buenos Aires', 20, date '2026-10-20'),
+  ('master-de-fin-de-ano-2026', 'América, Rivadavia, Buenos Aires', null, null::date),
+  ('clasico-del-oeste-2026', 'Carlos Tejedor, Buenos Aires', null, null::date),
+  ('invierno-padel-tour-2026', 'General Villegas, Buenos Aires', null, null::date),
+  ('copa-aniversario-padel-oeste-2026', 'Salliqueló, Buenos Aires', null, null::date)
+) as v(slug, address, capacity, opens)
+where t.slug = v.slug;
+
 insert into public.news
   (slug, title, excerpt, body, tag, author, published_at)
 values

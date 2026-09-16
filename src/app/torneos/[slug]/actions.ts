@@ -79,10 +79,14 @@ export async function registerForTournament(
 
   if (error) {
     // 23505: ya existe una inscripción de este usuario para el torneo.
+    // cupo_completo: lo lanza el trigger de cupos si se llenó mientras se anotaba.
     const message =
       error.code === "23505"
         ? "Ya estás inscripto en este torneo."
-        : "No pudimos guardar la inscripción. Probá de nuevo.";
+        : error.message === "cupo_completo"
+          ? "Se completó el cupo mientras te anotabas. Si se libera un lugar, vas a poder anotarte."
+          : "No pudimos guardar la inscripción. Probá de nuevo.";
+    if (error.message === "cupo_completo") revalidatePath(`/torneos/${slug}`);
     return { message, values };
   }
 

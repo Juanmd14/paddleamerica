@@ -7,7 +7,7 @@ import { SectionHeading } from "@/components/section-heading";
 import { TournamentCard } from "@/components/tournament-card";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
-import { getTournaments } from "@/lib/data";
+import { getTournamentSpots, getTournaments } from "@/lib/data";
 import { formatDateRange } from "@/lib/format";
 import { genderLabel } from "@/lib/labels";
 import type { Tournament } from "@/types/models";
@@ -19,9 +19,10 @@ export const metadata: Metadata = {
 };
 
 export default async function TournamentsPage() {
-  const [upcoming, finished] = await Promise.all([
+  const [upcoming, finished, spots] = await Promise.all([
     getTournaments(),
     getTournaments({ finished: true }),
+    getTournamentSpots(),
   ]);
 
   return (
@@ -38,7 +39,11 @@ export default async function TournamentsPage() {
           {upcoming.length > 0 ? (
             <div className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {upcoming.map((tournament) => (
-                <TournamentCard key={tournament.id} tournament={tournament} />
+                <TournamentCard
+                  key={tournament.id}
+                  tournament={tournament}
+                  taken={spots.get(tournament.id)}
+                />
               ))}
             </div>
           ) : (

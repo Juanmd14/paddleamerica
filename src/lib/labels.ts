@@ -73,3 +73,78 @@ export const playerGenderOptions = tournamentGenderOptions.filter(
 export const sideOptions = Object.entries(SIDE_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
+
+// ---------------------------------------------------------------------
+// Números del inicio
+// ---------------------------------------------------------------------
+
+export const STAT_KEYS = [
+  "players",
+  "tournaments_year",
+  "tournaments_month",
+  "venues",
+  "cities",
+  "clubs",
+  "registrations_year",
+] as const;
+
+export type StatKey = (typeof STAT_KEYS)[number];
+
+export type StatSetting = {
+  key: StatKey;
+  /** Título propio; null usa el automático. */
+  label?: string | null;
+  /** Número corregido a mano; null usa el automático. */
+  value?: number | null;
+};
+
+export const DEFAULT_STATS: StatSetting[] = [
+  { key: "players" },
+  { key: "tournaments_year" },
+  { key: "tournaments_month" },
+  { key: "cities" },
+];
+
+/** Título automático de cada número ("Torneos en 2026", "Torneos en septiembre"). */
+export function statLabel(
+  key: StatKey,
+  { year, monthName }: { year: string; monthName: string },
+) {
+  const labels: Record<StatKey, string> = {
+    players: "Jugadores en el ranking",
+    tournaments_year: `Torneos en ${year}`,
+    tournaments_month: `Torneos en ${monthName}`,
+    venues: "Sedes",
+    cities: "Ciudades",
+    clubs: "Clubes",
+    registrations_year: `Parejas inscriptas en ${year}`,
+  };
+  return labels[key];
+}
+
+// ---------------------------------------------------------------------
+// Cupos
+// ---------------------------------------------------------------------
+
+export type SpotsInfo = {
+  capacity: number;
+  taken: number;
+  left: number;
+  full: boolean;
+  percent: number;
+};
+
+/** Estado del cupo de un torneo. Null si el torneo no tiene cupo. */
+export function spotsInfo(
+  capacity: number | null,
+  taken = 0,
+): SpotsInfo | null {
+  if (!capacity) return null;
+  return {
+    capacity,
+    taken,
+    left: Math.max(capacity - taken, 0),
+    full: taken >= capacity,
+    percent: Math.min(100, Math.round((taken / capacity) * 100)),
+  };
+}

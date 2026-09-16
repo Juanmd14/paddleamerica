@@ -10,12 +10,28 @@ import {
   SLUG_PATTERN,
   saveErrorMessage,
   text,
+  wholeNumber,
 } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
 import { tournamentGenderOptions, tournamentStatusOptions } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import type { TablesInsert } from "@/types/database.types";
+
+/** Links que da Google Maps al compartir un lugar. */
+function isGoogleMapsUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname === "maps.app.goo.gl" ||
+        url.hostname === "goo.gl" ||
+        /(^|\.)google\.[a-z.]+$/.test(url.hostname))
+    );
+  } catch {
+    return false;
+  }
+}
 
 function readTournament(formData: FormData) {
   const name = text(formData, "name");
@@ -34,6 +50,12 @@ function readTournament(formData: FormData) {
     prize: optionalText(formData, "prize"),
     champions: optionalText(formData, "champions"),
     cover_url: optionalText(formData, "cover_url"),
+    address: optionalText(formData, "address"),
+    maps_url: optionalText(formData, "maps_url"),
+    capacity: text(formData, "capacity")
+      ? wholeNumber(formData, "capacity")
+      : null,
+    registration_opens_on: optionalText(formData, "registration_opens_on"),
   };
 
   const errors: Record<string, string> = {};
@@ -66,6 +88,26 @@ function readTournament(formData: FormData) {
   }
   if (!isStorageUrl(values.cover_url ?? null))
     errors.cover_url = "Subí el flyer desde acá.";
+  if ((values.address ?? "").length > 200) {
+    errors.address = "La dirección puede tener hasta 200 caracteres.";
+  }
+  if (values.maps_url && !isGoogleMapsUrl(values.maps_url)) {
+    errors.maps_url =
+      "Pegá el link de Google Maps (tocá Compartir → Copiar vínculo).";
+  }
+  if (
+    values.capacity !== null &&
+    values.capacity !== undefined &&
+    (Number.isNaN(values.capacity) || values.capacity < 1)
+  ) {
+    errors.capacity = "El cupo tiene que ser un número mayor a 0.";
+  }
+  if (
+    values.registration_opens_on &&
+    !isValidDate(values.registration_opens_on)
+  ) {
+    errors.registration_opens_on = "Elegí una fecha válida.";
+  }
 
   return { values, errors };
 }

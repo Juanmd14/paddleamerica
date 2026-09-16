@@ -3,38 +3,48 @@ import {
   CalendarDays,
   CircleCheck,
   CircleX,
+  Clock,
   type LucideIcon,
   MapPin,
   Medal,
-  Navigation,
   Trophy,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
 import { Cover } from "@/components/cover";
 import { RegistrationForm } from "@/components/registration-form";
-import { ShareButton } from "@/components/share-button";
-import { FlyerPlaceholder } from "@/components/tournament-card";
+import {
+  MobileRegistrationBar,
+  RegistrationToggle,
+} from "@/components/registration-toggle";
+import { SpotsBar } from "@/components/spots-bar";
 import { SubmitButton } from "@/components/submit-button";
+import { FlyerPlaceholder } from "@/components/tournament-card";
+import { TournamentMap } from "@/components/tournament-map";
+import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink, buttonStyles } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser } from "@/lib/auth";
-import { getMyProfile, getMyRegistration, getTournament } from "@/lib/data";
-import { formatDateRange } from "@/lib/format";
+import { type CurrentUser, getCurrentUser } from "@/lib/auth";
+import {
+  getMyProfile,
+  getMyRegistration,
+  getTournament,
+  getTournamentSpots,
+} from "@/lib/data";
+import { formatDateRange, formatShortDate } from "@/lib/format";
 import {
   genderLabel,
   registrationStatus,
-  tournamentStatus,
+  type SpotsInfo,
+  spotsInfo,
 } from "@/lib/labels";
 import { paragraphs } from "@/lib/utils";
-import type { Tournament } from "@/types/models";
+import type { Profile, Registration, Tournament } from "@/types/models";
 
 export async function generateMetadata({
   params,
@@ -57,20 +67,39 @@ export default async function TournamentPage({
   const tournament = await getTournament(slug);
   if (!tournament) notFound();
 
-  const status = tournamentStatus(tournament.status);
+  const [spotsMap, user] = await Promise.all([
+    getTournamentSpots(),
+    getCurrentUser(),
+  ]);
+  const [registration, profile] = user
+    ? await Promise.all([getMyRegistration(tournament.id), getMyProfile()])
+    : [null, null];
+
+  const spots = spotsInfo(tournament.capacity, spotsMap.get(tournament.id));
   const dates = formatDateRange(tournament.starts_on, tournament.ends_on);
-  const place = [tournament.venue, tournament.city].filter(Boolean).join(", ");
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+  const isOpen = tournament.status === "inscripciones";
+  const showMobileBar = isOpen && !registration && !spots?.full;
 
   const details: { icon: LucideIcon; label: string; value: string }[] = [
     { icon: CalendarDays, label: "Fechas", value: dates },
-    { icon: MapPin, label: "Sede", value: place },
+    {
+      icon: MapPin,
+      label: "Sede",
+      value: [tournament.venue, tournament.city].filter(Boolean).join(", "),
+    },
     {
       icon: Users,
       label: "Categoría",
       value: `${tournament.category} · ${genderLabel(tournament.gender)}`,
     },
   ];
+  if (tournament.capacity) {
+    details.push({
+      icon: Users,
+      label: "Cupo",
+      value: `${tournament.capacity} parejas`,
+    });
+  }
   if (tournament.prize) {
     details.push({ icon: Medal, label: "Premios", value: tournament.prize });
   }
@@ -85,7 +114,7 @@ export default async function TournamentPage({
   return (
     <>
       <section className="bg-noche-950 text-white">
-        <Container className="py-12 sm:py-16">
+        <Container className="py-10 sm:py-14">
           <Link
             href="/torneos"
             className="inline-flex items-center gap-2 text-sm font-medium text-noche-300 transition-colors hover:text-white"
@@ -93,85 +122,63 @@ export default async function TournamentPage({
             <ArrowLeft className="size-4" aria-hidden="true" />
             Todos los torneos
           </Link>
-          <div className="mt-8 flex flex-wrap gap-2">
-            <Badge tone={status.tone}>{status.label}</Badge>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <TournamentStatusBadge status={tournament.status} />
             <Badge tone="inverse">{genderLabel(tournament.gender)}</Badge>
+            <Badge tone="inverse">{tournament.category}</Badge>
           </div>
           <h1 className="mt-4 max-w-4xl font-display text-5xl leading-none font-bold uppercase sm:text-7xl">
             {tournament.name}
           </h1>
-          <p className="mt-4 text-lg text-noche-300">
-            {dates} · {tournament.city}
+          <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-lg text-noche-300">
+            <span className="inline-flex items-center gap-2">
+              <CalendarDays
+                className="size-5 text-oro-400"
+                aria-hidden="true"
+              />
+              {dates}
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <MapPin className="size-5 text-oro-400" aria-hidden="true" />
+              {[tournament.venue, tournament.city].filter(Boolean).join(", ")}
+            </span>
           </p>
         </Container>
       </section>
 
-      <Container className="grid gap-10 py-12 sm:py-16 lg:grid-cols-12 lg:gap-12">
-        <div className="lg:col-span-5">
-          <Cover
-            src={tournament.cover_url}
-            alt={`Flyer de ${tournament.name}`}
-            ratio="flyer"
-            seed={tournament.id}
-            preload
-            className="rounded-card lg:sticky lg:top-24"
-            sizes="(min-width: 1024px) 460px, 100vw"
-            placeholder={<FlyerPlaceholder tournament={tournament} />}
-          />
-        </div>
+      <Container
+        className={
+          showMobileBar
+            ? "grid gap-8 pt-8 pb-24 sm:pt-12 lg:grid-cols-12 lg:gap-12 lg:pb-16"
+            : "grid gap-8 py-8 sm:py-12 lg:grid-cols-12 lg:gap-12 lg:py-16"
+        }
+      >
+        <aside className="lg:col-span-5">
+          <div className="space-y-5 lg:sticky lg:top-24">
+            <Cover
+              src={tournament.cover_url}
+              alt={`Flyer de ${tournament.name}`}
+              ratio="flyer"
+              seed={tournament.id}
+              preload
+              className="rounded-card shadow-xl shadow-noche-900/10"
+              sizes="(min-width: 1024px) 460px, 100vw"
+              placeholder={<FlyerPlaceholder tournament={tournament} />}
+            />
+            <RegistrationCard
+              tournament={tournament}
+              spots={spots}
+              user={user}
+              registration={registration}
+              profile={profile}
+            />
+          </div>
+        </aside>
 
-        <div className="space-y-8 lg:col-span-7">
-          <Card className="p-6 sm:p-8">
-            <h2 className="font-display text-2xl font-bold uppercase">
-              Información
-            </h2>
-            <dl className="mt-6 grid gap-5 sm:grid-cols-2">
-              {details.map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex gap-3">
-                  <Icon
-                    className="mt-0.5 size-5 shrink-0 text-accent"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <dt className="text-sm text-muted-foreground">{label}</dt>
-                    <dd className="font-medium">{value}</dd>
-                  </div>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-6">
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={buttonStyles({ variant: "outline" })}
-              >
-                <Navigation className="size-4" aria-hidden="true" />
-                Cómo llegar
-              </a>
-              <ShareButton
-                title={tournament.name}
-                text={`${tournament.name} · ${dates} en ${tournament.city}`}
-              />
-            </div>
-          </Card>
-
-          {tournament.status === "inscripciones" && (
-            <Card id="inscripcion" className="scroll-mt-24 p-6 sm:p-8">
-              <h2 className="font-display text-2xl font-bold uppercase">
-                Inscripción
-              </h2>
-              <div className="mt-6">
-                <Suspense fallback={<RegistrationSkeleton />}>
-                  <RegistrationPanel tournament={tournament} />
-                </Suspense>
-              </div>
-            </Card>
-          )}
-
+        <div className="space-y-10 lg:col-span-7">
           {tournament.description && (
             <section>
-              <h2 className="font-display text-2xl font-bold uppercase">
+              <h2 className="font-display text-3xl font-bold uppercase">
                 Sobre el torneo
               </h2>
               <div className="mt-4 space-y-5 text-lg leading-8 text-foreground-soft">
@@ -181,51 +188,147 @@ export default async function TournamentPage({
               </div>
             </section>
           )}
+
+          <section>
+            <h2 className="font-display text-3xl font-bold uppercase">
+              Información
+            </h2>
+            <Card className="mt-4 p-5 sm:p-6">
+              <dl className="grid gap-5 sm:grid-cols-2">
+                {details.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex gap-3">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pista-50 text-accent">
+                      <Icon className="size-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">{label}</dt>
+                      <dd className="font-semibold">{value}</dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          </section>
+
+          <section>
+            <h2 className="font-display text-3xl font-bold uppercase">
+              Ubicación
+            </h2>
+            <div className="mt-4">
+              <TournamentMap
+                tournament={tournament}
+                shareText={`${tournament.name} · ${dates} en ${tournament.city}`}
+              />
+            </div>
+          </section>
         </div>
       </Container>
+
+      {showMobileBar && (
+        <MobileRegistrationBar
+          summary={
+            spots
+              ? `${spots.taken}/${spots.capacity} parejas · ${spots.left === 1 ? "queda 1 lugar" : `quedan ${spots.left}`}`
+              : "Inscripciones abiertas"
+          }
+        />
+      )}
     </>
   );
 }
 
-async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
-  const user = await getCurrentUser();
+type RegistrationCardProps = {
+  tournament: Tournament;
+  spots: SpotsInfo | null;
+  user: CurrentUser | null;
+  registration: Registration | null;
+  profile: Profile | null;
+};
 
-  if (!user) {
-    return (
-      <div>
-        <p className="text-foreground-soft">
-          Para anotarte con tu pareja necesitás una cuenta. Es gratis y te lleva
-          un minuto.
+/** Tarjeta de inscripción debajo del flyer, según el estado del torneo y del usuario. */
+function RegistrationCard({
+  tournament,
+  spots,
+  user,
+  registration,
+  profile,
+}: RegistrationCardProps) {
+  const isOpen = tournament.status === "inscripciones";
+  const title = isOpen
+    ? registration
+      ? "Tu inscripción"
+      : spots?.full
+        ? "Cupo completo"
+        : "Anotate con tu pareja"
+    : tournament.status === "proximo"
+      ? "Inscripciones próximamente"
+      : tournament.status === "en_juego"
+        ? "Torneo en juego"
+        : "Torneo finalizado";
+
+  return (
+    <Card id="inscripcion" className="scroll-mt-24 overflow-hidden shadow-lg">
+      <div className="bg-noche-950 p-5 text-white sm:p-6">
+        <p className="text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
+          Inscripción
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <ButtonLink
-            href={`/login?modo=registro&next=/torneos/${tournament.slug}%23inscripcion`}
-            size="lg"
-          >
-            Crear cuenta e inscribirme
-          </ButtonLink>
-          <ButtonLink
-            href={`/login?next=/torneos/${tournament.slug}%23inscripcion`}
-            size="lg"
-            variant="outline"
-          >
-            Ya tengo cuenta
-          </ButtonLink>
-        </div>
+        <h2 className="mt-1 font-display text-3xl leading-none font-bold uppercase">
+          {title}
+        </h2>
+        {spots && (isOpen || tournament.status === "proximo") && (
+          <SpotsBar spots={spots} tone="dark" className="mt-5" />
+        )}
       </div>
-    );
-  }
 
-  const [registration, profile] = await Promise.all([
-    getMyRegistration(tournament.id),
-    getMyProfile(),
-  ]);
+      <div className="p-5 sm:p-6">
+        {isOpen ? (
+          <OpenRegistration
+            tournament={tournament}
+            spots={spots}
+            user={user}
+            registration={registration}
+            profile={profile}
+          />
+        ) : tournament.status === "proximo" ? (
+          <p className="flex items-start gap-3 text-foreground-soft">
+            <Clock
+              className="mt-0.5 size-5 shrink-0 text-accent"
+              aria-hidden="true"
+            />
+            {tournament.registration_opens_on
+              ? `Las inscripciones abren el ${formatShortDate(tournament.registration_opens_on)}. Volvé ese día para anotarte.`
+              : "Las inscripciones todavía no abrieron. Seguinos para enterarte cuándo arrancan."}
+          </p>
+        ) : tournament.champions ? (
+          <p className="flex items-center gap-3 font-semibold">
+            <Trophy
+              className="size-5 shrink-0 text-oro-500"
+              aria-hidden="true"
+            />
+            Campeones: {tournament.champions}
+          </p>
+        ) : (
+          <p className="text-foreground-soft">
+            Las inscripciones de este torneo están cerradas.
+          </p>
+        )}
+      </div>
+    </Card>
+  );
+}
 
+function OpenRegistration({
+  tournament,
+  spots,
+  user,
+  registration,
+  profile,
+}: RegistrationCardProps) {
   if (registration) {
     const status = registrationStatus(registration.status);
     const rejected = registration.status === "rechazada";
     return (
-      <div>
+      <div className="space-y-5">
         {rejected ? (
           <div className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger">
             <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
@@ -245,7 +348,7 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
             </p>
           </div>
         )}
-        <dl className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+        <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-muted-foreground">Estado</dt>
             <dd className="mt-1">
@@ -256,12 +359,6 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
             <dt className="text-muted-foreground">Teléfono de contacto</dt>
             <dd className="mt-1 font-medium">{registration.contact_phone}</dd>
           </div>
-          {registration.category && (
-            <div>
-              <dt className="text-muted-foreground">Categoría</dt>
-              <dd className="mt-1 font-medium">{registration.category}</dd>
-            </div>
-          )}
         </dl>
         {!rejected && (
           <form
@@ -270,7 +367,7 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
               registration.id,
               tournament.slug,
             )}
-            className="mt-6 border-t border-border pt-6"
+            className="border-t border-border pt-4"
           >
             <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
               Cancelar inscripción
@@ -281,22 +378,50 @@ async function RegistrationPanel({ tournament }: { tournament: Tournament }) {
     );
   }
 
-  return (
-    <RegistrationForm
-      slug={tournament.slug}
-      categoryHint={tournament.category}
-      defaultPhone={profile?.phone}
-    />
-  );
-}
+  if (spots?.full) {
+    return (
+      <div className="space-y-3">
+        <Button size="lg" className="w-full" disabled>
+          Cupo completo
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          Si se libera un lugar, vas a poder anotarte desde acá.
+        </p>
+      </div>
+    );
+  }
 
-function RegistrationSkeleton() {
+  if (!user) {
+    const next = encodeURIComponent(`/torneos/${tournament.slug}#inscripcion`);
+    return (
+      <div className="space-y-3">
+        <ButtonLink
+          href={`/login?modo=registro&next=${next}`}
+          size="lg"
+          className="w-full"
+        >
+          Inscribirme
+        </ButtonLink>
+        <p className="text-center text-sm text-muted-foreground">
+          Necesitás una cuenta (es gratis).{" "}
+          <Link
+            href={`/login?next=${next}`}
+            className="font-semibold text-accent hover:text-accent-hover"
+          >
+            Ya tengo cuenta
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-4">
-      <Skeleton className="h-5 w-3/4" />
-      <Skeleton className="h-11 w-full" />
-      <Skeleton className="h-11 w-full" />
-      <Skeleton className="h-13 w-full rounded-full" />
-    </div>
+    <RegistrationToggle>
+      <RegistrationForm
+        slug={tournament.slug}
+        categoryHint={tournament.category}
+        defaultPhone={profile?.phone}
+      />
+    </RegistrationToggle>
   );
 }

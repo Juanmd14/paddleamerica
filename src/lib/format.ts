@@ -114,3 +114,29 @@ export function fromDateTimeLocal(value: string) {
   const date = new Date(`${value}:00-03:00`);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+
+const monthNameFormatter = new Intl.DateTimeFormat("es-AR", {
+  month: "long",
+  timeZone: APP_TIME_ZONE,
+});
+
+/** Año y mes actuales en hora argentina: { year: "2026", yearMonth: "2026-09", monthName: "septiembre" }. */
+export function currentPeriod(date = new Date()) {
+  const local = toDateTimeLocal(date);
+  return {
+    year: local.slice(0, 4),
+    yearMonth: local.slice(0, 7),
+    monthName: monthNameFormatter.format(date),
+  };
+}
+
+const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
+  day: "numeric",
+  month: "numeric",
+  timeZone: APP_TIME_ZONE,
+});
+
+/** "2026-10-20" → "20/10". */
+export function formatShortDate(value: string) {
+  return shortDateFormatter.format(parseDate(value));
+}

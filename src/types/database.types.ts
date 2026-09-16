@@ -215,6 +215,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          hero_image_url: string | null
+          id: boolean
+          stats: Json
+          updated_at: string
+        }
+        Insert: {
+          hero_image_url?: string | null
+          id?: boolean
+          stats?: Json
+          updated_at?: string
+        }
+        Update: {
+          hero_image_url?: string | null
+          id?: boolean
+          stats?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tournament_registrations: {
         Row: {
           category: string | null
@@ -261,6 +282,8 @@ export type Database = {
       }
       tournaments: {
         Row: {
+          address: string | null
+          capacity: number | null
           category: string
           champions: string | null
           city: string
@@ -270,14 +293,18 @@ export type Database = {
           ends_on: string
           gender: string
           id: number
+          maps_url: string | null
           name: string
           prize: string | null
+          registration_opens_on: string | null
           slug: string
           starts_on: string
           status: string
           venue: string | null
         }
         Insert: {
+          address?: string | null
+          capacity?: number | null
           category: string
           champions?: string | null
           city: string
@@ -287,14 +314,18 @@ export type Database = {
           ends_on: string
           gender: string
           id?: never
+          maps_url?: string | null
           name: string
           prize?: string | null
+          registration_opens_on?: string | null
           slug: string
           starts_on: string
           status?: string
           venue?: string | null
         }
         Update: {
+          address?: string | null
+          capacity?: number | null
           category?: string
           champions?: string | null
           city?: string
@@ -304,8 +335,10 @@ export type Database = {
           ends_on?: string
           gender?: string
           id?: never
+          maps_url?: string | null
           name?: string
           prize?: string | null
+          registration_opens_on?: string | null
           slug?: string
           starts_on?: string
           status?: string
@@ -328,6 +361,13 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      tournament_spots: {
+        Args: never
+        Returns: {
+          taken: number
+          tournament_id: number
+        }[]
+      }
       undo_last_points_import: { Args: never; Returns: Json }
     }
     Enums: {

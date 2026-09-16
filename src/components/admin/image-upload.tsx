@@ -11,6 +11,7 @@ const ratios = {
   flyer: "aspect-[4/5] max-w-xs",
   video: "aspect-video max-w-md",
   square: "aspect-square max-w-48",
+  wide: "aspect-[21/9]",
 };
 
 const MAX_SIDE = 1600;
@@ -20,7 +21,7 @@ type ImageUploadProps = {
   /** Nombre del input oculto que recibe la URL pública. */
   name: string;
   label: string;
-  folder: "flyers" | "noticias" | "jugadores";
+  folder: "flyers" | "noticias" | "jugadores" | "sitio";
   ratio: keyof typeof ratios;
   defaultValue?: string | null;
   hint?: string;

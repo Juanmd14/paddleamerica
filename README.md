@@ -80,6 +80,7 @@ El servicio de email que trae Supabase solo manda mails a los miembros de tu org
 
 ## Inscripciones
 
+- Los torneos con cupo muestran cuántas parejas hay anotadas (por ejemplo 18/24) en las tarjetas y en la página del torneo.
 - Cualquier usuario con cuenta se anota con su pareja en los torneos con `status = inscripciones`. Queda **pendiente**.
 - El admin la confirma o rechaza en **Panel → Torneos → Inscripciones**. El jugador recibe un aviso en **Mi cuenta** (campanita en el header) y un email si Resend está configurado.
 - El usuario puede darse de baja mientras las inscripciones sigan abiertas y la inscripción no esté rechazada (la baja borra la fila, así puede volver a anotarse).
@@ -90,8 +91,12 @@ El servicio de email que trae Supabase solo manda mails a los miembros de tu org
 En `/admin`, solo para cuentas marcadas como admin:
 
 - **Torneos:** crear, editar y borrar (con flyer). Un torneo con inscripciones no se puede borrar: pasalo a _Finalizado_. Desde cada torneo: inscripciones, confirmar o rechazar, WhatsApp con un toque y CSV para Excel.
+  - **Ubicación:** dirección y link de Google Maps (en Maps: _Compartir → Copiar vínculo_). La página del torneo muestra el mapa y el botón _Cómo llegar_.
+  - **Cupo:** en parejas. Cuentan las pendientes y las confirmadas; al llenarse, el sitio muestra _Cupo completo_ y la base no deja anotarse (trigger `check_tournament_capacity`). Rechazar una inscripción o subir el cupo libera lugares.
+  - **Abren las inscripciones:** fecha que se muestra como “Abre el …” mientras el torneo está en _Próximamente_.
 - **Noticias:** borrador, publicada o programada (fecha futura), con portada.
 - **Jugadores:** alta, edición y foto.
+- **Sitio:** foto de fondo del inicio y los 4 números de la franja (se calculan solos; elegís cuáles mostrar y podés corregir título o valor).
 - **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
 
 **Marcar a alguien como admin:** la persona se registra en el sitio y después, en el **SQL Editor** de Supabase (o con el CLI):

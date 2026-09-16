@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import courtImage from "@/assets/ranking-cancha.webp";
+import courtImage from "@/assets/cancha-aerea.webp";
 import { Avatar } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/format";
 import { playerName } from "@/lib/labels";

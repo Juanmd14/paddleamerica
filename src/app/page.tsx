@@ -5,32 +5,45 @@ import {
   Newspaper,
   Trophy,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import courtImage from "@/assets/cancha-aerea.webp";
 import { CourtLines } from "@/components/court-lines";
 import { EmptyState } from "@/components/empty-state";
 import { NewsCard } from "@/components/news-card";
 import { RankingList } from "@/components/ranking-list";
 import { SectionHeading } from "@/components/section-heading";
+import { SpotsBar } from "@/components/spots-bar";
 import { TournamentCard } from "@/components/tournament-card";
-import { Badge } from "@/components/ui/badge";
+import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
-import { getNews, getRanking, getStats, getTournaments } from "@/lib/data";
+import {
+  getHomeStats,
+  getNews,
+  getRanking,
+  getSiteSettings,
+  getTournamentSpots,
+  getTournaments,
+  type HomeStat,
+} from "@/lib/data";
 import { currentYear, formatDateRange, formatNumber } from "@/lib/format";
-import { genderLabel, tournamentStatus } from "@/lib/labels";
+import { genderLabel, type SpotsInfo, spotsInfo } from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
-import type { SiteStats } from "@/lib/data";
 import type { Tournament } from "@/types/models";
 
 export default async function Home() {
-  const [tournaments, news, men, women, stats] = await Promise.all([
-    getTournaments({ limit: 4 }),
-    getNews({ limit: 3 }),
-    getRanking({ gender: "masculino", limit: 5 }),
-    getRanking({ gender: "femenino", limit: 5 }),
-    getStats(),
-  ]);
+  const [tournaments, news, men, women, stats, settings, spots] =
+    await Promise.all([
+      getTournaments({ limit: 4 }),
+      getNews({ limit: 3 }),
+      getRanking({ gender: "masculino", limit: 5 }),
+      getRanking({ gender: "femenino", limit: 5 }),
+      getHomeStats(),
+      getSiteSettings(),
+      getTournamentSpots(),
+    ]);
 
   const featuredTournament =
     tournaments.find((t) => t.status === "inscripciones") ?? tournaments[0];
@@ -43,14 +56,7 @@ export default async function Home() {
   return (
     <>
       <section className="relative overflow-hidden bg-noche-950 text-white">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_75%_0%,var(--color-noche-800)_0%,transparent_65%)]"
-        />
-        <CourtLines
-          orientation="vertical"
-          className="pointer-events-none absolute top-0 right-[-8%] hidden h-full w-[46%] text-white/[0.06] lg:block"
-        />
+        <HeroBackground imageUrl={settings.heroImageUrl} />
         <Container className="relative grid gap-12 pt-14 pb-12 sm:pt-20 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-16 lg:pt-24 lg:pb-16">
           <div>
             <p className="text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
@@ -74,7 +80,13 @@ export default async function Home() {
             </div>
           </div>
           {featuredTournament && (
-            <FeaturedTournament tournament={featuredTournament} />
+            <FeaturedTournament
+              tournament={featuredTournament}
+              spots={spotsInfo(
+                featuredTournament.capacity,
+                spots.get(featuredTournament.id),
+              )}
+            />
           )}
         </Container>
 
@@ -94,6 +106,7 @@ export default async function Home() {
                 <TournamentCard
                   key={tournament.id}
                   tournament={tournament}
+                  taken={spots.get(tournament.id)}
                   className="w-[78%] shrink-0 snap-start sm:w-auto"
                 />
               ))}
@@ -165,16 +178,60 @@ export default async function Home() {
   );
 }
 
-function FeaturedTournament({ tournament }: { tournament: Tournament }) {
-  const status = tournamentStatus(tournament.status);
+/** Foto del hero cargada en Panel → Sitio o, si no hay, la cancha aérea a la derecha. */
+function HeroBackground({ imageUrl }: { imageUrl: string | null }) {
+  if (imageUrl) {
+    return (
+      <>
+        <Image
+          src={imageUrl}
+          alt=""
+          fill
+          preload
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-linear-to-t from-noche-950 via-noche-950/85 to-noche-950/55 lg:bg-linear-to-r lg:from-noche-950 lg:via-noche-950/80 lg:to-noche-950/30"
+        />
+      </>
+    );
+  }
 
   return (
-    <div className="relative rounded-card border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/30 backdrop-blur sm:p-8">
+    <>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_75%_0%,var(--color-noche-800)_0%,transparent_65%)]"
+      />
+      <Image
+        src={courtImage}
+        alt=""
+        preload
+        sizes="(min-width: 1024px) 40vw, 100vw"
+        className="pointer-events-none absolute top-0 right-0 h-full w-full [mask-image:linear-gradient(to_bottom,black,transparent)] object-cover opacity-20 lg:w-[42%] lg:[mask-image:linear-gradient(to_right,transparent,black_45%)] lg:opacity-60"
+      />
+    </>
+  );
+}
+
+function FeaturedTournament({
+  tournament,
+  spots,
+}: {
+  tournament: Tournament;
+  spots: SpotsInfo | null;
+}) {
+  const isOpen = tournament.status === "inscripciones";
+
+  return (
+    <div className="relative rounded-card border border-white/10 bg-noche-950/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
           Próximo torneo
         </p>
-        <Badge tone={status.tone}>{status.label}</Badge>
+        <TournamentStatusBadge status={tournament.status} />
       </div>
       <h2 className="mt-5 font-display text-4xl leading-none font-bold uppercase sm:text-5xl">
         {tournament.name}
@@ -204,32 +261,32 @@ function FeaturedTournament({ tournament }: { tournament: Tournament }) {
           </li>
         )}
       </ul>
+      {isOpen && spots && (
+        <SpotsBar
+          spots={spots}
+          tone="dark"
+          className="mt-6 border-t border-white/10 pt-6"
+        />
+      )}
       <ButtonLink
-        href={`/torneos/${tournament.slug}`}
+        href={`/torneos/${tournament.slug}${isOpen && !spots?.full ? "#inscripcion" : ""}`}
         size="lg"
         className="mt-8 w-full"
       >
-        {tournament.status === "inscripciones" ? "Inscribirme" : "Ver torneo"}
+        {isOpen && !spots?.full ? "Inscribirme" : "Ver torneo"}
         <ArrowRight className="size-4" aria-hidden="true" />
       </ButtonLink>
     </div>
   );
 }
 
-function StatsStrip({ stats }: { stats: SiteStats }) {
-  const items = [
-    { value: stats.players, label: "Jugadores en el ranking" },
-    { value: stats.tournamentsThisYear, label: `Torneos en ${currentYear()}` },
-    { value: stats.venues, label: "Sedes" },
-    { value: stats.cities, label: "Ciudades" },
-  ];
-
+function StatsStrip({ stats }: { stats: HomeStat[] }) {
   return (
     <div className="relative border-t border-white/10">
       <Container>
         <dl className="grid grid-cols-2 divide-white/10 sm:grid-cols-4 sm:divide-x">
-          {items.map((item) => (
-            <div key={item.label} className="py-6 sm:px-6 sm:first:pl-0">
+          {stats.map((item) => (
+            <div key={item.key} className="py-6 sm:px-6 sm:first:pl-0">
               <dt className="text-xs font-medium text-noche-400">
                 {item.label}
               </dt>

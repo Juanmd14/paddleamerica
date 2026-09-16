@@ -1,7 +1,19 @@
 import { cache } from "react";
 import { getCurrentUser } from "@/lib/auth";
-import { demoNews, demoPlayers, demoTournaments } from "@/lib/demo-data";
-import { currentYear } from "@/lib/format";
+import {
+  demoNews,
+  demoPlayers,
+  demoSpots,
+  demoTournaments,
+} from "@/lib/demo-data";
+import { currentPeriod } from "@/lib/format";
+import {
+  DEFAULT_STATS,
+  STAT_KEYS,
+  type StatKey,
+  type StatSetting,
+  statLabel,
+} from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -221,19 +233,74 @@ export const getNewsArticle = cache(
 );
 
 // ---------------------------------------------------------------------
-// Números del circuito (franja del inicio)
+// Cupos de torneos
 // ---------------------------------------------------------------------
 
-export type SiteStats = {
-  players: number;
-  tournamentsThisYear: number;
-  venues: number;
-  cities: number;
+/** Parejas anotadas (pendientes + confirmadas) por torneo. */
+export const getTournamentSpots = cache(
+  async (): Promise<Map<number, number>> => {
+    if (isDemoMode) {
+      return new Map(
+        Object.entries(demoSpots).map(([id, taken]) => [Number(id), taken]),
+      );
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("tournament_spots");
+    if (error) throw error;
+    return new Map(data.map((row) => [row.tournament_id, row.taken]));
+  },
+);
+
+// ---------------------------------------------------------------------
+// Configuración del sitio y números del inicio
+// ---------------------------------------------------------------------
+
+export type SiteSettings = {
+  heroImageUrl: string | null;
+  stats: StatSetting[];
 };
 
-export async function getStats(): Promise<SiteStats> {
-  let players: Pick<Player, "city">[];
-  let tournaments: Pick<Tournament, "city" | "venue" | "starts_on">[];
+function parseStatSettings(value: unknown): StatSetting[] {
+  if (!Array.isArray(value)) return DEFAULT_STATS;
+  const parsed = value
+    .filter(
+      (item): item is StatSetting =>
+        typeof item === "object" &&
+        item !== null &&
+        STAT_KEYS.includes((item as StatSetting).key),
+    )
+    .map((item) => ({
+      key: item.key,
+      label: typeof item.label === "string" && item.label ? item.label : null,
+      value:
+        typeof item.value === "number" && Number.isInteger(item.value)
+          ? item.value
+          : null,
+    }))
+    .slice(0, 4);
+  return parsed.length > 0 ? parsed : DEFAULT_STATS;
+}
+
+export const getSiteSettings = cache(async (): Promise<SiteSettings> => {
+  if (isDemoMode) return { heroImageUrl: null, stats: DEFAULT_STATS };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("hero_image_url, stats")
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    heroImageUrl: data?.hero_image_url ?? null,
+    stats: parseStatSettings(data?.stats),
+  };
+});
+
+/** Valor automático de cada número del inicio. */
+export async function getStats(): Promise<Record<StatKey, number>> {
+  let players: Pick<Player, "city" | "club">[];
+  let tournaments: Pick<Tournament, "id" | "city" | "venue" | "starts_on">[];
 
   if (isDemoMode) {
     players = demoPlayers;
@@ -241,8 +308,8 @@ export async function getStats(): Promise<SiteStats> {
   } else {
     const supabase = await createClient();
     const [playersResult, tournamentsResult] = await Promise.all([
-      supabase.from("players").select("city"),
-      supabase.from("tournaments").select("city, venue, starts_on"),
+      supabase.from("players").select("city, club"),
+      supabase.from("tournaments").select("id, city, venue, starts_on"),
     ]);
     if (playersResult.error) throw playersResult.error;
     if (tournamentsResult.error) throw tournamentsResult.error;
@@ -250,20 +317,42 @@ export async function getStats(): Promise<SiteStats> {
     tournaments = tournamentsResult.data;
   }
 
-  const year = String(currentYear());
+  const { year, yearMonth } = currentPeriod();
+  const spots = await getTournamentSpots();
   const distinct = (values: (string | null)[]) =>
     new Set(values.filter(Boolean)).size;
+  const thisYear = tournaments.filter((t) => t.starts_on.startsWith(year));
 
   return {
     players: players.length,
-    tournamentsThisYear: tournaments.filter((t) => t.starts_on.startsWith(year))
-      .length,
+    tournaments_year: thisYear.length,
+    tournaments_month: tournaments.filter((t) =>
+      t.starts_on.startsWith(yearMonth),
+    ).length,
     venues: distinct(tournaments.map((t) => t.venue)),
     cities: distinct([
       ...players.map((p) => p.city),
       ...tournaments.map((t) => t.city),
     ]),
+    clubs: distinct(players.map((p) => p.club)),
+    registrations_year: thisYear.reduce(
+      (total, tournament) => total + (spots.get(tournament.id) ?? 0),
+      0,
+    ),
   };
+}
+
+export type HomeStat = { key: StatKey; label: string; value: number };
+
+/** Los números del inicio: automáticos, con título y valor corregibles desde el panel. */
+export async function getHomeStats(): Promise<HomeStat[]> {
+  const [settings, values] = await Promise.all([getSiteSettings(), getStats()]);
+  const period = currentPeriod();
+  return settings.stats.map((stat) => ({
+    key: stat.key,
+    label: stat.label || statLabel(stat.key, period),
+    value: stat.value ?? values[stat.key],
+  }));
 }
 
 // ---------------------------------------------------------------------

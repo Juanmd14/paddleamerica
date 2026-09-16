@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 import { setRegistrationStatus } from "@/app/admin/torneos/[id]/inscripciones/actions";
 import { AdminPageHeader, Table, Td, Th } from "@/components/admin/admin-ui";
 import { EmptyState } from "@/components/empty-state";
+import { SpotsBar } from "@/components/spots-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
 import { getTournamentById, getTournamentRegistrations } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
-import { registrationStatus } from "@/lib/labels";
+import { registrationStatus, spotsInfo } from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
 import { cn, firstParam, whatsappUrl } from "@/lib/utils";
 
@@ -50,6 +51,14 @@ export default async function TournamentRegistrationsPage({
   const visible = filter
     ? registrations.filter((registration) => registration.status === filter)
     : registrations;
+  const spots = spotsInfo(
+    tournament.capacity,
+    registrations.filter(
+      (registration) =>
+        registration.status === "pendiente" ||
+        registration.status === "confirmada",
+    ).length,
+  );
   const countOf = (status?: string) =>
     status
       ? registrations.filter((registration) => registration.status === status)
@@ -84,6 +93,16 @@ export default async function TournamentRegistrationsPage({
           </>
         }
       />
+
+      {spots && (
+        <Card className="p-5 sm:p-6">
+          <SpotsBar spots={spots} />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Cuentan las pendientes y las confirmadas. Con el cupo lleno, el
+            sitio no deja anotarse; si confirmás de más, el cupo se excede.
+          </p>
+        </Card>
+      )}
 
       <nav aria-label="Filtrar por estado" className="flex flex-wrap gap-2">
         {FILTERS.map((option) => {
