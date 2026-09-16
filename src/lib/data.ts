@@ -579,18 +579,27 @@ export async function getMyNotifications(limit = 20): Promise<Notification[]> {
   return data;
 }
 
+/** Número de la campana: avisos sin leer o, si ya se leyeron, invitaciones sin responder. */
 export async function getUnreadNotificationsCount(): Promise<number> {
   const user = await getCurrentUser();
   if (!user) return 0;
 
   const supabase = await createClient();
-  const { count, error } = await supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .is("read_at", null);
-  if (error) throw error;
-  return count ?? 0;
+  const [unread, invitations] = await Promise.all([
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null),
+    supabase
+      .from("tournament_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("partner_id", user.id)
+      .eq("status", "invitacion"),
+  ]);
+  if (unread.error) throw unread.error;
+  if (invitations.error) throw invitations.error;
+  return Math.max(unread.count ?? 0, invitations.count ?? 0);
 }
 
 // ---------------------------------------------------------------------

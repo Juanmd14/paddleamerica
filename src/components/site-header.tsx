@@ -1,7 +1,8 @@
-import { Bell, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { NavLink } from "@/components/nav-link";
+import { NotificationsButton } from "@/components/notifications-button";
 import { Avatar } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -48,18 +49,7 @@ export async function SiteHeader() {
                 <span className="hidden lg:inline">Admin</span>
               </Link>
             )}
-            <Link
-              href="/mi-cuenta#avisos"
-              aria-label={unread > 0 ? `Avisos: ${unread} sin leer` : "Avisos"}
-              className="relative flex size-10 items-center justify-center rounded-full text-noche-200 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <Bell className="size-5" aria-hidden="true" />
-              {unread > 0 && (
-                <span className="absolute top-1 right-1 flex min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-4.5 font-bold text-primary-foreground tabular-nums">
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
-            </Link>
+            <NotificationsButton count={unread} />
             <Link
               href="/mi-cuenta"
               aria-label="Mi cuenta"
