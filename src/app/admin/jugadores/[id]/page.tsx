@@ -1,14 +1,19 @@
 import { ExternalLink, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { deletePlayer, updatePlayer } from "@/app/admin/jugadores/actions";
+import {
+  adjustPlayerPoints,
+  deletePlayer,
+  updatePlayer,
+} from "@/app/admin/jugadores/actions";
 import { AdminPageHeader } from "@/components/admin/admin-ui";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { PlayerForm } from "@/components/admin/player-form";
+import { PointsAdjuster } from "@/components/admin/points-adjuster";
 import { Alert } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
-import { getPlayerById } from "@/lib/data";
+import { getPlayerById, getPlayerPointChanges } from "@/lib/data";
 import { playerName } from "@/lib/labels";
 import { firstParam } from "@/lib/utils";
 
@@ -24,7 +29,10 @@ export default async function EditPlayerPage({
   const player = await getPlayerById(Number(id));
   if (!player) notFound();
 
-  const query = await searchParams;
+  const [query, history] = await Promise.all([
+    searchParams,
+    getPlayerPointChanges(player.id),
+  ]);
   const error = firstParam(query.error);
   const saved = firstParam(query.guardado);
   const name = playerName(player);
@@ -52,6 +60,12 @@ export default async function EditPlayerPage({
         action={updatePlayer.bind(null, player.id)}
         player={player}
         submitLabel="Guardar cambios"
+      />
+
+      <PointsAdjuster
+        action={adjustPlayerPoints.bind(null, player.id)}
+        points={player.ranking_points}
+        history={history}
       />
 
       <form

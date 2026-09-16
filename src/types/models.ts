@@ -13,3 +13,4 @@ export type RegistrationWithProfile = Registration & {
 };
 export type Notification = Tables<"notifications">;
 export type RankingImport = Tables<"ranking_imports">;
+export type PlayerPointChange = Tables<"player_point_changes">;

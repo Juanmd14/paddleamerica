@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
+import { ClimbBadge, PointsGain } from "@/components/ranking-trend";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/format";
 import { effectiveness, playerName, sideLabel } from "@/lib/labels";
+import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
 
@@ -11,7 +13,14 @@ const th =
 const td = "px-4 py-3 tabular-nums";
 
 /** Tabla completa del ranking (escritorio). La posición sale del orden del array. */
-export function RankingTable({ players }: { players: Player[] }) {
+export function RankingTable({
+  players,
+  trends,
+}: {
+  players: Player[];
+  /** Puntos del último mes y puestos subidos, por id de jugador. */
+  trends?: Map<number, RankingTrend>;
+}) {
   return (
     <table className="w-full text-sm">
       <thead className="border-b border-border bg-muted/60">
@@ -67,12 +76,15 @@ export function RankingTable({ players }: { players: Player[] }) {
                 <div className="flex items-center gap-3">
                   <Avatar name={name} src={player.photo_url} size="sm" />
                   <div className="min-w-0">
-                    <Link
-                      href={`/jugadores/${player.slug}`}
-                      className="font-semibold transition-colors group-hover:text-accent after:absolute after:inset-0"
-                    >
-                      {name}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/jugadores/${player.slug}`}
+                        className="font-semibold transition-colors group-hover:text-accent after:absolute after:inset-0"
+                      >
+                        {name}
+                      </Link>
+                      <ClimbBadge trend={trends?.get(player.id)} />
+                    </div>
                     {player.side && (
                       <p className="text-xs text-muted-foreground">
                         {sideLabel(player.side)}
@@ -104,6 +116,10 @@ export function RankingTable({ players }: { players: Player[] }) {
                 )}
               >
                 {formatNumber(player.ranking_points)}
+                <PointsGain
+                  trend={trends?.get(player.id)}
+                  className="mt-1 font-sans"
+                />
               </td>
             </tr>
           );

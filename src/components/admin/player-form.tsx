@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/lib/admin-form";
 import { playerGenderOptions, sideOptions } from "@/lib/labels";
-import { slugify } from "@/lib/utils";
+import { cn, slugify } from "@/lib/utils";
 import type { Player } from "@/types/models";
 
 type PlayerFormProps = {
@@ -40,6 +40,7 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
         step={1}
         inputMode="numeric"
         defaultValue={player?.[name] ?? 0}
+        onWheel={(event) => event.currentTarget.blur()}
       />
     </Field>
   );
@@ -142,8 +143,14 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
           </Field>
         </Card>
 
-        <Card className="grid gap-5 p-5 sm:grid-cols-4 sm:p-6">
-          {numberField("ranking_points", "Puntos")}
+        {/* Al editar, los puntos se cambian solo con "Corregir puntos" (queda el motivo en el historial). */}
+        <Card
+          className={cn(
+            "grid gap-5 p-5 sm:p-6",
+            player ? "sm:grid-cols-3" : "sm:grid-cols-4",
+          )}
+        >
+          {!player && numberField("ranking_points", "Puntos")}
           {numberField("matches_played", "PJ")}
           {numberField("matches_won", "PG")}
           {numberField("titles", "Títulos")}

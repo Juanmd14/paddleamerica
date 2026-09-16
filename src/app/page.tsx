@@ -24,6 +24,7 @@ import {
   getHomeStats,
   getNews,
   getRanking,
+  getRankingTrends,
   getSiteSettings,
   getTournamentSpots,
   getTournaments,
@@ -46,8 +47,8 @@ export default async function Home() {
     await Promise.all([
       getTournaments(),
       getNews({ limit: 3 }),
-      getRanking({ gender: "masculino", limit: 5 }),
-      getRanking({ gender: "femenino", limit: 5 }),
+      getRanking({ gender: "masculino" }),
+      getRanking({ gender: "femenino" }),
       getHomeStats(),
       getSiteSettings(),
       getTournamentSpots(),
@@ -56,9 +57,14 @@ export default async function Home() {
   const tournaments = upcoming.slice(0, 4);
   const featuredTournament = pickFeaturedTournament(upcoming);
   const [leadNews, ...moreNews] = news;
+  // Las tendencias se calculan con la rama completa; se muestran los 5 primeros.
+  const [menTrends, womenTrends] = await Promise.all([
+    getRankingTrends(men),
+    getRankingTrends(women),
+  ]);
   const rankings = [
-    { gender: "masculino", players: men },
-    { gender: "femenino", players: women },
+    { gender: "masculino", players: men.slice(0, 5), trends: menTrends },
+    { gender: "femenino", players: women.slice(0, 5), trends: womenTrends },
   ];
 
   return (
@@ -173,7 +179,11 @@ export default async function Home() {
                       Ver completo
                     </Link>
                   </div>
-                  <RankingList players={ranking.players} compact />
+                  <RankingList
+                    players={ranking.players}
+                    trends={ranking.trends}
+                    compact
+                  />
                 </Card>
               ))}
             </div>

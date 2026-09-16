@@ -9,7 +9,7 @@ import { RankingTable } from "@/components/ranking-table";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
-import { getRanking, getRankingCategories } from "@/lib/data";
+import { getRanking, getRankingCategories, getRankingTrends } from "@/lib/data";
 import { genderLabel } from "@/lib/labels";
 import { cn, firstParam } from "@/lib/utils";
 
@@ -38,6 +38,7 @@ export default async function PlayersPage({
   const category =
     requested && categories.includes(requested) ? requested : undefined;
   const players = await getRanking({ gender, category });
+  const trends = await getRankingTrends(players);
 
   const title = category
     ? `${genderLabel(gender)} · ${category}`
@@ -49,7 +50,7 @@ export default async function PlayersPage({
         eyebrow="Ranking regional"
         title="Ranking"
         decoration={false}
-        description="Puntos acumulados en los torneos del circuito. Se actualiza después de cada fecha."
+        description="Puntos acumulados en los torneos del circuito. La flecha verde muestra los puestos que alguien subió en la última semana."
       >
         <div className="inline-flex rounded-full bg-white/10 p-1">
           {GENDERS.map((option) => (
@@ -120,9 +121,13 @@ export default async function PlayersPage({
             </div>
 
             <Card className="mt-4 overflow-hidden">
-              <RankingList players={players} className="md:hidden" />
+              <RankingList
+                players={players}
+                trends={trends}
+                className="md:hidden"
+              />
               <div className="hidden md:block">
-                <RankingTable players={players} />
+                <RankingTable players={players} trends={trends} />
               </div>
             </Card>
           </>

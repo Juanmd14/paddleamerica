@@ -14,12 +14,18 @@ import {
   type StatSetting,
   statLabel,
 } from "@/lib/labels";
+import {
+  GAIN_DAYS,
+  type RankingTrend,
+  rankingTrends,
+} from "@/lib/ranking-trends";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type {
   NewsArticle,
   Notification,
   Player,
+  PlayerPointChange,
   Profile,
   RankingImport,
   Registration,
@@ -64,6 +70,49 @@ export async function getRanking({
   if (limit) query = query.limit(limit);
 
   const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+/** Cambios de puntos del último mes (uno por request, lo usan las dos ramas del inicio). */
+const getRecentPointChanges = cache(async () => {
+  const since = new Date(
+    Date.now() - GAIN_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("player_point_changes")
+    .select("player_id, delta, created_at")
+    .gte("created_at", since);
+  if (error) throw error;
+  return data;
+});
+
+/**
+ * Puntos ganados en el último mes y puestos subidos en la semana, calculados
+ * sobre la lista completa que se muestra (rama o categoría).
+ */
+export async function getRankingTrends(
+  players: Player[],
+): Promise<Map<number, RankingTrend>> {
+  if (isDemoMode || players.length === 0) return new Map();
+  return rankingTrends(players, await getRecentPointChanges());
+}
+
+/** Historial de puntos de un jugador, lo más nuevo primero. */
+export async function getPlayerPointChanges(
+  playerId: number,
+  limit = 20,
+): Promise<PlayerPointChange[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("player_point_changes")
+    .select("*")
+    .eq("player_id", playerId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return data;
 }

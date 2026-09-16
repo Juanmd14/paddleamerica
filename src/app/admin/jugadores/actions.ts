@@ -31,7 +31,10 @@ function readPlayer(formData: FormData) {
     city: optionalText(formData, "city"),
     photo_url: optionalText(formData, "photo_url"),
     bio: optionalText(formData, "bio"),
-    ranking_points: wholeNumber(formData, "ranking_points"),
+    // Al editar no viene: los puntos se corrigen con adjustPlayerPoints.
+    ranking_points: formData.has("ranking_points")
+      ? wholeNumber(formData, "ranking_points")
+      : undefined,
     matches_played: wholeNumber(formData, "matches_played"),
     matches_won: wholeNumber(formData, "matches_won"),
     titles: wholeNumber(formData, "titles"),
@@ -141,6 +144,58 @@ export async function updatePlayer(
   revalidatePlayerPages(values.slug, previous?.slug ?? values.slug);
   revalidatePath(`/admin/jugadores/${id}`);
   return { ok: true };
+}
+
+export type AdjustPointsState = {
+  message?: string;
+  errors?: Partial<Record<"amount" | "reason", string>>;
+  total?: number;
+  savedAt?: number;
+};
+
+/** Suma o resta puntos con un motivo (queda en el historial del jugador). */
+export async function adjustPlayerPoints(
+  id: number,
+  _prevState: AdjustPointsState,
+  formData: FormData,
+): Promise<AdjustPointsState> {
+  await requireAdmin();
+  const amount = wholeNumber(formData, "amount", Number.NaN);
+  const reason = text(formData, "reason");
+  const sign = text(formData, "direction") === "restar" ? -1 : 1;
+
+  const errors: AdjustPointsState["errors"] = {};
+  if (Number.isNaN(amount) || amount < 1) {
+    errors.amount = "Poné cuántos puntos.";
+  }
+  if (reason.length < 3 || reason.length > 150) {
+    errors.reason = "Contá brevemente por qué (se guarda en el historial).";
+  }
+  if (Object.keys(errors).length > 0) return { errors };
+
+  const supabase = await createClient();
+  const { data: total, error } = await supabase.rpc("adjust_player_points", {
+    p_player_id: id,
+    p_delta: sign * amount,
+    p_reason: reason,
+  });
+  if (error) {
+    return {
+      message:
+        error.message === "puntos_negativos"
+          ? "No puede quedar con puntos negativos."
+          : "No pudimos corregir los puntos. Probá de nuevo.",
+    };
+  }
+
+  const { data: player } = await supabase
+    .from("players")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+  revalidatePlayerPages(player?.slug ?? "");
+  revalidatePath(`/admin/jugadores/${id}`);
+  return { total, savedAt: Date.now() };
 }
 
 export async function deletePlayer(id: number): Promise<void> {
