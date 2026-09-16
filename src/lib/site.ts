@@ -1,3 +1,26 @@
+/**
+ * URL pública del sitio: NEXT_PUBLIC_SITE_URL o, en Vercel, el dominio de producción
+ * o del deploy. Ignora valores vacíos o inválidos (una variable cargada vacía rompía el build).
+ */
+function resolveSiteUrl() {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL &&
+      `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  ];
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) continue;
+    try {
+      return new URL(value).origin;
+    } catch {
+      // Valor inválido: probamos el siguiente.
+    }
+  }
+  return "http://localhost:3000";
+}
+
 /** Datos de marca. Cambiá el nombre del sitio desde acá. */
 export const siteConfig = {
   name: "PaddleAmerica",
@@ -5,7 +28,7 @@ export const siteConfig = {
   region: "América y la zona",
   description:
     "Torneos, ranking y noticias del pádel de América, Rivadavia y la zona. Anotate en el próximo torneo y seguí a los mejores jugadores.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: resolveSiteUrl(),
   /**
    * Datos de contacto del circuito. Solo se muestran los que completes.
    * whatsapp: número con código de país, sin "+" ni espacios (ej. "5492392123456").

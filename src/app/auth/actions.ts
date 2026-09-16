@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { authErrorMessage } from "@/lib/auth-errors";
+import { siteConfig } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import { safeRedirectPath } from "@/lib/utils";
 
@@ -13,11 +14,7 @@ function withParams(path: string, params: Record<string, string>) {
 }
 
 async function siteOrigin() {
-  return (
-    (await headers()).get("origin") ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "http://localhost:3000"
-  );
+  return (await headers()).get("origin") || siteConfig.url;
 }
 
 export async function signIn(formData: FormData) {
