@@ -61,7 +61,7 @@ export function playerCategoryError(
   category: number | null,
 ) {
   if (!rules.category_min && !rules.category_sum) return null;
-  if (!category) return "Cargá tu categoría en Mi cuenta para poder anotarte.";
+  if (!category) return "Todavía no tenés categoría. La asigna el organizador: hasta entonces no podés anotarte.";
   const { category_min: min, category_max: max } = rules;
   if (min && max && (category < min || category > max)) {
     return `Sos ${categoryName(category)} y este torneo es de ${categoryRulesLabel(rules)}.`;
@@ -79,7 +79,7 @@ export function pairCategoryError(
   const own = playerCategoryError(rules, player);
   if (own) return own;
   if (!rules.category_min && !rules.category_sum) return null;
-  if (!partner) return `${partnerName} todavía no cargó su categoría.`;
+  if (!partner) return `${partnerName} todavía no tiene categoría asignada por el organizador.`;
 
   const { category_min: min, category_max: max, category_sum: sum } = rules;
   if (min && max && (partner < min || partner > max)) {

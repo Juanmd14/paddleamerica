@@ -22,6 +22,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  AdminProfile,
   NewsArticle,
   Notification,
   Player,
@@ -766,6 +767,23 @@ export async function getTournamentRegistrations(
     partnerProfile: registration.partner_id
       ? (byId.get(registration.partner_id) ?? null)
       : null,
+  }));
+}
+
+/** Todas las cuentas, para asignar categorías. Primero las que no tienen. */
+export async function getAllProfiles(): Promise<AdminProfile[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, phone, username, avatar_url, category")
+    .order("category", { ascending: true, nullsFirst: true })
+    .order("full_name", { ascending: true });
+  if (error) throw error;
+  return data.map((profile) => ({
+    ...profile,
+    avatar_url: safeAvatarUrl(profile.avatar_url),
   }));
 }
 

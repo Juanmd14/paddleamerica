@@ -4,8 +4,8 @@ import { useActionState } from "react";
 import { type ProfileFormState, updateProfile } from "@/app/mi-cuenta/actions";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert } from "@/components/ui/alert";
-import { FieldError, Input, Label, Select } from "@/components/ui/input";
-import { categoryOptions } from "@/lib/categories";
+import { FieldError, Input, Label } from "@/components/ui/input";
+import { categoryName } from "@/lib/categories";
 
 type ProfileFormProps = {
   email: string;
@@ -91,30 +91,20 @@ export function ProfileForm({
       </div>
       <div>
         <Label htmlFor="profile-category">Tu categoría</Label>
-        <Select
+        <Input
           id="profile-category"
-          name="category"
-          defaultValue={category ?? ""}
-          aria-invalid={!!errors.category}
+          value={category ? categoryName(category) : "Sin asignar"}
+          readOnly
+          disabled
           aria-describedby="profile-category-hint"
+          className="bg-muted text-muted-foreground"
+        />
+        <p
+          id="profile-category-hint"
+          className="mt-1.5 text-xs text-muted-foreground"
         >
-          <option value="">Todavía no la cargué</option>
-          {categoryOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
-        {errors.category ? (
-          <FieldError id="profile-category-hint">{errors.category}</FieldError>
-        ) : (
-          <p
-            id="profile-category-hint"
-            className="mt-1.5 text-xs text-muted-foreground"
-          >
-            Define en qué torneos podés anotarte. El organizador la revisa.
-          </p>
-        )}
+          La asigna el organizador y define en qué torneos podés anotarte.
+        </p>
       </div>
       <div>
         <Label htmlFor="profile-phone">Teléfono (WhatsApp)</Label>

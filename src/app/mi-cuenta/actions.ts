@@ -2,14 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
-import { isCategoryNumber } from "@/lib/categories";
 import { createClient } from "@/lib/supabase/server";
 
 export type ProfileFormState = {
   ok?: boolean;
   message?: string;
   errors?: Partial<
-    Record<"full_name" | "phone" | "username" | "category", string>
+    Record<"full_name" | "phone" | "username", string>
   >;
 };
 
@@ -29,8 +28,6 @@ export async function updateProfile(
     .trim()
     .replace(/^@/, "")
     .toLowerCase();
-  const categoryValue = String(formData.get("category") ?? "");
-  const category = categoryValue ? Number(categoryValue) : null;
 
   const errors: ProfileFormState["errors"] = {};
   if (fullName.length < 3 || fullName.length > 120) {
@@ -43,15 +40,13 @@ export async function updateProfile(
     errors.username =
       "De 3 a 20 letras o números, sin espacios (podés usar punto y guion bajo).";
   }
-  if (category !== null && !isCategoryNumber(category)) {
-    errors.category = "Elegí tu categoría.";
-  }
   if (Object.keys(errors).length > 0) return { errors };
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, phone: phone || null, username, category })
+    // La categoría no: la asigna un admin (set_profile_category).
+    .update({ full_name: fullName, phone: phone || null, username })
     .eq("id", user.id);
   if (error) {
     if (error.code === "23505") {

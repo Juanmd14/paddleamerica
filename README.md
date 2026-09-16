@@ -96,6 +96,7 @@ En `/admin`, solo para cuentas marcadas como admin:
   - **Abren las inscripciones:** fecha que se muestra como “Abre el …” mientras el torneo está en _Próximamente_.
 - **Noticias:** borrador, publicada o programada (fecha futura), con portada.
 - **Jugadores:** alta, edición y foto.
+- **Usuarios:** la categoría de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso.
 - **Sitio:** foto de fondo del inicio y los 4 números de la franja (se calculan solos; elegís cuáles mostrar y podés corregir título o valor).
 - **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
 

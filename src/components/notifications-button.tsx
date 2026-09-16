@@ -168,8 +168,8 @@ export function NotificationsButton({ count }: { count: number }) {
                     href="/mi-cuenta#mis-datos"
                     onClick={close}
                     icon={<UserRound className="size-5" aria-hidden="true" />}
-                    title="Cargá tu categoría"
-                    text="Sin categoría no podés anotarte en torneos con categoría."
+                    title="Todavía no tenés categoría"
+                    text="La asigna el organizador. Hasta entonces no podés anotarte en torneos con categoría."
                   />
                 )}
               </InboxSection>

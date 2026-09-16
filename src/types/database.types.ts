@@ -493,6 +493,10 @@ export type Database = {
           username: string
         }[]
       }
+      set_profile_category: {
+        Args: { p_category?: number; p_user_id: string }
+        Returns: undefined
+      }
       tournament_spots: {
         Args: never
         Returns: {

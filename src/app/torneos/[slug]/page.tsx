@@ -449,15 +449,6 @@ function OpenRegistration({
           <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
           <p className="font-medium">{ownError}</p>
         </div>
-        {!myCategory && (
-          <ButtonLink
-            href="/mi-cuenta#mis-datos"
-            variant="outline"
-            className="w-full"
-          >
-            Cargar mi categoría
-          </ButtonLink>
-        )}
       </div>
     );
   }
