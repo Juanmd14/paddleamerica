@@ -38,6 +38,7 @@ import {
 } from "@/lib/data";
 import { formatDateRange, formatShortDate } from "@/lib/format";
 import {
+  featuredLabel,
   genderLabel,
   registrationStatus,
   type SpotsInfo,
@@ -124,6 +125,9 @@ export default async function TournamentPage({
           </Link>
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <TournamentStatusBadge status={tournament.status} />
+            {featuredLabel(tournament) && (
+              <Badge tone="primary">{featuredLabel(tournament)}</Badge>
+            )}
             <Badge tone="inverse">{genderLabel(tournament.gender)}</Badge>
             <Badge tone="inverse">{tournament.category}</Badge>
           </div>

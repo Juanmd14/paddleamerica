@@ -135,20 +135,35 @@ export async function getRankingPosition(player: Player): Promise<number> {
 // Torneos
 // ---------------------------------------------------------------------
 
-/** Próximos (por fecha ascendente) o finalizados (más recientes primero). */
+/** Orden de los próximos: primero los que tienen la inscripción abierta, después los que se están jugando y al final los que vienen. */
+const UPCOMING_ORDER: Record<string, number> = {
+  inscripciones: 0,
+  en_juego: 1,
+  proximo: 2,
+};
+
+function sortUpcoming(tournaments: Tournament[]) {
+  return tournaments.toSorted(
+    (a, b) =>
+      (UPCOMING_ORDER[a.status] ?? 3) - (UPCOMING_ORDER[b.status] ?? 3) ||
+      a.starts_on.localeCompare(b.starts_on),
+  );
+}
+
+/** Próximos (abiertos primero, después por fecha) o finalizados (más recientes primero). */
 export async function getTournaments({
   finished = false,
   limit,
 }: { finished?: boolean; limit?: number } = {}): Promise<Tournament[]> {
   if (isDemoMode) {
-    return demoTournaments
-      .filter((tournament) => (tournament.status === "finalizado") === finished)
-      .toSorted((a, b) =>
-        finished
-          ? b.starts_on.localeCompare(a.starts_on)
-          : a.starts_on.localeCompare(b.starts_on),
-      )
-      .slice(0, limit);
+    const matching = demoTournaments.filter(
+      (tournament) => (tournament.status === "finalizado") === finished,
+    );
+    return (
+      finished
+        ? matching.toSorted((a, b) => b.starts_on.localeCompare(a.starts_on))
+        : sortUpcoming(matching)
+    ).slice(0, limit);
   }
 
   const supabase = await createClient();
@@ -159,11 +174,25 @@ export async function getTournaments({
   query = finished
     ? query.eq("status", "finalizado")
     : query.neq("status", "finalizado");
-  if (limit) query = query.limit(limit);
+  // Los próximos se ordenan por estado acá, así que el límite va después.
+  if (limit && finished) query = query.limit(limit);
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return finished ? data : sortUpcoming(data).slice(0, limit);
+}
+
+/** El torneo grande del inicio: el destacado más cercano o, si no hay, el primero de los próximos (ya ordenados). */
+export function pickFeaturedTournament(
+  upcoming: Tournament[],
+): Tournament | null {
+  return (
+    upcoming
+      .filter((tournament) => tournament.featured)
+      .toSorted((a, b) => a.starts_on.localeCompare(b.starts_on))[0] ??
+    upcoming[0] ??
+    null
+  );
 }
 
 export const getTournament = cache(

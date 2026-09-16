@@ -3,6 +3,7 @@ import {
   CalendarDays,
   MapPin,
   Newspaper,
+  Star,
   Trophy,
 } from "lucide-react";
 import Image from "next/image";
@@ -27,16 +28,23 @@ import {
   getTournamentSpots,
   getTournaments,
   type HomeStat,
+  pickFeaturedTournament,
 } from "@/lib/data";
 import { currentYear, formatDateRange, formatNumber } from "@/lib/format";
-import { genderLabel, type SpotsInfo, spotsInfo } from "@/lib/labels";
+import {
+  featuredLabel,
+  genderLabel,
+  type SpotsInfo,
+  spotsInfo,
+} from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
+import { cn } from "@/lib/utils";
 import type { Tournament } from "@/types/models";
 
 export default async function Home() {
-  const [tournaments, news, men, women, stats, settings, spots] =
+  const [upcoming, news, men, women, stats, settings, spots] =
     await Promise.all([
-      getTournaments({ limit: 4 }),
+      getTournaments(),
       getNews({ limit: 3 }),
       getRanking({ gender: "masculino", limit: 5 }),
       getRanking({ gender: "femenino", limit: 5 }),
@@ -45,8 +53,8 @@ export default async function Home() {
       getTournamentSpots(),
     ]);
 
-  const featuredTournament =
-    tournaments.find((t) => t.status === "inscripciones") ?? tournaments[0];
+  const tournaments = upcoming.slice(0, 4);
+  const featuredTournament = pickFeaturedTournament(upcoming);
   const [leadNews, ...moreNews] = news;
   const rankings = [
     { gender: "masculino", players: men },
@@ -224,21 +232,54 @@ function FeaturedTournament({
   spots: SpotsInfo | null;
 }) {
   const isOpen = tournament.status === "inscripciones";
+  const featured = featuredLabel(tournament);
+  const flyer = tournament.cover_url;
 
   return (
-    <div className="relative rounded-card border border-white/10 bg-noche-950/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-8">
+    <div
+      className={cn(
+        "relative rounded-card border bg-noche-950/70 p-6 shadow-2xl shadow-black/40 backdrop-blur-md sm:p-8",
+        featured ? "border-oro-400/60" : "border-white/10",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
-          Próximo torneo
+        <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
+          {featured && (
+            <Star className="size-3.5 fill-current" aria-hidden="true" />
+          )}
+          {featured ?? "Próximo torneo"}
         </p>
         <TournamentStatusBadge status={tournament.status} />
       </div>
-      <h2 className="mt-5 font-display text-4xl leading-none font-bold uppercase sm:text-5xl">
-        {tournament.name}
-      </h2>
-      <p className="mt-2 text-noche-300">
-        {tournament.category} · {genderLabel(tournament.gender)}
-      </p>
+      <div className="mt-5 flex items-start gap-5">
+        {flyer && (
+          <Link
+            href={`/torneos/${tournament.slug}`}
+            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-lg ring-1 ring-white/15 sm:w-36"
+          >
+            <Image
+              src={flyer}
+              alt={`Flyer de ${tournament.name}`}
+              fill
+              sizes="144px"
+              className="object-cover"
+            />
+          </Link>
+        )}
+        <div className="min-w-0">
+          <h2
+            className={cn(
+              "font-display leading-none font-bold uppercase",
+              flyer ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl",
+            )}
+          >
+            {tournament.name}
+          </h2>
+          <p className="mt-2 text-noche-300">
+            {tournament.category} · {genderLabel(tournament.gender)}
+          </p>
+        </div>
+      </div>
       <ul className="mt-6 space-y-3 border-t border-white/10 pt-6 text-noche-200">
         <li className="flex items-center gap-3">
           <CalendarDays

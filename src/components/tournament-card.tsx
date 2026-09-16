@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, MapPin, Trophy } from "lucide-react";
+import { CalendarDays, ChevronRight, MapPin, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Cover } from "@/components/cover";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
@@ -7,7 +7,7 @@ import {
   formatFlyerDate,
   formatShortDate,
 } from "@/lib/format";
-import { genderLabel, spotsInfo } from "@/lib/labels";
+import { featuredLabel, genderLabel, spotsInfo } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { Tournament } from "@/types/models";
 
@@ -36,6 +36,7 @@ export function TournamentCard({
       : tournament.status === "proximo" && tournament.registration_opens_on
         ? `Abre el ${formatShortDate(tournament.registration_opens_on)}`
         : null;
+  const featured = featuredLabel(tournament);
 
   return (
     <article className={cn("group relative flex flex-col", className)}>
@@ -58,6 +59,15 @@ export function TournamentCard({
         />
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
           <TournamentStatusBadge status={tournament.status} />
+          {featured && (
+            <span className="inline-flex max-w-full items-center gap-1 truncate rounded-full bg-oro-400 px-2.5 py-1 text-xs font-bold text-noche-950 shadow-sm">
+              <Star
+                className="size-3 shrink-0 fill-current"
+                aria-hidden="true"
+              />
+              {featured}
+            </span>
+          )}
           {chip && (
             <span
               className={cn(

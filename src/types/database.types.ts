@@ -86,6 +86,44 @@ export type Database = {
         }
         Relationships: []
       }
+      player_point_changes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: number
+          player_id: number
+          points_after: number
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: never
+          player_id: number
+          points_after: number
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: never
+          player_id?: number
+          points_after?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_point_changes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           bio: string | null
@@ -146,6 +184,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          category: number | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -153,9 +192,11 @@ export type Database = {
           is_admin: boolean
           phone: string | null
           updated_at: string
+          username: string
         }
         Insert: {
           avatar_url?: string | null
+          category?: number | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -163,9 +204,11 @@ export type Database = {
           is_admin?: boolean
           phone?: string | null
           updated_at?: string
+          username: string
         }
         Update: {
           avatar_url?: string | null
+          category?: number | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -173,6 +216,7 @@ export type Database = {
           is_admin?: boolean
           phone?: string | null
           updated_at?: string
+          username?: string
         }
         Relationships: []
       }
@@ -285,12 +329,16 @@ export type Database = {
           address: string | null
           capacity: number | null
           category: string
+          category_max: number | null
+          category_min: number | null
+          category_sum: number | null
           champions: string | null
           city: string
           cover_url: string | null
           created_at: string
           description: string | null
           ends_on: string
+          featured: string | null
           gender: string
           id: number
           maps_url: string | null
@@ -298,6 +346,7 @@ export type Database = {
           prize: string | null
           registration_opens_on: string | null
           slug: string
+          sponsor_name: string | null
           starts_on: string
           status: string
           venue: string | null
@@ -306,12 +355,16 @@ export type Database = {
           address?: string | null
           capacity?: number | null
           category: string
+          category_max?: number | null
+          category_min?: number | null
+          category_sum?: number | null
           champions?: string | null
           city: string
           cover_url?: string | null
           created_at?: string
           description?: string | null
           ends_on: string
+          featured?: string | null
           gender: string
           id?: never
           maps_url?: string | null
@@ -319,6 +372,7 @@ export type Database = {
           prize?: string | null
           registration_opens_on?: string | null
           slug: string
+          sponsor_name?: string | null
           starts_on: string
           status?: string
           venue?: string | null
@@ -327,12 +381,16 @@ export type Database = {
           address?: string | null
           capacity?: number | null
           category?: string
+          category_max?: number | null
+          category_min?: number | null
+          category_sum?: number | null
           champions?: string | null
           city?: string
           cover_url?: string | null
           created_at?: string
           description?: string | null
           ends_on?: string
+          featured?: string | null
           gender?: string
           id?: never
           maps_url?: string | null
@@ -340,6 +398,7 @@ export type Database = {
           prize?: string | null
           registration_opens_on?: string | null
           slug?: string
+          sponsor_name?: string | null
           starts_on?: string
           status?: string
           venue?: string | null
@@ -351,6 +410,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_player_points: {
+        Args: { p_delta: number; p_player_id: number; p_reason: string }
+        Returns: number
+      }
       apply_points_import: {
         Args: {
           p_file_name: string
@@ -360,7 +423,27 @@ export type Database = {
         }
         Returns: Json
       }
+      get_public_profiles: {
+        Args: { p_ids: string[] }
+        Returns: {
+          avatar_url: string
+          category: number
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
+      search_profiles: {
+        Args: { p_query: string }
+        Returns: {
+          avatar_url: string
+          category: number
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
       tournament_spots: {
         Args: never
         Returns: {
@@ -369,6 +452,7 @@ export type Database = {
         }[]
       }
       undo_last_points_import: { Args: never; Returns: Json }
+      unique_username: { Args: { p_base: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

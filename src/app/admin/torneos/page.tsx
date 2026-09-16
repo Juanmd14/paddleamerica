@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
 import { getAllTournaments } from "@/lib/data";
 import { formatDateRange } from "@/lib/format";
-import { genderLabel, tournamentStatus } from "@/lib/labels";
+import { featuredLabel, genderLabel, tournamentStatus } from "@/lib/labels";
 
 export const metadata: Metadata = { title: "Torneos" };
 
@@ -64,6 +64,11 @@ export default async function AdminTournamentsPage({
                         {tournament.category} · {genderLabel(tournament.gender)}{" "}
                         · {tournament.city}
                       </p>
+                      {featuredLabel(tournament) && (
+                        <Badge tone="primary" className="mt-1.5">
+                          {featuredLabel(tournament)}
+                        </Badge>
+                      )}
                     </Td>
                     <Td className="whitespace-nowrap text-foreground-soft">
                       {formatDateRange(

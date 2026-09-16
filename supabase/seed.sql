@@ -55,6 +55,25 @@ from (values
 ) as v(slug, address, capacity, opens)
 where t.slug = v.slug;
 
+-- Destacados en el inicio y reglas de categoría (1 = 1ra … 8 = 8va)
+update public.tournaments t
+set
+  featured = v.featured,
+  sponsor_name = v.sponsor,
+  category_min = v.min,
+  category_max = v.max,
+  category_sum = v.sum
+from (values
+  ('abierto-de-primavera-2026', 'principal'::text, null::text, 1::smallint, 2::smallint, null::smallint),
+  ('copa-ciudad-de-trenque-lauquen-2026', null, null, 3, 5, null),
+  ('torneo-mixto-nocturno-2026', 'sponsor', 'Bandeja Club', null, null, 13),
+  ('master-de-fin-de-ano-2026', null, null, null, null, null),
+  ('clasico-del-oeste-2026', null, null, 1, 1, null),
+  ('invierno-padel-tour-2026', null, null, 1, 1, null),
+  ('copa-aniversario-padel-oeste-2026', null, null, 2, 3, null)
+) as v(slug, featured, sponsor, min, max, sum)
+where t.slug = v.slug;
+
 insert into public.news
   (slug, title, excerpt, body, tag, author, published_at)
 values

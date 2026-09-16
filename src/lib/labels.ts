@@ -1,5 +1,5 @@
 import type { BadgeTone } from "@/components/ui/badge";
-import type { Player } from "@/types/models";
+import type { Player, Tournament } from "@/types/models";
 
 const GENDER_LABELS: Record<string, string> = {
   masculino: "Masculino",
@@ -18,6 +18,26 @@ const TOURNAMENT_STATUS: Record<string, { label: string; tone: BadgeTone }> = {
   en_juego: { label: "En juego", tone: "primary" },
   finalizado: { label: "Finalizado", tone: "neutral" },
 };
+
+const FEATURED_LABELS: Record<string, string> = {
+  principal: "Torneo principal",
+  sponsor: "Sponsoreado",
+};
+
+/** "Torneo principal", "Sponsoreado por Bandeja Club" o null si no está destacado. */
+export function featuredLabel(
+  tournament: Pick<Tournament, "featured" | "sponsor_name">,
+) {
+  const label = tournament.featured && FEATURED_LABELS[tournament.featured];
+  if (!label) return null;
+  return tournament.featured === "sponsor" && tournament.sponsor_name
+    ? `${label} por ${tournament.sponsor_name}`
+    : label;
+}
+
+export const featuredOptions = Object.entries(FEATURED_LABELS).map(
+  ([value, label]) => ({ value, label }),
+);
 
 export function genderLabel(gender: string) {
   return GENDER_LABELS[gender] ?? gender;

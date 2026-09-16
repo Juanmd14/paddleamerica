@@ -12,10 +12,17 @@ import {
 } from "@/components/tournament-card";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
-import { Input, Select, Textarea } from "@/components/ui/input";
+import { FieldError, Input, Select, Textarea } from "@/components/ui/input";
 import { type FormState, isValidDate } from "@/lib/admin-form";
+import {
+  type CategoryRules,
+  categoryOptions,
+  categoryRulesHelp,
+  categoryRulesLabel,
+} from "@/lib/categories";
 import { formatShortDate } from "@/lib/format";
 import {
+  featuredOptions,
   genderLabel,
   tournamentGenderOptions,
   tournamentStatusOptions,
@@ -31,8 +38,31 @@ type TournamentFormProps = {
   submitLabel: string;
 };
 
-/** Ejemplos de categoría que se cargan con un toque. */
-const CATEGORY_EXAMPLES = ["4ta", "1ra y 2da", "3ra a 5ta", "Suma 13", "Libre"];
+type CategoryMode = "rango" | "suma" | "libre";
+
+const CATEGORY_MODES: { value: CategoryMode; label: string }[] = [
+  { value: "rango", label: "Por categorías" },
+  { value: "suma", label: "Suma de la pareja" },
+  { value: "libre", label: "Libre" },
+];
+
+/** Ejemplos que completan la categoría con un toque. */
+const CATEGORY_PRESETS: {
+  label: string;
+  mode: CategoryMode;
+  min?: number;
+  max?: number;
+  sum?: number;
+}[] = [
+  { label: "4ta", mode: "rango", min: 4, max: 4 },
+  { label: "1ra y 2da", mode: "rango", min: 1, max: 2 },
+  { label: "3ra a 5ta", mode: "rango", min: 3, max: 5 },
+  { label: "6ta a 8va", mode: "rango", min: 6, max: 8 },
+  { label: "Suma 13", mode: "suma", sum: 13 },
+  { label: "Libre", mode: "libre" },
+];
+
+const SUM_OPTIONS = Array.from({ length: 15 }, (_, index) => index + 2);
 
 /** Qué significa cada estado, debajo del select. */
 const STATUS_HELP: Record<string, string> = {
@@ -52,7 +82,14 @@ type Draft = {
   ends_on: string;
   city: string;
   venue: string;
+  /** Texto de la categoría (solo en modo libre). */
   category: string;
+  category_mode: CategoryMode;
+  category_min: string;
+  category_max: string;
+  category_sum: string;
+  featured: string;
+  sponsor_name: string;
   gender: string;
   status: string;
   capacity: string;
@@ -60,6 +97,32 @@ type Draft = {
   champions: string;
   cover_url: string;
 };
+
+/** Reglas de categoría tal como van cargadas (todo null si están incompletas). */
+function draftRules(draft: Draft): CategoryRules {
+  const min = Number(draft.category_min);
+  const max = Number(draft.category_max);
+  const sum = Number(draft.category_sum);
+  if (draft.category_mode === "rango" && min && max) {
+    return {
+      category_min: Math.min(min, max),
+      category_max: Math.max(min, max),
+      category_sum: null,
+    };
+  }
+  if (draft.category_mode === "suma" && sum) {
+    return { category_min: null, category_max: null, category_sum: sum };
+  }
+  return { category_min: null, category_max: null, category_sum: null };
+}
+
+function draftCategoryLabel(draft: Draft) {
+  return draft.category_mode === "libre"
+    ? draft.category.trim() || "Libre"
+    : (categoryRulesLabel(draftRules(draft)) ?? "");
+}
+
+type TextKey = Exclude<keyof Draft, "category_mode">;
 
 function parseCapacity(value: string) {
   return /^\d+$/.test(value) && Number(value) > 0 ? Number(value) : null;
@@ -87,7 +150,10 @@ function previewTournament(
       isValidDate(draft.ends_on) && draft.ends_on > draft.starts_on
         ? draft.ends_on
         : draft.starts_on,
-    category: draft.category.trim() || "Categoría",
+    category: draftCategoryLabel(draft) || "Categoría",
+    ...draftRules(draft),
+    featured: draft.featured || null,
+    sponsor_name: draft.sponsor_name.trim() || null,
     gender: draft.gender,
     status: draft.status,
     prize: null,
@@ -102,13 +168,26 @@ function previewTournament(
 
 /** Qué pasa al guardar con el estado elegido. */
 function saveNotes(draft: Draft): { text: string; warning?: boolean }[] {
+  const featured = draft.featured
+    ? [{ text: "Aparece destacado en el inicio, con el flyer." }]
+    : [];
+  return [...statusNotes(draft), ...featured];
+}
+
+function statusNotes(draft: Draft): { text: string; warning?: boolean }[] {
   const capacity = parseCapacity(draft.capacity);
   const champions = draft.champions.trim();
+  const rules = draftRules(draft);
+  const who =
+    rules.category_min || rules.category_sum
+      ? `Solo se pueden anotar parejas que cumplan “${categoryRulesLabel(rules)}”.`
+      : null;
 
   switch (draft.status) {
     case "inscripciones":
       return [
         { text: "Sale en Torneos con el botón “Inscribirme”." },
+        ...(who ? [{ text: who }] : []),
         {
           text: "Cada pareja que se anota te llega a “Inscripciones” de este torneo, para que la confirmes.",
         },
@@ -163,7 +242,20 @@ export function TournamentForm({
     ends_on: tournament?.ends_on ?? "",
     city: tournament?.city ?? "",
     venue: tournament?.venue ?? "",
-    category: tournament?.category ?? "",
+    category:
+      tournament && !tournament.category_min && !tournament.category_sum
+        ? tournament.category
+        : "",
+    category_mode: tournament?.category_sum
+      ? "suma"
+      : tournament && !tournament.category_min
+        ? "libre"
+        : "rango",
+    category_min: tournament?.category_min?.toString() ?? "",
+    category_max: tournament?.category_max?.toString() ?? "",
+    category_sum: tournament?.category_sum?.toString() ?? "13",
+    featured: tournament?.featured ?? "",
+    sponsor_name: tournament?.sponsor_name ?? "",
     gender: tournament?.gender ?? "masculino",
     status: tournament?.status ?? "proximo",
     capacity: tournament?.capacity?.toString() ?? "",
@@ -171,9 +263,9 @@ export function TournamentForm({
     champions: tournament?.champions ?? "",
     cover_url: tournament?.cover_url ?? "",
   }));
-  const set = (key: keyof Draft, value: string) =>
+  const set = (key: TextKey, value: string) =>
     setDraft((current) => ({ ...current, [key]: value }));
-  const bind = (key: keyof Draft) => ({
+  const bind = (key: TextKey) => ({
     value: draft[key],
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       set(key, event.target.value),
@@ -214,7 +306,7 @@ export function TournamentForm({
     draft.name.trim().length < 3 && "el nombre",
     !isValidDate(draft.starts_on) && "la fecha de inicio",
     draft.city.trim().length < 2 && "la ciudad",
-    !draft.category.trim() && "la categoría",
+    !draftCategoryLabel(draft) && "la categoría",
   ].filter((item) => typeof item === "string");
 
   return (
@@ -306,21 +398,113 @@ export function TournamentForm({
             description="Quiénes pueden jugar. Se ve arriba del nombre, en la tarjeta y en la página del torneo."
             className="sm:col-span-2"
           />
-          <Field
-            name="category"
-            label="Categoría"
-            error={errors.category}
-            hint="Escribila o tocá un ejemplo de abajo."
-          >
-            <Input
-              {...fieldProps("category", errors.category)}
-              {...bind("category")}
-              placeholder="Ej. 3ra a 5ta"
-              maxLength={60}
-              autoComplete="off"
-              required
-            />
-          </Field>
+          <fieldset className="sm:col-span-2">
+            <legend className="mb-1.5 text-sm font-medium text-foreground-soft">
+              Categoría
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {CATEGORY_MODES.map((option) => (
+                <label
+                  key={option.value}
+                  className={cn(
+                    "flex h-11 cursor-pointer items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors has-focus-visible:ring-2 has-focus-visible:ring-pista-200",
+                    draft.category_mode === option.value
+                      ? "border-noche-950 bg-noche-950 text-white"
+                      : "border-border-strong bg-surface hover:bg-muted",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="category_mode"
+                    value={option.value}
+                    checked={draft.category_mode === option.value}
+                    onChange={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        category_mode: option.value,
+                      }))
+                    }
+                    className="sr-only"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            <FieldError id="category-error">{errors.category}</FieldError>
+          </fieldset>
+
+          {draft.category_mode === "rango" && (
+            <>
+              <Field
+                name="category_min"
+                label="Desde"
+                hint="La categoría más alta que puede jugar."
+              >
+                <Select
+                  {...fieldProps("category_min", errors.category)}
+                  {...bind("category_min")}
+                >
+                  <option value="">Elegí…</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field
+                name="category_max"
+                label="Hasta"
+                hint="La más baja. Si es una sola, elegí la misma."
+              >
+                <Select
+                  {...fieldProps("category_max", errors.category)}
+                  {...bind("category_max")}
+                >
+                  <option value="">Elegí…</option>
+                  {categoryOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          )}
+          {draft.category_mode === "suma" && (
+            <Field
+              name="category_sum"
+              label="La pareja tiene que sumar"
+              hint="O más. Ej. 6ta + 7ma = 13."
+            >
+              <Select
+                {...fieldProps("category_sum", errors.category)}
+                {...bind("category_sum")}
+              >
+                {SUM_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    Suma {value}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          {draft.category_mode === "libre" && (
+            <Field
+              name="category"
+              label="Texto"
+              optional
+              hint="No se controla quién se anota."
+            >
+              <Input
+                {...fieldProps("category", errors.category)}
+                {...bind("category")}
+                placeholder="Ej. Libre, Top 8 del ranking"
+                maxLength={60}
+                autoComplete="off"
+              />
+            </Field>
+          )}
           <Field
             name="gender"
             label="Rama"
@@ -351,14 +535,26 @@ export function TournamentForm({
               aria-labelledby="category-examples"
               className="mt-2 flex flex-wrap gap-2"
             >
-              {CATEGORY_EXAMPLES.map((example) => {
-                const active = draft.category.trim() === example;
+              {CATEGORY_PRESETS.map((preset) => {
+                const active =
+                  draft.category_mode === preset.mode &&
+                  draftCategoryLabel(draft) === preset.label;
                 return (
                   <button
-                    key={example}
+                    key={preset.label}
                     type="button"
                     aria-pressed={active}
-                    onClick={() => set("category", example)}
+                    onClick={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        category_mode: preset.mode,
+                        category_min: preset.min?.toString() ?? "",
+                        category_max: preset.max?.toString() ?? "",
+                        category_sum:
+                          preset.sum?.toString() ?? current.category_sum,
+                        category: preset.mode === "libre" ? "Libre" : "",
+                      }))
+                    }
                     className={cn(
                       "inline-flex h-9 cursor-pointer items-center rounded-full border px-4 text-sm font-semibold transition-colors",
                       active
@@ -366,15 +562,17 @@ export function TournamentForm({
                         : "border-border-strong bg-surface hover:bg-muted",
                     )}
                   >
-                    {example}
+                    {preset.label}
                   </button>
                 );
               })}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Una categoría (4ta), dos (1ra y 2da), un rango (3ra a 5ta) o una
-              suma: en “Suma 13” se suman las categorías de la pareja{" "}
-              <span className="whitespace-nowrap">(ej. 6ta + 7ma = 13)</span>.
+            <p className="mt-2 text-sm text-foreground-soft">
+              {draft.category_mode === "libre"
+                ? "Se puede anotar cualquier categoría: el texto es solo informativo."
+                : draftCategoryLabel(draft)
+                  ? `${categoryRulesHelp(draftRules(draft))} Al anotarse, el sitio no deja inscribirse a quien no cumpla.`
+                  : "Elegí las categorías que pueden jugar."}
             </p>
           </div>
 
@@ -383,7 +581,7 @@ export function TournamentForm({
               En la tarjeta del torneo se ve así:
             </p>
             <p className="mt-3 text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
-              {draft.category.trim() || "Categoría"} ·{" "}
+              {draftCategoryLabel(draft) || "Categoría"} ·{" "}
               {genderLabel(draft.gender)}
             </p>
             <p className="mt-1.5 font-display text-2xl leading-none font-bold uppercase">
@@ -461,9 +659,46 @@ export function TournamentForm({
         <Card className="space-y-5 p-5 sm:p-6">
           <FormSection
             step={4}
-            title="Flyer"
+            title="Flyer y destacado"
             description="Opcional. Sin flyer, la tarjeta muestra la fecha y la ciudad sobre una cancha (mirá la vista previa)."
           />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field
+              name="featured"
+              label="Destacar en el inicio"
+              error={errors.featured}
+              hint="Sale grande arriba de todo, con el flyer. Si hay varios, el más cercano."
+            >
+              <Select
+                {...fieldProps("featured", errors.featured)}
+                {...bind("featured")}
+              >
+                <option value="">No destacar</option>
+                {featuredOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            {draft.featured === "sponsor" && (
+              <Field
+                name="sponsor_name"
+                label="Sponsor"
+                optional
+                error={errors.sponsor_name}
+                hint="Se lee “Sponsoreado por …”."
+              >
+                <Input
+                  {...fieldProps("sponsor_name", errors.sponsor_name)}
+                  {...bind("sponsor_name")}
+                  maxLength={80}
+                  placeholder="Ej. Bandeja Club"
+                  autoComplete="off"
+                />
+              </Field>
+            )}
+          </div>
           <div>
             <ImageUpload
               name="cover_url"

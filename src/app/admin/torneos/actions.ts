@@ -13,7 +13,16 @@ import {
   wholeNumber,
 } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
-import { tournamentGenderOptions, tournamentStatusOptions } from "@/lib/labels";
+import {
+  type CategoryRules,
+  categoryRulesLabel,
+  isCategoryNumber,
+} from "@/lib/categories";
+import {
+  featuredOptions,
+  tournamentGenderOptions,
+  tournamentStatusOptions,
+} from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import type { TablesInsert } from "@/types/database.types";
@@ -33,9 +42,52 @@ function isGoogleMapsUrl(value: string) {
   }
 }
 
+/** Categoría del formulario: rango (desde/hasta), suma o texto libre. */
+function readCategory(formData: FormData): {
+  label: string;
+  rules: CategoryRules;
+  error?: string;
+} {
+  const none = { category_min: null, category_max: null, category_sum: null };
+  const mode = text(formData, "category_mode");
+
+  if (mode === "rango") {
+    const from = Number(text(formData, "category_min"));
+    const to = Number(text(formData, "category_max"));
+    if (!isCategoryNumber(from) || !isCategoryNumber(to)) {
+      return {
+        label: "",
+        rules: none,
+        error: "Elegí desde qué categoría y hasta cuál.",
+      };
+    }
+    const rules = {
+      category_min: Math.min(from, to),
+      category_max: Math.max(from, to),
+      category_sum: null,
+    };
+    return { label: categoryRulesLabel(rules) ?? "", rules };
+  }
+  if (mode === "suma") {
+    const sum = Number(text(formData, "category_sum"));
+    if (!Number.isInteger(sum) || sum < 2 || sum > 16) {
+      return { label: "", rules: none, error: "Elegí la suma de la pareja." };
+    }
+    const rules = { category_min: null, category_max: null, category_sum: sum };
+    return { label: categoryRulesLabel(rules) ?? "", rules };
+  }
+
+  const label = text(formData, "category") || "Libre";
+  return label.length > 60
+    ? { label, rules: none, error: "El texto puede tener hasta 60 caracteres." }
+    : { label, rules: none };
+}
+
 function readTournament(formData: FormData) {
   const name = text(formData, "name");
   const startsOn = text(formData, "starts_on");
+  const category = readCategory(formData);
+  const featured = text(formData, "featured");
   const values: TablesInsert<"tournaments"> = {
     name,
     slug: text(formData, "slug") || slugify(`${name} ${startsOn.slice(0, 4)}`),
@@ -44,7 +96,11 @@ function readTournament(formData: FormData) {
     venue: optionalText(formData, "venue"),
     starts_on: startsOn,
     ends_on: text(formData, "ends_on") || startsOn,
-    category: text(formData, "category"),
+    category: category.label,
+    ...category.rules,
+    featured: featured || null,
+    sponsor_name:
+      featured === "sponsor" ? optionalText(formData, "sponsor_name") : null,
     gender: text(formData, "gender"),
     status: text(formData, "status"),
     prize: optionalText(formData, "prize"),
@@ -73,8 +129,15 @@ function readTournament(formData: FormData) {
   } else if (values.ends_on < values.starts_on) {
     errors.ends_on = "Termina antes de empezar.";
   }
-  if (values.category.length < 1 || values.category.length > 60) {
-    errors.category = "Poné la categoría (ej. 1ra y 2da, Suma 13).";
+  if (category.error) errors.category = category.error;
+  if (
+    featured &&
+    !featuredOptions.some((option) => option.value === featured)
+  ) {
+    errors.featured = "Elegí cómo destacarlo.";
+  }
+  if ((values.sponsor_name ?? "").length > 80) {
+    errors.sponsor_name = "El sponsor puede tener hasta 80 caracteres.";
   }
   if (
     !tournamentGenderOptions.some((option) => option.value === values.gender)
