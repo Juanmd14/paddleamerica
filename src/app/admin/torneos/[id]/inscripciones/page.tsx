@@ -12,6 +12,7 @@ import { notFound } from "next/navigation";
 import { setRegistrationStatus } from "@/app/admin/torneos/[id]/inscripciones/actions";
 import { AdminPageHeader, Table, Td, Th } from "@/components/admin/admin-ui";
 import { EmptyState } from "@/components/empty-state";
+import { PairPlayers } from "@/components/pair-players";
 import { SpotsBar } from "@/components/spots-bar";
 import { SubmitButton } from "@/components/submit-button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
 import { getTournamentById, getTournamentRegistrations } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
+import { categoryRulesLabel } from "@/lib/categories";
 import { registrationStatus, spotsInfo } from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
 import { cn, firstParam, whatsappUrl } from "@/lib/utils";
@@ -28,6 +30,7 @@ export const metadata: Metadata = { title: "Inscripciones" };
 
 const FILTERS = [
   { value: undefined, label: "Todas" },
+  { value: "invitacion", label: "Esperando pareja" },
   { value: "pendiente", label: "Pendientes" },
   { value: "confirmada", label: "Confirmadas" },
   { value: "rechazada", label: "Rechazadas" },
@@ -69,7 +72,7 @@ export default async function TournamentRegistrationsPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Inscripciones"
-        description={`${tournament.name} · ${formatDateRange(tournament.starts_on, tournament.ends_on)}`}
+        description={`${tournament.name} · ${formatDateRange(tournament.starts_on, tournament.ends_on)}${categoryRulesLabel(tournament) ? ` · ${categoryRulesLabel(tournament)}` : ""}`}
         actions={
           <>
             <ButtonLink
@@ -151,13 +154,17 @@ export default async function TournamentRegistrationsPage({
                 const message = `¡Hola ${name.split(" ")[0]}! Te escribimos de ${siteConfig.name} por tu inscripción al ${tournament.name}.`;
                 return (
                   <tr key={registration.id} className="align-top">
-                    <Td>
-                      <p className="font-semibold">{name}</p>
-                      <p className="text-foreground-soft">
-                        con {registration.partner_name}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                    <Td className="min-w-64">
+                      <PairPlayers
+                        player={registration.profile}
+                        partner={registration.partnerProfile}
+                        partnerName={registration.partner_name}
+                        className="sm:grid-cols-1"
+                      />
+                      <p className="mt-2 text-xs text-muted-foreground">
                         Se anotó el {formatDate(registration.created_at)}
+                        {registration.accepted_at &&
+                          ` · aceptó el ${formatDate(registration.accepted_at)}`}
                       </p>
                     </Td>
                     <Td>
@@ -175,6 +182,28 @@ export default async function TournamentRegistrationsPage({
                           {registration.profile.email}
                         </p>
                       )}
+                      {registration.partnerProfile?.phone && (
+                        <a
+                          href={whatsappUrl(
+                            registration.partnerProfile.phone,
+                            message,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-flex items-center gap-1.5 font-medium whitespace-nowrap text-success hover:underline"
+                        >
+                          <MessageCircle
+                            className="size-4"
+                            aria-hidden="true"
+                          />
+                          {registration.partnerProfile.phone}
+                        </a>
+                      )}
+                      {registration.partnerProfile?.email && (
+                        <p className="text-xs text-muted-foreground">
+                          {registration.partnerProfile.email}
+                        </p>
+                      )}
                     </Td>
                     <Td className="max-w-64 text-foreground-soft">
                       {registration.category && (
@@ -190,21 +219,30 @@ export default async function TournamentRegistrationsPage({
                       <Badge tone={status.tone}>{status.label}</Badge>
                     </Td>
                     <Td>
+                      {registration.status === "invitacion" && (
+                        <p className="mb-2 max-w-48 text-right text-xs text-muted-foreground">
+                          Se puede confirmar cuando{" "}
+                          {registration.partnerProfile?.full_name ||
+                            registration.partner_name}{" "}
+                          acepte la invitación.
+                        </p>
+                      )}
                       <div className="flex justify-end gap-2">
-                        {registration.status !== "confirmada" && (
-                          <form
-                            action={setRegistrationStatus.bind(
-                              null,
-                              registration.id,
-                              "confirmada",
-                            )}
-                          >
-                            <SubmitButton size="sm" pendingLabel="…">
-                              <Check className="size-4" aria-hidden="true" />
-                              Confirmar
-                            </SubmitButton>
-                          </form>
-                        )}
+                        {registration.status !== "confirmada" &&
+                          registration.status !== "invitacion" && (
+                            <form
+                              action={setRegistrationStatus.bind(
+                                null,
+                                registration.id,
+                                "confirmada",
+                              )}
+                            >
+                              <SubmitButton size="sm" pendingLabel="…">
+                                <Check className="size-4" aria-hidden="true" />
+                                Confirmar
+                              </SubmitButton>
+                            </form>
+                          )}
                         {registration.status !== "rechazada" && (
                           <form
                             action={setRegistrationStatus.bind(
@@ -223,28 +261,29 @@ export default async function TournamentRegistrationsPage({
                             </SubmitButton>
                           </form>
                         )}
-                        {registration.status !== "pendiente" && (
-                          <form
-                            action={setRegistrationStatus.bind(
-                              null,
-                              registration.id,
-                              "pendiente",
-                            )}
-                          >
-                            <SubmitButton
-                              size="sm"
-                              variant="ghost"
-                              pendingLabel="…"
-                              aria-label="Volver a pendiente"
-                              title="Volver a pendiente"
+                        {registration.status !== "pendiente" &&
+                          registration.status !== "invitacion" && (
+                            <form
+                              action={setRegistrationStatus.bind(
+                                null,
+                                registration.id,
+                                "pendiente",
+                              )}
                             >
-                              <RotateCcw
-                                className="size-4"
-                                aria-hidden="true"
-                              />
-                            </SubmitButton>
-                          </form>
-                        )}
+                              <SubmitButton
+                                size="sm"
+                                variant="ghost"
+                                pendingLabel="…"
+                                aria-label="Volver a pendiente"
+                                title="Volver a pendiente"
+                              >
+                                <RotateCcw
+                                  className="size-4"
+                                  aria-hidden="true"
+                                />
+                              </SubmitButton>
+                            </form>
+                          )}
                       </div>
                     </Td>
                   </tr>
@@ -270,7 +309,8 @@ export default async function TournamentRegistrationsPage({
       )}
 
       <p className="text-sm text-muted-foreground">
-        Al confirmar o rechazar, el jugador recibe un aviso en su cuenta
+        Primero la pareja acepta la invitación y después la confirmás. Al
+        confirmar o rechazar, los dos jugadores reciben un aviso en su cuenta
         {process.env.RESEND_API_KEY
           ? " y un email."
           : ". El email se activa cuando configures Resend."}

@@ -4,6 +4,7 @@ import {
   CircleCheck,
   CircleX,
   Clock,
+  Info,
   type LucideIcon,
   MapPin,
   Medal,
@@ -14,14 +15,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { Cover } from "@/components/cover";
+import { InvitationResponse } from "@/components/invitation-response";
+import { PairPlayers } from "@/components/pair-players";
 import { RegistrationForm } from "@/components/registration-form";
 import {
   MobileRegistrationBar,
   RegistrationToggle,
 } from "@/components/registration-toggle";
 import { SpotsBar } from "@/components/spots-bar";
-import { SubmitButton } from "@/components/submit-button";
 import { FlyerPlaceholder } from "@/components/tournament-card";
 import { TournamentMap } from "@/components/tournament-map";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
@@ -31,10 +34,17 @@ import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth";
 import {
+  categoryName,
+  categoryRulesHelp,
+  categoryRulesLabel,
+  playerCategoryError,
+} from "@/lib/categories";
+import {
   getMyProfile,
-  getMyRegistration,
+  getMyTournamentEntry,
   getTournament,
   getTournamentSpots,
+  type MyTournamentEntry,
 } from "@/lib/data";
 import { formatDateRange, formatShortDate } from "@/lib/format";
 import {
@@ -44,8 +54,12 @@ import {
   type SpotsInfo,
   spotsInfo,
 } from "@/lib/labels";
-import { paragraphs } from "@/lib/utils";
-import type { Profile, Registration, Tournament } from "@/types/models";
+import { cn, paragraphs } from "@/lib/utils";
+import type {
+  Profile,
+  RegistrationWithPeople,
+  Tournament,
+} from "@/types/models";
 
 export async function generateMetadata({
   params,
@@ -72,14 +86,18 @@ export default async function TournamentPage({
     getTournamentSpots(),
     getCurrentUser(),
   ]);
-  const [registration, profile] = user
-    ? await Promise.all([getMyRegistration(tournament.id), getMyProfile()])
-    : [null, null];
+  const [entry, profile] = user
+    ? await Promise.all([getMyTournamentEntry(tournament.id), getMyProfile()])
+    : [{ registration: null, invitations: [] }, null];
 
   const spots = spotsInfo(tournament.capacity, spotsMap.get(tournament.id));
   const dates = formatDateRange(tournament.starts_on, tournament.ends_on);
   const isOpen = tournament.status === "inscripciones";
-  const showMobileBar = isOpen && !registration && !spots?.full;
+  const showMobileBar =
+    isOpen &&
+    !entry.registration &&
+    entry.invitations.length === 0 &&
+    !spots?.full;
 
   const details: { icon: LucideIcon; label: string; value: string }[] = [
     { icon: CalendarDays, label: "Fechas", value: dates },
@@ -173,7 +191,7 @@ export default async function TournamentPage({
               tournament={tournament}
               spots={spots}
               user={user}
-              registration={registration}
+              entry={entry}
               profile={profile}
             />
           </div>
@@ -245,7 +263,7 @@ type RegistrationCardProps = {
   tournament: Tournament;
   spots: SpotsInfo | null;
   user: CurrentUser | null;
-  registration: Registration | null;
+  entry: MyTournamentEntry;
   profile: Profile | null;
 };
 
@@ -254,16 +272,18 @@ function RegistrationCard({
   tournament,
   spots,
   user,
-  registration,
+  entry,
   profile,
 }: RegistrationCardProps) {
   const isOpen = tournament.status === "inscripciones";
   const title = isOpen
-    ? registration
+    ? entry.registration
       ? "Tu inscripción"
-      : spots?.full
-        ? "Cupo completo"
-        : "Anotate con tu pareja"
+      : entry.invitations.length > 0
+        ? "Te invitaron a jugar"
+        : spots?.full
+          ? "Cupo completo"
+          : "Anotate con tu pareja"
     : tournament.status === "proximo"
       ? "Inscripciones próximamente"
       : tournament.status === "en_juego"
@@ -290,7 +310,7 @@ function RegistrationCard({
             tournament={tournament}
             spots={spots}
             user={user}
-            registration={registration}
+            entry={entry}
             profile={profile}
           />
         ) : tournament.status === "proximo" ? (
@@ -325,59 +345,49 @@ function OpenRegistration({
   tournament,
   spots,
   user,
-  registration,
+  entry,
   profile,
 }: RegistrationCardProps) {
-  if (registration) {
-    const status = registrationStatus(registration.status);
-    const rejected = registration.status === "rechazada";
+  const { registration, invitations } = entry;
+
+  if (user && registration) {
     return (
-      <div className="space-y-5">
-        {rejected ? (
-          <div className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger">
-            <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <p className="font-medium">
-              Tu inscripción con {registration.partner_name} fue rechazada. Si
-              tenés dudas, escribile a la organización.
-            </p>
-          </div>
-        ) : (
-          <div className="flex items-start gap-3 rounded-lg bg-success-soft p-4 text-success">
-            <CircleCheck
-              className="mt-0.5 size-5 shrink-0"
-              aria-hidden="true"
-            />
-            <p className="font-medium">
-              Ya estás inscripto con {registration.partner_name}.
-            </p>
-          </div>
-        )}
-        <dl className="grid gap-4 text-sm sm:grid-cols-2">
-          <div>
-            <dt className="text-muted-foreground">Estado</dt>
-            <dd className="mt-1">
-              <Badge tone={status.tone}>{status.label}</Badge>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Teléfono de contacto</dt>
-            <dd className="mt-1 font-medium">{registration.contact_phone}</dd>
-          </div>
-        </dl>
-        {!rejected && (
-          <form
-            action={cancelRegistration.bind(
-              null,
-              registration.id,
-              tournament.slug,
-            )}
-            className="border-t border-border pt-4"
+      <MyRegistration
+        registration={registration}
+        tournament={tournament}
+        userId={user.id}
+      />
+    );
+  }
+
+  if (user && invitations.length > 0) {
+    return (
+      <div className="space-y-4">
+        {invitations.map((invitation) => (
+          <div
+            key={invitation.id}
+            className="space-y-4 rounded-lg border border-oro-300 bg-oro-50 p-4"
           >
-            <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
-              Cancelar inscripción
-            </SubmitButton>
-          </form>
-        )}
+            <p className="font-medium">
+              {invitation.player?.full_name || "Un jugador"} te invitó a jugar
+              este torneo.
+            </p>
+            <PairPlayers
+              player={invitation.player}
+              partner={invitation.partner}
+              partnerName={invitation.partner_name}
+              meId={user.id}
+            />
+            <InvitationResponse
+              registrationId={invitation.id}
+              slug={tournament.slug}
+            />
+          </div>
+        ))}
+        <p className="text-sm text-muted-foreground">
+          Al aceptar quedan anotados y el organizador confirma el lugar. Si
+          preferís jugar con otra pareja, rechazá y anotate vos.
+        </p>
       </div>
     );
   }
@@ -407,7 +417,7 @@ function OpenRegistration({
           Inscribirme
         </ButtonLink>
         <p className="text-center text-sm text-muted-foreground">
-          Necesitás una cuenta (es gratis).{" "}
+          Necesitás una cuenta (es gratis), y tu pareja también.{" "}
           <Link
             href={`/login?next=${next}`}
             className="font-semibold text-accent hover:text-accent-hover"
@@ -419,13 +429,151 @@ function OpenRegistration({
     );
   }
 
+  const myCategory = profile?.category ?? null;
+  const ownError = playerCategoryError(tournament, myCategory);
+  const rules = categoryRulesLabel(tournament) && (
+    <p className="flex items-start gap-2 rounded-lg bg-pista-50 px-3 py-2.5 text-sm text-pista-800">
+      <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span>
+        {categoryRulesHelp(tournament)}
+        {myCategory && ` Vos sos ${categoryName(myCategory)}.`}
+      </span>
+    </p>
+  );
+
+  if (ownError) {
+    return (
+      <div className="space-y-4">
+        {rules}
+        <div className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger">
+          <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <p className="font-medium">{ownError}</p>
+        </div>
+        {!myCategory && (
+          <ButtonLink
+            href="/mi-cuenta#mis-datos"
+            variant="outline"
+            className="w-full"
+          >
+            Cargar mi categoría
+          </ButtonLink>
+        )}
+      </div>
+    );
+  }
+
   return (
     <RegistrationToggle>
-      <RegistrationForm
-        slug={tournament.slug}
-        categoryHint={tournament.category}
-        defaultPhone={profile?.phone}
-      />
+      <div className="space-y-5">
+        {rules}
+        <RegistrationForm
+          slug={tournament.slug}
+          defaultPhone={profile?.phone}
+        />
+      </div>
     </RegistrationToggle>
+  );
+}
+
+/** Lo que ve cada jugador de la pareja según en qué paso está la inscripción. */
+function MyRegistration({
+  registration,
+  tournament,
+  userId,
+}: {
+  registration: RegistrationWithPeople;
+  tournament: Tournament;
+  userId: string;
+}) {
+  const status = registrationStatus(registration.status);
+  const isOwner = registration.user_id === userId;
+  const partnerName =
+    registration.partner?.full_name || registration.partner_name;
+  const otherName = isOwner
+    ? partnerName
+    : registration.player?.full_name || "tu pareja";
+
+  const steps: Record<
+    string,
+    { icon: LucideIcon; className: string; text: string }
+  > = {
+    invitacion: {
+      icon: Clock,
+      className: "bg-oro-50 text-oro-800",
+      text: `Invitaste a ${partnerName}. Falta que acepte la invitación; le llegó un aviso.`,
+    },
+    pendiente: {
+      icon: Clock,
+      className: "bg-oro-50 text-oro-800",
+      text: `Ya están anotados con ${otherName}. Falta que el organizador confirme el lugar.`,
+    },
+    confirmada: {
+      icon: CircleCheck,
+      className: "bg-success-soft text-success",
+      text: `¡Lugar confirmado! Juegan con ${otherName}.`,
+    },
+    rechazada: {
+      icon: CircleX,
+      className: "bg-danger-soft text-danger",
+      text: `La inscripción con ${otherName} fue rechazada. Si tenés dudas, escribile a la organización.`,
+    },
+  };
+  const step = steps[registration.status] ?? steps.pendiente;
+  const canCancel = ["invitacion", "pendiente", "confirmada"].includes(
+    registration.status,
+  );
+
+  return (
+    <div className="space-y-5">
+      <div
+        className={cn("flex items-start gap-3 rounded-lg p-4", step.className)}
+      >
+        <step.icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+        <p className="font-medium">{step.text}</p>
+      </div>
+      <PairPlayers
+        player={registration.player}
+        partner={registration.partner}
+        partnerName={registration.partner_name}
+        meId={userId}
+      />
+      <dl className="grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-muted-foreground">Estado</dt>
+          <dd className="mt-1">
+            <Badge tone={status.tone}>{status.label}</Badge>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Teléfono de contacto</dt>
+          <dd className="mt-1 font-medium">{registration.contact_phone}</dd>
+        </div>
+      </dl>
+      {canCancel && (
+        <form
+          action={cancelRegistration.bind(
+            null,
+            registration.id,
+            tournament.slug,
+          )}
+          className="border-t border-border pt-4"
+        >
+          <ConfirmSubmitButton
+            variant="ghost"
+            size="sm"
+            pendingLabel="Cancelando…"
+            confirmMessage={
+              registration.status === "invitacion"
+                ? `¿Retirar la invitación a ${partnerName}?`
+                : `¿Cancelar la inscripción? Le avisamos a ${otherName}.`
+            }
+          >
+            {registration.status === "invitacion"
+              ? "Retirar invitación"
+              : "Cancelar inscripción"}
+          </ConfirmSubmitButton>
+        </form>
+      )}
+    </div>
   );
 }

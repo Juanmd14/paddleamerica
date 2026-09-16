@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, safeAvatarUrl } from "@/lib/auth";
 import {
   demoNews,
   demoPlayers,
@@ -27,8 +27,10 @@ import type {
   Player,
   PlayerPointChange,
   Profile,
+  PublicProfile,
   RankingImport,
   Registration,
+  RegistrationWithPeople,
   RegistrationWithProfile,
   RegistrationWithTournament,
   Tournament,
@@ -451,6 +453,45 @@ export const getMyProfile = cache(async (): Promise<Profile | null> => {
   return data;
 });
 
+/** Nombre, usuario, foto y categoría de otros usuarios (sin email ni teléfono). */
+async function getPublicProfiles(
+  ids: (string | null)[],
+): Promise<Map<string, PublicProfile>> {
+  const unique = [...new Set(ids.filter((id) => id !== null))];
+  if (unique.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_profiles", {
+    p_ids: unique,
+  });
+  if (error) throw error;
+  return new Map(
+    data.map((profile) => [
+      profile.id,
+      { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
+    ]),
+  );
+}
+
+async function withPeople<T extends Registration>(
+  registrations: T[],
+): Promise<(T & Pick<RegistrationWithPeople, "player" | "partner">)[]> {
+  const profiles = await getPublicProfiles(
+    registrations.flatMap((registration) => [
+      registration.user_id,
+      registration.partner_id,
+    ]),
+  );
+  return registrations.map((registration) => ({
+    ...registration,
+    player: profiles.get(registration.user_id) ?? null,
+    partner: registration.partner_id
+      ? (profiles.get(registration.partner_id) ?? null)
+      : null,
+  }));
+}
+
+/** Inscripciones donde el usuario se anotó o es la pareja (con invitaciones). */
 export async function getMyRegistrations(): Promise<
   RegistrationWithTournament[]
 > {
@@ -461,27 +502,66 @@ export async function getMyRegistrations(): Promise<
   const { data, error } = await supabase
     .from("tournament_registrations")
     .select("*, tournament:tournaments(*)")
-    .eq("user_id", user.id)
+    .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data;
+  return withPeople(data);
 }
 
-export async function getMyRegistration(
+export type MyTournamentEntry = {
+  /** La inscripción propia (anotado, invitando, o pareja que ya aceptó). */
+  registration: RegistrationWithPeople | null;
+  /** Invitaciones de otros jugadores que falta responder. */
+  invitations: RegistrationWithPeople[];
+};
+
+export async function getMyTournamentEntry(
   tournamentId: number,
-): Promise<Registration | null> {
+): Promise<MyTournamentEntry> {
   const user = await getCurrentUser();
-  if (!user) return null;
+  if (!user) return { registration: null, invitations: [] };
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tournament_registrations")
     .select("*")
-    .eq("user_id", user.id)
     .eq("tournament_id", tournamentId)
-    .maybeSingle();
+    .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .order("created_at", { ascending: true });
   if (error) throw error;
-  return data;
+
+  const rows = await withPeople(data);
+  const isInvitation = (row: Registration) =>
+    row.partner_id === user.id && row.status === "invitacion";
+  return {
+    registration:
+      rows.find(
+        (row) =>
+          !isInvitation(row) &&
+          (row.user_id === user.id ||
+            row.status === "pendiente" ||
+            row.status === "confirmada"),
+      ) ?? null,
+    invitations: rows.filter(isInvitation),
+  };
+}
+
+/** Invitaciones a jugar que el usuario todavía no respondió. */
+export async function getMyInvitations(): Promise<
+  RegistrationWithTournament[]
+> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournament_registrations")
+    .select("*, tournament:tournaments(*)")
+    .eq("partner_id", user.id)
+    .eq("status", "invitacion")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return withPeople(data);
 }
 
 export async function getMyNotifications(limit = 20): Promise<Notification[]> {
@@ -604,7 +684,7 @@ export async function getPlayerById(id: number): Promise<Player | null> {
   return data;
 }
 
-/** Inscripciones de un torneo con nombre, email y teléfono del usuario. */
+/** Inscripciones de un torneo con los perfiles de los dos jugadores (email y teléfono incluidos). */
 export async function getTournamentRegistrations(
   tournamentId: number,
 ): Promise<RegistrationWithProfile[]> {
@@ -619,20 +699,34 @@ export async function getTournamentRegistrations(
   if (error) throw error;
   if (registrations.length === 0) return [];
 
-  // user_id apunta a auth.users, así que el perfil se trae aparte.
+  // user_id y partner_id apuntan a auth.users, así que los perfiles se traen aparte.
+  const ids = [
+    ...new Set(
+      registrations.flatMap((registration) =>
+        registration.partner_id
+          ? [registration.user_id, registration.partner_id]
+          : [registration.user_id],
+      ),
+    ),
+  ];
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, full_name, email, phone")
-    .in(
-      "id",
-      registrations.map((registration) => registration.user_id),
-    );
+    .select("id, full_name, email, phone, username, avatar_url, category")
+    .in("id", ids);
   if (profilesError) throw profilesError;
 
+  const byId = new Map(
+    profiles.map((profile) => [
+      profile.id,
+      { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
+    ]),
+  );
   return registrations.map((registration) => ({
     ...registration,
-    profile:
-      profiles.find((profile) => profile.id === registration.user_id) ?? null,
+    profile: byId.get(registration.user_id) ?? null,
+    partnerProfile: registration.partner_id
+      ? (byId.get(registration.partner_id) ?? null)
+      : null,
   }));
 }
 

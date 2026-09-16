@@ -5,16 +5,18 @@ import {
   LayoutDashboard,
   MapPin,
   Trophy,
-  Users,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { EmptyState } from "@/components/empty-state";
+import { InvitationResponse } from "@/components/invitation-response";
 import { MarkNotificationsRead } from "@/components/mark-notifications-read";
+import { PairPlayers } from "@/components/pair-players";
 import { ProfileForm } from "@/components/profile-form";
 import { SubmitButton } from "@/components/submit-button";
 import { SupabaseNotice } from "@/components/supabase-notice";
@@ -63,6 +65,14 @@ export default async function AccountPage({
     searchParams,
   ]);
   const message = firstParam(params.message);
+  const invitations = registrations.filter(
+    (registration) =>
+      registration.partner_id === user.id &&
+      registration.status === "invitacion",
+  );
+  const mine = registrations.filter(
+    (registration) => !invitations.includes(registration),
+  );
   const name = profile?.full_name || user.name;
 
   return (
@@ -108,17 +118,63 @@ export default async function AccountPage({
         )}
 
         <div className="space-y-12 lg:col-span-2">
+          {invitations.length > 0 && (
+            <section id="invitaciones" className="scroll-mt-24">
+              <h2 className="font-display text-3xl font-bold uppercase">
+                Te invitaron a jugar
+              </h2>
+              <ul className="mt-6 space-y-4">
+                {invitations.map((invitation) => (
+                  <li key={invitation.id}>
+                    <Card className="space-y-4 border-oro-300 bg-oro-50 p-5 sm:p-6">
+                      <div>
+                        <Link
+                          href={`/torneos/${invitation.tournament.slug}`}
+                          className="font-display text-2xl leading-tight font-bold uppercase transition-colors hover:text-accent"
+                        >
+                          {invitation.tournament.name}
+                        </Link>
+                        <p className="text-sm text-foreground-soft">
+                          {invitation.player?.full_name || "Un jugador"} te
+                          invitó ·{" "}
+                          {formatDateRange(
+                            invitation.tournament.starts_on,
+                            invitation.tournament.ends_on,
+                          )}{" "}
+                          · {invitation.tournament.city}
+                        </p>
+                      </div>
+                      <PairPlayers
+                        player={invitation.player}
+                        partner={invitation.partner}
+                        partnerName={invitation.partner_name}
+                        meId={user.id}
+                      />
+                      <InvitationResponse
+                        registrationId={invitation.id}
+                        slug={invitation.tournament.slug}
+                      />
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <Notifications notifications={notifications} />
 
           <section>
             <h2 className="font-display text-3xl font-bold uppercase">
               Mis inscripciones
             </h2>
-            {registrations.length > 0 ? (
+            {mine.length > 0 ? (
               <ul className="mt-6 space-y-4">
-                {registrations.map((registration) => (
+                {mine.map((registration) => (
                   <li key={registration.id}>
-                    <RegistrationCard registration={registration} />
+                    <RegistrationCard
+                      registration={registration}
+                      userId={user.id}
+                    />
                   </li>
                 ))}
               </ul>
@@ -150,7 +206,7 @@ export default async function AccountPage({
               </ButtonLink>
             </Card>
           )}
-          <Card className="p-6">
+          <Card id="mis-datos" className="scroll-mt-24 p-6">
             <h2 className="font-display text-2xl font-bold uppercase">
               Mis datos
             </h2>
@@ -193,15 +249,22 @@ export default async function AccountPage({
 
 function RegistrationCard({
   registration,
+  userId,
 }: {
   registration: RegistrationWithTournament;
+  userId: string;
 }) {
   const { tournament } = registration;
   const status = registrationStatus(registration.status);
+  const isOwner = registration.user_id === userId;
   const canCancel =
     tournament.status === "inscripciones" &&
-    (registration.status === "pendiente" ||
-      registration.status === "confirmada");
+    ["invitacion", "pendiente", "confirmada"].includes(registration.status);
+  const partnerName =
+    registration.partner?.full_name || registration.partner_name;
+  const otherName = isOwner
+    ? partnerName
+    : registration.player?.full_name || "tu pareja";
 
   return (
     <Card className="p-5 sm:p-6">
@@ -220,14 +283,26 @@ function RegistrationCard({
         <Badge tone={status.tone}>{status.label}</Badge>
       </div>
 
-      <ul className="mt-4 grid gap-2 text-sm text-foreground-soft sm:grid-cols-3">
-        <li className="flex items-center gap-2">
-          <Users
-            className="size-4 shrink-0 text-noche-400"
-            aria-hidden="true"
-          />
-          Con {registration.partner_name}
-        </li>
+      {registration.status === "invitacion" && isOwner && (
+        <p className="mt-4 text-sm font-medium text-oro-800">
+          Falta que {partnerName} acepte la invitación.
+        </p>
+      )}
+      {registration.status === "pendiente" && (
+        <p className="mt-4 text-sm font-medium text-oro-800">
+          Falta que el organizador confirme el lugar.
+        </p>
+      )}
+
+      <PairPlayers
+        player={registration.player}
+        partner={registration.partner}
+        partnerName={registration.partner_name}
+        meId={userId}
+        className="mt-4"
+      />
+
+      <ul className="mt-4 grid gap-2 text-sm text-foreground-soft sm:grid-cols-2">
         <li className="flex items-center gap-2">
           <CalendarDays
             className="size-4 shrink-0 text-noche-400"
@@ -253,9 +328,20 @@ function RegistrationCard({
           )}
           className="mt-4 border-t border-border pt-4"
         >
-          <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
-            Cancelar inscripción
-          </SubmitButton>
+          <ConfirmSubmitButton
+            variant="ghost"
+            size="sm"
+            pendingLabel="Cancelando…"
+            confirmMessage={
+              registration.status === "invitacion"
+                ? `¿Retirar la invitación a ${partnerName}?`
+                : `¿Cancelar la inscripción? Le avisamos a ${otherName}.`
+            }
+          >
+            {registration.status === "invitacion"
+              ? "Retirar invitación"
+              : "Cancelar inscripción"}
+          </ConfirmSubmitButton>
         </form>
       )}
     </Card>
@@ -326,7 +412,7 @@ function Notifications({ notifications }: { notifications: Notification[] }) {
           <EmptyState
             icon={Bell}
             title="No tenés avisos"
-            description="Te avisamos acá (y por email) cuando confirmen o rechacen una inscripción."
+            description="Te avisamos acá cuando te inviten a jugar o cuando confirmen tu inscripción."
           />
         </div>
       )}

@@ -282,34 +282,46 @@ export type Database = {
       }
       tournament_registrations: {
         Row: {
+          accepted_at: string | null
           category: string | null
           contact_phone: string
           created_at: string
           id: number
           notes: string | null
+          partner_category: number | null
+          partner_id: string | null
           partner_name: string
+          player_category: number | null
           status: string
           tournament_id: number
           user_id: string
         }
         Insert: {
+          accepted_at?: string | null
           category?: string | null
           contact_phone: string
           created_at?: string
           id?: never
           notes?: string | null
+          partner_category?: number | null
+          partner_id?: string | null
           partner_name: string
+          player_category?: number | null
           status?: string
           tournament_id: number
           user_id?: string
         }
         Update: {
+          accepted_at?: string | null
           category?: string | null
           contact_phone?: string
           created_at?: string
           id?: never
           notes?: string | null
+          partner_category?: number | null
+          partner_id?: string | null
           partner_name?: string
+          player_category?: number | null
           status?: string
           tournament_id?: number
           user_id?: string
@@ -423,6 +435,10 @@ export type Database = {
         }
         Returns: Json
       }
+      cancel_registration: {
+        Args: { p_registration_id: number }
+        Returns: string
+      }
       get_public_profiles: {
         Args: { p_ids: string[] }
         Returns: {
@@ -434,6 +450,39 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      is_in_tournament: {
+        Args: {
+          p_except_id?: number
+          p_tournament_id: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      pair_category_error: {
+        Args: {
+          p_partner: number
+          p_player: number
+          p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
+        }
+        Returns: string
+      }
+      profile_display_name: {
+        Args: { p_profile: Database["public"]["Tables"]["profiles"]["Row"] }
+        Returns: string
+      }
+      register_pair: {
+        Args: {
+          p_contact_phone: string
+          p_notes?: string
+          p_partner_username: string
+          p_tournament_id: number
+        }
+        Returns: number
+      }
+      respond_invitation: {
+        Args: { p_accept: boolean; p_registration_id: number }
+        Returns: string
+      }
       search_profiles: {
         Args: { p_query: string }
         Returns: {
@@ -451,6 +500,7 @@ export type Database = {
           tournament_id: number
         }[]
       }
+      tournament_taken: { Args: { p_tournament_id: number }; Returns: number }
       undo_last_points_import: { Args: never; Returns: Json }
       unique_username: { Args: { p_base: string }; Returns: string }
     }

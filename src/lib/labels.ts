@@ -59,6 +59,7 @@ export function playerName(player: Pick<Player, "first_name" | "last_name">) {
 
 const REGISTRATION_STATUS: Record<string, { label: string; tone: BadgeTone }> =
   {
+    invitacion: { label: "Esperando a la pareja", tone: "accent" },
     pendiente: { label: "Pendiente de confirmación", tone: "primary" },
     confirmada: { label: "Confirmada", tone: "success" },
     rechazada: { label: "Rechazada", tone: "danger" },

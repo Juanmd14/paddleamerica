@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getTournamentById, getTournamentRegistrations } from "@/lib/data";
+import { categoryName } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { registrationStatus } from "@/lib/labels";
 
@@ -21,23 +22,36 @@ export async function GET(
   if (!tournament) return new Response("No encontrado", { status: 404 });
 
   const registrations = await getTournamentRegistrations(tournament.id);
+  const category = (value: number | null | undefined) =>
+    value ? categoryName(value) : "";
   const header = [
     "Estado",
     "Jugador",
+    "Usuario",
+    "Categoría",
     "Email",
     "Teléfono",
     "Pareja",
-    "Categoría",
+    "Usuario pareja",
+    "Categoría pareja",
+    "Email pareja",
+    "Teléfono pareja",
     "Observaciones",
     "Fecha de inscripción",
   ];
   const rows = registrations.map((registration) => [
     registrationStatus(registration.status).label,
     registration.profile?.full_name,
+    registration.profile?.username && `@${registration.profile.username}`,
+    category(registration.profile?.category) || registration.category,
     registration.profile?.email,
     registration.contact_phone,
-    registration.partner_name,
-    registration.category,
+    registration.partnerProfile?.full_name || registration.partner_name,
+    registration.partnerProfile?.username &&
+      `@${registration.partnerProfile.username}`,
+    category(registration.partnerProfile?.category),
+    registration.partnerProfile?.email,
+    registration.partnerProfile?.phone,
     registration.notes,
     formatDate(registration.created_at),
   ]);
