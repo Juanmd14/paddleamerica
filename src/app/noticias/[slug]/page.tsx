@@ -71,23 +71,6 @@ export default async function NewsArticlePage({
             </p>
           )}
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
-            <p className="text-sm">
-              {article.author ? (
-                <>
-                  Por <span className="font-semibold">{article.author}</span>
-                </>
-              ) : (
-                <span className="text-muted-foreground">Redacción</span>
-              )}
-            </p>
-            <ShareButton
-              title={article.title}
-              text={article.excerpt ?? undefined}
-              variant="ghost"
-            />
-          </div>
-
           <Cover
             src={article.cover_url}
             alt=""
@@ -102,6 +85,22 @@ export default async function NewsArticlePage({
               <p key={index}>{paragraph}</p>
             ))}
           </div>
+
+          <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
+            <p className="text-sm">
+              {article.author ? (
+                <>
+                  Por <span className="font-semibold">{article.author}</span>
+                </>
+              ) : (
+                <span className="text-muted-foreground">Redacción</span>
+              )}
+            </p>
+            <ShareButton
+              title={article.title}
+              text={article.excerpt ?? undefined}
+            />
+          </footer>
         </Container>
       </article>
 
