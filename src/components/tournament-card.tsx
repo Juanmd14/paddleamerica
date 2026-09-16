@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin, Trophy } from "lucide-react";
+import { CalendarDays, ChevronRight, MapPin, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Cover } from "@/components/cover";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
@@ -134,5 +134,50 @@ export function FlyerPlaceholder({ tournament }: { tournament: Tournament }) {
         {tournament.city}
       </p>
     </div>
+  );
+}
+
+/** Fila de la lista de Resultados (torneos finalizados). Se acomoda al ancho de la lista, no de la pantalla. */
+export function TournamentResultRow({
+  tournament,
+}: {
+  tournament: Tournament;
+}) {
+  return (
+    <li className="@container">
+      <Link
+        href={`/torneos/${tournament.slug}`}
+        className="group flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted @xl:px-6"
+      >
+        <div className="grid min-w-0 flex-1 gap-1 @xl:grid-cols-[1.4fr_1fr_1fr] @xl:items-center @xl:gap-6">
+          <div className="min-w-0">
+            <p className="font-display text-xl leading-tight font-bold uppercase transition-colors group-hover:text-accent">
+              {tournament.name}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {formatDateRange(tournament.starts_on, tournament.ends_on)}
+            </p>
+          </div>
+          <p className="text-sm text-foreground-soft">
+            {tournament.city} · {tournament.category} ·{" "}
+            {genderLabel(tournament.gender)}
+          </p>
+          {tournament.champions && (
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <Trophy
+                className="size-4 shrink-0 text-oro-500"
+                aria-hidden="true"
+              />
+              <span className="sr-only">Campeones:</span>
+              {tournament.champions}
+            </p>
+          )}
+        </div>
+        <ChevronRight
+          className="size-5 shrink-0 text-noche-300 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </Link>
+    </li>
   );
 }

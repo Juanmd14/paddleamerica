@@ -27,6 +27,40 @@ export function AdminPageHeader({
   );
 }
 
+/** Título de un bloque de formulario, con el número de paso a la izquierda. */
+export function FormSection({
+  step,
+  title,
+  description,
+  className,
+}: {
+  step?: number;
+  title: string;
+  description?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-start gap-3", className)}>
+      {step !== undefined && (
+        <span
+          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-lg font-bold text-primary-foreground"
+          aria-hidden="true"
+        >
+          {step}
+        </span>
+      )}
+      <div>
+        <h2 className="font-display text-2xl leading-8 font-bold uppercase">
+          {title}
+        </h2>
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Etiqueta + control + error (o ayuda) de un campo. El control tiene que usar id={name}. */
 export function Field({
   name,

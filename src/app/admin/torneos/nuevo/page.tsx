@@ -13,7 +13,7 @@ export default async function NewTournamentPage() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Nuevo torneo"
-        description="Completá los datos y subí el flyer. Podés dejarlo en “Próximamente” y abrir las inscripciones después."
+        description="Completá los pasos. La vista previa te muestra cómo va a quedar en el sitio antes de crearlo."
       />
       <TournamentForm action={createTournament} submitLabel="Crear torneo" />
     </div>

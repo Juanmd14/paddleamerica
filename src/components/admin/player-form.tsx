@@ -71,7 +71,7 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
           </Field>
           <Field
             name="slug"
-            label="Dirección"
+            label="Link del jugador"
             error={errors.slug}
             hint={`/jugadores/${currentSlug || "…"} · también es el “Código” de la planilla de puntos`}
             className="sm:col-span-2"

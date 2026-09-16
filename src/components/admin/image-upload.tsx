@@ -25,6 +25,8 @@ type ImageUploadProps = {
   ratio: keyof typeof ratios;
   defaultValue?: string | null;
   hint?: string;
+  /** Avisa la URL nueva al subir o quitar la imagen ("" al quitarla). */
+  onChange?: (url: string) => void;
 };
 
 /** Achica la imagen en el navegador (lado mayor 1600 px) y la pasa a WebP, o JPEG si el navegador no sabe. */
@@ -54,11 +56,17 @@ export function ImageUpload({
   ratio,
   defaultValue,
   hint,
+  onChange,
 }: ImageUploadProps) {
   const id = useId();
   const [url, setUrl] = useState(defaultValue ?? "");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  function changeUrl(next: string) {
+    setUrl(next);
+    onChange?.(next);
+  }
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -86,7 +94,9 @@ export function ImageUpload({
         });
       if (uploadError) throw uploadError;
 
-      setUrl(supabase.storage.from("media").getPublicUrl(path).data.publicUrl);
+      changeUrl(
+        supabase.storage.from("media").getPublicUrl(path).data.publicUrl,
+      );
     } catch (uploadError) {
       console.error(uploadError);
       setError(
@@ -128,7 +138,7 @@ export function ImageUpload({
               <ImagePlus className="size-4" aria-hidden="true" />
               Cambiar
             </label>
-            <Button variant="ghost" size="sm" onClick={() => setUrl("")}>
+            <Button variant="ghost" size="sm" onClick={() => changeUrl("")}>
               <Trash2 className="size-4" aria-hidden="true" />
               Quitar
             </Button>

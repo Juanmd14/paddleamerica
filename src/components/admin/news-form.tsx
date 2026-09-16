@@ -53,7 +53,7 @@ export function NewsForm({
           </Field>
           <Field
             name="slug"
-            label="Dirección"
+            label="Link de la nota"
             error={errors.slug}
             hint={`/noticias/${currentSlug || "…"}`}
           >
