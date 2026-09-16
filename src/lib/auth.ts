@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
+import { isStorageUrl } from "@/lib/admin-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,6 +8,10 @@ export type CurrentUser = {
   id: string;
   email: string;
   name: string;
+  /** Usuario público, sin @. */
+  username: string | null;
+  /** Foto de perfil (solo si está subida a nuestro Storage). */
+  avatarUrl: string | null;
   isAdmin: boolean;
 };
 
@@ -24,7 +29,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, username, avatar_url")
     .eq("id", claims.sub)
     .maybeSingle();
 
@@ -35,9 +40,16 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     id: claims.sub,
     email,
     name: typeof fullName === "string" && fullName ? fullName : email,
+    username: profile?.username ?? null,
+    avatarUrl: safeAvatarUrl(profile?.avatar_url),
     isAdmin: profile?.is_admin ?? false,
   };
 });
+
+/** La foto solo se muestra si está en nuestro Storage (next/image rechaza otros dominios). */
+export function safeAvatarUrl(url: string | null | undefined) {
+  return url && isStorageUrl(url) ? url : null;
+}
 
 /**
  * Para páginas y Server Actions del panel. Sin sesión manda al login;

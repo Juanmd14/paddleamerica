@@ -66,7 +66,12 @@ export async function SiteHeader() {
               className="flex items-center gap-2.5 rounded-full py-1 pr-1 pl-3 text-sm font-medium text-noche-200 transition-colors hover:bg-white/10 hover:text-white"
             >
               <span className="hidden sm:inline">Mi cuenta</span>
-              <Avatar name={user.name} size="sm" className="bg-noche-800" />
+              <Avatar
+                name={user.name}
+                src={user.avatarUrl}
+                size="sm"
+                className="bg-noche-800"
+              />
             </Link>
           </div>
         ) : (

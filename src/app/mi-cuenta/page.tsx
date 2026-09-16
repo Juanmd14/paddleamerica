@@ -12,6 +12,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
+import { AvatarUpload } from "@/components/avatar-upload";
 import { EmptyState } from "@/components/empty-state";
 import { MarkNotificationsRead } from "@/components/mark-notifications-read";
 import { ProfileForm } from "@/components/profile-form";
@@ -70,6 +71,7 @@ export default async function AccountPage({
         <Container className="flex flex-col gap-6 py-12 sm:flex-row sm:items-center sm:py-16">
           <Avatar
             name={name}
+            src={user.avatarUrl}
             size="lg"
             className="bg-noche-800 ring-2 ring-oro-400"
           />
@@ -80,7 +82,15 @@ export default async function AccountPage({
             <h1 className="mt-2 font-display text-4xl leading-none font-bold uppercase sm:text-5xl">
               Hola, {name}
             </h1>
-            <p className="mt-2 truncate text-noche-300">{user.email}</p>
+            <p className="mt-2 truncate text-noche-300">
+              {user.username && (
+                <span className="font-semibold text-white">
+                  @{user.username}
+                </span>
+              )}
+              {user.username && " · "}
+              {user.email}
+            </p>
           </div>
           <form action={signOut}>
             <SubmitButton variant="inverse" size="sm" pendingLabel="Saliendo…">
@@ -144,11 +154,18 @@ export default async function AccountPage({
             <h2 className="font-display text-2xl font-bold uppercase">
               Mis datos
             </h2>
-            <div className="mt-5">
+            <div className="mt-5 space-y-6">
+              <AvatarUpload
+                userId={user.id}
+                name={name}
+                avatarUrl={user.avatarUrl}
+              />
               <ProfileForm
                 email={user.email}
                 fullName={name}
                 phone={profile?.phone ?? ""}
+                username={profile?.username ?? user.username ?? ""}
+                category={profile?.category ?? null}
               />
             </div>
           </Card>

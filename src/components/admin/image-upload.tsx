@@ -4,6 +4,7 @@ import { ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { MAX_IMAGE_BYTES, resizeImage } from "@/lib/resize-image";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -13,9 +14,6 @@ const ratios = {
   square: "aspect-square max-w-48",
   wide: "aspect-[21/9]",
 };
-
-const MAX_SIDE = 1600;
-const MAX_BYTES = 5 * 1024 * 1024;
 
 type ImageUploadProps = {
   /** Nombre del input oculto que recibe la URL pública. */
@@ -28,25 +26,6 @@ type ImageUploadProps = {
   /** Avisa la URL nueva al subir o quitar la imagen ("" al quitarla). */
   onChange?: (url: string) => void;
 };
-
-/** Achica la imagen en el navegador (lado mayor 1600 px) y la pasa a WebP, o JPEG si el navegador no sabe. */
-async function resize(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-
-  const toBlob = (type: string) =>
-    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.85));
-  const webp = await toBlob("image/webp");
-  if (webp?.type === "image/webp") return webp;
-  const jpeg = await toBlob("image/jpeg");
-  if (!jpeg) throw new Error("No se pudo procesar la imagen.");
-  return jpeg;
-}
 
 /** Sube la imagen a Supabase Storage (bucket "media") con la sesión del admin. */
 export function ImageUpload({
@@ -78,8 +57,8 @@ export function ImageUpload({
 
     setUploading(true);
     try {
-      const blob = await resize(file);
-      if (blob.size > MAX_BYTES) {
+      const blob = await resizeImage(file);
+      if (blob.size > MAX_IMAGE_BYTES) {
         throw new Error("La imagen pesa más de 5 MB incluso achicada.");
       }
       const extension = blob.type === "image/webp" ? "webp" : "jpg";
