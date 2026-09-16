@@ -21,6 +21,7 @@ import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import { Input, Label, Select } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
 import { playerGenderOptions } from "@/lib/labels";
@@ -82,6 +83,8 @@ export function PointsImporter({
   const [players, setPlayers] = useState<PlayerOption[]>([]);
   const [decisions, setDecisions] = useState<Record<number, Decision>>({});
   const [error, setError] = useState("");
+  /** Filas listas para aplicar, mientras el admin revisa el resumen. */
+  const [confirmRows, setConfirmRows] = useState<ApplyRow[] | null>(null);
   const [result, setResult] = useState<{
     updated: number;
     created: number;
@@ -220,19 +223,41 @@ export function PointsImporter({
       setError("No hay filas para aplicar.");
       return;
     }
-    const verb =
-      mode === "sumar" ? "sumar puntos a" : "reemplazar los puntos de";
-    if (
-      !window.confirm(
-        `¿Confirmás ${verb} ${rows.length} jugadores? Después podés deshacer la carga.`,
-      )
-    ) {
-      return;
-    }
-
     setError("");
+    setConfirmRows(rows);
+  }
+
+  /** Cuántos puntos gana o pierde cada jugador con la carga, de mayor a menor. */
+  const changes = useMemo(
+    () =>
+      (confirmRows ?? [])
+        .map((row) => {
+          const player =
+            row.playerId !== null ? playersById.get(row.playerId) : undefined;
+          const before = player?.points ?? 0;
+          const after = mode === "sumar" ? before + row.points : row.points;
+          return {
+            line: row.line,
+            name: player?.name ?? `${row.firstName} ${row.lastName}`.trim(),
+            isNew: !player,
+            before,
+            change: after - before,
+            after,
+          };
+        })
+        .toSorted(
+          (a, b) => b.change - a.change || a.name.localeCompare(b.name, "es"),
+        ),
+    [confirmRows, playersById, mode],
+  );
+  const totalChange = changes.reduce((total, item) => total + item.change, 0);
+
+  function confirmApply() {
+    if (!confirmRows) return;
+    const rows = confirmRows;
     startTransition(async () => {
       const response = await applyPointsImport({ fileName, mode, label, rows });
+      setConfirmRows(null);
       if (!response.ok) {
         setError(response.message);
         return;
@@ -640,11 +665,79 @@ export function PointsImporter({
                   aria-hidden="true"
                 />
               )}
-              Aplicar carga ({summary.update + summary.create})
+              Revisar y aplicar ({summary.update + summary.create})
             </Button>
           </div>
         </Card>
       )}
+
+      <Modal
+        open={confirmRows !== null}
+        onClose={() => {
+          if (!isPending) setConfirmRows(null);
+        }}
+        title="¿Está bien la carga?"
+        description={`${changes.length} ${changes.length === 1 ? "jugador" : "jugadores"} · ${totalChange >= 0 ? "+" : "−"}${formatNumber(Math.abs(totalChange))} puntos en total${label.trim() ? ` · ${label.trim()}` : ""}`}
+        footer={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Se actualiza todo junto. Si algo quedó mal, después podés deshacer
+              la carga.
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmRows(null)}
+                disabled={isPending}
+              >
+                Volver
+              </Button>
+              <Button onClick={confirmApply} disabled={isPending}>
+                {isPending && (
+                  <LoaderCircle
+                    className="size-4 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                )}
+                {isPending ? "Actualizando…" : "Confirmar y actualizar"}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <ul className="divide-y divide-border">
+          {changes.map((item) => (
+            <li
+              key={item.line}
+              className="flex items-center gap-3 px-5 py-3 sm:px-6"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2">
+                  <span className="truncate font-semibold">{item.name}</span>
+                  {item.isNew && <Badge tone="accent">Nuevo</Badge>}
+                </p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {formatNumber(item.before)} → {formatNumber(item.after)} pts
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 font-display text-2xl leading-none font-bold tabular-nums",
+                  item.change > 0
+                    ? "text-success"
+                    : item.change < 0
+                      ? "text-danger"
+                      : "text-muted-foreground",
+                )}
+              >
+                {item.change > 0 ? "+" : item.change < 0 ? "−" : "±"}
+                {formatNumber(Math.abs(item.change))}
+                <span className="ml-0.5 text-sm">p</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Modal>
     </div>
   );
 }
