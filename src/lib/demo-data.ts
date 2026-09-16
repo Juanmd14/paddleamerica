@@ -352,7 +352,7 @@ export const demoTournaments: Tournament[] = [
   },
 ];
 
-const author = "Redacción Punto de Oro";
+const author = "Redacción PaddleAmerica";
 
 export const demoNews: NewsArticle[] = [
   {

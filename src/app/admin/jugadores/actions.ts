@@ -1,0 +1,163 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import {
+  type FormState,
+  isStorageUrl,
+  optionalText,
+  SLUG_PATTERN,
+  saveErrorMessage,
+  text,
+  wholeNumber,
+} from "@/lib/admin-form";
+import { requireAdmin } from "@/lib/auth";
+import { playerGenderOptions, sideOptions } from "@/lib/labels";
+import { createClient } from "@/lib/supabase/server";
+import { slugify } from "@/lib/utils";
+import type { TablesInsert } from "@/types/database.types";
+
+function readPlayer(formData: FormData) {
+  const firstName = text(formData, "first_name");
+  const lastName = text(formData, "last_name");
+  const values: TablesInsert<"players"> = {
+    first_name: firstName,
+    last_name: lastName,
+    slug: text(formData, "slug") || slugify(`${firstName} ${lastName}`),
+    gender: text(formData, "gender"),
+    category: text(formData, "category"),
+    side: optionalText(formData, "side"),
+    club: optionalText(formData, "club"),
+    city: optionalText(formData, "city"),
+    photo_url: optionalText(formData, "photo_url"),
+    bio: optionalText(formData, "bio"),
+    ranking_points: wholeNumber(formData, "ranking_points"),
+    matches_played: wholeNumber(formData, "matches_played"),
+    matches_won: wholeNumber(formData, "matches_won"),
+    titles: wholeNumber(formData, "titles"),
+  };
+
+  const errors: Record<string, string> = {};
+  if (firstName.length < 2) errors.first_name = "Poné el nombre.";
+  if (lastName.length < 2) errors.last_name = "Poné el apellido.";
+  if (!SLUG_PATTERN.test(values.slug)) {
+    errors.slug = "Solo minúsculas, números y guiones.";
+  }
+  if (!playerGenderOptions.some((option) => option.value === values.gender)) {
+    errors.gender = "Elegí la rama.";
+  }
+  if (values.category.length < 1 || values.category.length > 30) {
+    errors.category = "Poné la categoría (ej. 1ra).";
+  }
+  if (
+    values.side &&
+    !sideOptions.some((option) => option.value === values.side)
+  ) {
+    errors.side = "Elegí drive o revés.";
+  }
+  for (const [name, label] of [
+    ["ranking_points", "Los puntos"],
+    ["matches_played", "Los partidos jugados"],
+    ["matches_won", "Los partidos ganados"],
+    ["titles", "Los títulos"],
+  ] as const) {
+    if (Number.isNaN(values[name])) {
+      errors[name] = `${label} tienen que ser un número entero.`;
+    }
+  }
+  if (
+    !errors.matches_won &&
+    !errors.matches_played &&
+    (values.matches_won ?? 0) > (values.matches_played ?? 0)
+  ) {
+    errors.matches_won = "No puede ganar más partidos de los que jugó.";
+  }
+  if (!isStorageUrl(values.photo_url ?? null)) {
+    errors.photo_url = "Subí la foto desde acá.";
+  }
+
+  return { values, errors };
+}
+
+function revalidatePlayerPages(...slugs: string[]) {
+  for (const path of [
+    "/",
+    "/jugadores",
+    "/admin",
+    "/admin/jugadores",
+    "/sitemap.xml",
+  ]) {
+    revalidatePath(path);
+  }
+  for (const slug of new Set(slugs)) revalidatePath(`/jugadores/${slug}`);
+}
+
+export async function createPlayer(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const { values, errors } = readPlayer(formData);
+  if (Object.keys(errors).length > 0) return { errors };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("players")
+    .insert(values)
+    .select("id")
+    .single();
+  if (error) {
+    return error.code === "23505"
+      ? { errors: { slug: "Ya hay un jugador con ese slug." } }
+      : { message: saveErrorMessage(error) };
+  }
+
+  revalidatePlayerPages(values.slug);
+  redirect(`/admin/jugadores/${data.id}?guardado=1`);
+}
+
+export async function updatePlayer(
+  id: number,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const { values, errors } = readPlayer(formData);
+  if (Object.keys(errors).length > 0) return { errors };
+
+  const supabase = await createClient();
+  const { data: previous } = await supabase
+    .from("players")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+  const { error } = await supabase.from("players").update(values).eq("id", id);
+  if (error) {
+    return error.code === "23505"
+      ? { errors: { slug: "Ya hay un jugador con ese slug." } }
+      : { message: saveErrorMessage(error) };
+  }
+
+  revalidatePlayerPages(values.slug, previous?.slug ?? values.slug);
+  revalidatePath(`/admin/jugadores/${id}`);
+  return { ok: true };
+}
+
+export async function deletePlayer(id: number): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data: player } = await supabase
+    .from("players")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+  const { error } = await supabase.from("players").delete().eq("id", id);
+  if (error) {
+    redirect(
+      `/admin/jugadores/${id}?error=${encodeURIComponent(saveErrorMessage(error))}`,
+    );
+  }
+
+  revalidatePlayerPages(player?.slug ?? "");
+  redirect("/admin/jugadores?borrado=1");
+}

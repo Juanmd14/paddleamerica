@@ -242,6 +242,17 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Plantillas en castellano. El link lleva token_hash a /auth/confirm, así funciona aunque
+# el mail se abra en otro dispositivo. En el proyecto hosteado se pegan en
+# Authentication → Emails → Templates (ver README).
+[auth.email.template.confirmation]
+subject = "Confirmá tu cuenta en PaddleAmerica"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Elegí una contraseña nueva"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

@@ -10,12 +10,17 @@ type RankingListProps = {
   players: Player[];
   /** Versión reducida para columnas angostas. */
   compact?: boolean;
+  className?: string;
 };
 
 /** Lista de jugadores ordenada; la posición sale del orden del array. */
-export function RankingList({ players, compact = false }: RankingListProps) {
+export function RankingList({
+  players,
+  compact = false,
+  className,
+}: RankingListProps) {
   return (
-    <ol className="divide-y divide-border">
+    <ol className={cn("divide-y divide-border", className)}>
       {players.map((player, index) => (
         <li key={player.id}>
           <Link
@@ -27,7 +32,7 @@ export function RankingList({ players, compact = false }: RankingListProps) {
           >
             <span
               className={cn(
-                "w-7 shrink-0 text-center font-display text-2xl font-bold",
+                "w-7 shrink-0 text-center font-display text-2xl font-bold tabular-nums",
                 index < 3 ? "text-oro-500" : "text-noche-300",
               )}
             >
@@ -52,7 +57,7 @@ export function RankingList({ players, compact = false }: RankingListProps) {
             <div className="text-right">
               <p
                 className={cn(
-                  "font-display leading-none font-bold",
+                  "font-display leading-none font-bold tabular-nums",
                   compact ? "text-lg" : "text-2xl",
                 )}
               >

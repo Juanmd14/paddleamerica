@@ -1,19 +1,35 @@
+import { CalendarDays, KeyRound, MapPin, Trophy, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/auth/actions";
+import { cancelRegistration } from "@/app/torneos/[slug]/actions";
+import { EmptyState } from "@/components/empty-state";
+import { ProfileForm } from "@/components/profile-form";
+import { SubmitButton } from "@/components/submit-button";
 import { SupabaseNotice } from "@/components/supabase-notice";
+import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
+import { getCurrentUser } from "@/lib/auth";
+import { getMyProfile, getMyRegistrations } from "@/lib/data";
+import { formatDateRange } from "@/lib/format";
+import { registrationStatus, tournamentStatus } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
+import { firstParam } from "@/lib/utils";
+import type { RegistrationWithTournament } from "@/types/models";
 
 export const metadata: Metadata = {
   title: "Mi cuenta",
+  robots: { index: false },
 };
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: PageProps<"/mi-cuenta">) {
   if (!isSupabaseConfigured) {
     return (
       <Container className="max-w-3xl py-12 sm:py-16">
@@ -22,51 +38,174 @@ export default async function AccountPage() {
     );
   }
 
-  const supabase = await createClient();
-  const { data: auth } = await supabase.auth.getClaims();
-  const claims = auth?.claims;
-
   // El proxy ya protege esta ruta, pero siempre verificá en el servidor también.
-  if (!claims) redirect("/login?next=/mi-cuenta");
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/mi-cuenta");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", claims.sub)
-    .maybeSingle();
-
-  const name = profile?.full_name || claims.email || "Jugador";
+  const [profile, registrations, params] = await Promise.all([
+    getMyProfile(),
+    getMyRegistrations(),
+    searchParams,
+  ]);
+  const message = firstParam(params.message);
+  const name = profile?.full_name || user.name;
 
   return (
-    <Container className="max-w-3xl py-12 sm:py-16">
-      <Card className="p-6 sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-          <Avatar name={name} size="lg" />
+    <>
+      <section className="bg-noche-950 text-white">
+        <Container className="flex flex-col gap-6 py-12 sm:flex-row sm:items-center sm:py-16">
+          <Avatar
+            name={name}
+            size="lg"
+            className="bg-noche-800 ring-2 ring-oro-400"
+          />
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-4xl leading-none font-bold uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-oro-400 uppercase">
+              Mi cuenta
+            </p>
+            <h1 className="mt-2 font-display text-4xl leading-none font-bold uppercase sm:text-5xl">
               Hola, {name}
             </h1>
-            <p className="mt-2 truncate text-muted-foreground">
-              {claims.email}
-            </p>
+            <p className="mt-2 truncate text-noche-300">{user.email}</p>
           </div>
           <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
+            <SubmitButton variant="inverse" size="sm" pendingLabel="Saliendo…">
               Cerrar sesión
-            </Button>
+            </SubmitButton>
           </form>
-        </div>
-      </Card>
+        </Container>
+      </section>
 
-      <div className="mt-8 rounded-card border border-dashed border-noche-200 p-8 text-center">
-        <p className="font-semibold">Pronto vas a poder hacer más desde acá</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Seguir jugadores, anotarte en torneos y ver tus resultados.
-        </p>
-        <ButtonLink href="/torneos" className="mt-6">
-          Ver torneos
-        </ButtonLink>
+      <Container className="grid gap-10 py-12 sm:py-16 lg:grid-cols-3">
+        {message && (
+          <Alert tone="success" className="lg:col-span-3">
+            {message}
+          </Alert>
+        )}
+
+        <section className="lg:col-span-2">
+          <h2 className="font-display text-3xl font-bold uppercase">
+            Mis inscripciones
+          </h2>
+          {registrations.length > 0 ? (
+            <ul className="mt-6 space-y-4">
+              {registrations.map((registration) => (
+                <li key={registration.id}>
+                  <RegistrationCard registration={registration} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-6">
+              <EmptyState
+                icon={Trophy}
+                title="Todavía no te anotaste en ningún torneo"
+                description="Elegí un torneo con inscripciones abiertas y anotate con tu pareja."
+                action={<ButtonLink href="/torneos">Ver torneos</ButtonLink>}
+              />
+            </div>
+          )}
+        </section>
+
+        <aside className="space-y-6">
+          <Card className="p-6">
+            <h2 className="font-display text-2xl font-bold uppercase">
+              Mis datos
+            </h2>
+            <div className="mt-5">
+              <ProfileForm
+                email={user.email}
+                fullName={name}
+                phone={profile?.phone ?? ""}
+              />
+            </div>
+          </Card>
+          <Card className="flex items-center justify-between gap-4 p-6">
+            <div>
+              <h2 className="font-semibold">Contraseña</h2>
+              <p className="text-sm text-muted-foreground">
+                Cambiala cuando quieras.
+              </p>
+            </div>
+            <ButtonLink
+              href="/mi-cuenta/contrasena"
+              variant="outline"
+              size="sm"
+            >
+              <KeyRound className="size-4" aria-hidden="true" />
+              Cambiar
+            </ButtonLink>
+          </Card>
+        </aside>
+      </Container>
+    </>
+  );
+}
+
+function RegistrationCard({
+  registration,
+}: {
+  registration: RegistrationWithTournament;
+}) {
+  const { tournament } = registration;
+  const status = registrationStatus(registration.status);
+  const canCancel = tournament.status === "inscripciones";
+
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Link
+            href={`/torneos/${tournament.slug}`}
+            className="font-display text-2xl leading-tight font-bold uppercase transition-colors hover:text-accent"
+          >
+            {tournament.name}
+          </Link>
+          <p className="text-sm text-muted-foreground">
+            {tournament.category} · {tournamentStatus(tournament.status).label}
+          </p>
+        </div>
+        <Badge tone={status.tone}>{status.label}</Badge>
       </div>
-    </Container>
+
+      <ul className="mt-4 grid gap-2 text-sm text-foreground-soft sm:grid-cols-3">
+        <li className="flex items-center gap-2">
+          <Users
+            className="size-4 shrink-0 text-noche-400"
+            aria-hidden="true"
+          />
+          Con {registration.partner_name}
+        </li>
+        <li className="flex items-center gap-2">
+          <CalendarDays
+            className="size-4 shrink-0 text-noche-400"
+            aria-hidden="true"
+          />
+          {formatDateRange(tournament.starts_on, tournament.ends_on)}
+        </li>
+        <li className="flex items-center gap-2">
+          <MapPin
+            className="size-4 shrink-0 text-noche-400"
+            aria-hidden="true"
+          />
+          {tournament.city}
+        </li>
+      </ul>
+
+      {canCancel && (
+        <form
+          action={cancelRegistration.bind(
+            null,
+            registration.id,
+            tournament.slug,
+          )}
+          className="mt-4 border-t border-border pt-4"
+        >
+          <SubmitButton variant="ghost" size="sm" pendingLabel="Cancelando…">
+            Cancelar inscripción
+          </SubmitButton>
+        </form>
+      )}
+    </Card>
   );
 }

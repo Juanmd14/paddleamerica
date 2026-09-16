@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Punto de Oro — tokens de diseño
+ * PaddleAmerica — tokens de diseño
  *
  * Escalas de marca:
  *   noche  → azul noche (fondos oscuros, texto)
@@ -9,12 +9,11 @@
  *   pista  → azul cancha (links, acentos)
  *
  * En los componentes preferí los tokens semánticos (primary, surface, muted...).
- * Vista previa de todo en /ui.
+ * Vista previa de todo en /ui (solo en desarrollo).
  */
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
   --font-display: var(--font-barlow-condensed);
 }
 
@@ -56,10 +55,12 @@
   /* Semánticos */
   --color-background: #f7f9fc;
   --color-foreground: var(--color-noche-950);
+  --color-foreground-soft: var(--color-noche-700);
   --color-surface: #ffffff;
   --color-muted: var(--color-noche-50);
   --color-muted-foreground: var(--color-noche-500);
   --color-border: var(--color-noche-100);
+  --color-border-strong: var(--color-noche-200);
   --color-primary: var(--color-oro-400);
   --color-primary-hover: var(--color-oro-300);
   --color-primary-foreground: var(--color-noche-950);
@@ -67,13 +68,50 @@
   --color-secondary-hover: var(--color-noche-800);
   --color-secondary-foreground: #ffffff;
   --color-accent: var(--color-pista-600);
+  --color-accent-hover: var(--color-pista-800);
   --color-accent-foreground: #ffffff;
   --color-ring: var(--color-pista-500);
+
+  /* Estados */
+  --color-success: #047857;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #92400e;
+  --color-warning-soft: #fffbeb;
+  --color-warning-border: #fcd34d;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
 
   --radius-card: 1rem;
 }
 
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+@layer base {
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: var(--color-oro-300);
+    color: var(--color-noche-950);
+  }
+
+  a:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
