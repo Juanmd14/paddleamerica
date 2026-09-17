@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
   const rama = new URL(request.url).searchParams.get("rama");
   const gender = rama === "masculino" || rama === "femenino" ? rama : undefined;
-  const players = await getRanking({ gender });
+  const players = await getRanking({ gender, includeInactive: true });
 
   const header = HEADERS.map((value) => ({
     value,

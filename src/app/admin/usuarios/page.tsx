@@ -1,9 +1,13 @@
-import { Search, UserRound } from "lucide-react";
+import { Search, Trash2, UserRound } from "lucide-react";
 import type { Metadata } from "next";
+import { deleteUserAccount } from "@/app/admin/usuarios/actions";
 import { AdminPageHeader, Table, Td, Th } from "@/components/admin/admin-ui";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ProfileCategoryForm } from "@/components/admin/profile-category-form";
 import { EmptyState } from "@/components/empty-state";
+import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
@@ -16,8 +20,9 @@ export const metadata: Metadata = { title: "Usuarios" };
 export default async function AdminUsersPage({
   searchParams,
 }: PageProps<"/admin/usuarios">) {
-  await requireAdmin("/admin/usuarios");
+  const me = await requireAdmin("/admin/usuarios");
   const params = await searchParams;
+  const error = firstParam(params.error);
   const q = firstParam(params.q)?.trim() ?? "";
   const onlyMissing = firstParam(params.categoria) === "sin";
 
@@ -41,6 +46,8 @@ export default async function AdminUsersPage({
         title="Usuarios"
         description={`La categoría de cada jugador la asignás vos: define en qué torneos se puede anotar.${missing > 0 ? ` ${missing} ${missing === 1 ? "cuenta no tiene" : "cuentas no tienen"} categoría.` : ""}`}
       />
+      {params.borrada && <Alert tone="success">Borramos la cuenta.</Alert>}
+      {error && <Alert tone="danger">{error}</Alert>}
 
       <form className="flex flex-col gap-3 sm:flex-row" role="search">
         <div className="relative flex-1">
@@ -79,6 +86,9 @@ export default async function AdminUsersPage({
                 <Th>Usuario</Th>
                 <Th>Contacto</Th>
                 <Th>Categoría</Th>
+                <Th className="text-right">
+                  <span className="sr-only">Acciones</span>
+                </Th>
               </tr>
             </thead>
             <tbody>
@@ -115,6 +125,25 @@ export default async function AdminUsersPage({
                         name={name}
                         category={profile.category}
                       />
+                    </Td>
+                    <Td className="text-right">
+                      {profile.is_admin || profile.id === me.id ? (
+                        <Badge tone="primary">Admin</Badge>
+                      ) : (
+                        <form action={deleteUserAccount.bind(null, profile.id)}>
+                          <ConfirmSubmitButton
+                            variant="ghost"
+                            size="sm"
+                            className="text-danger hover:bg-danger-soft hover:text-danger"
+                            confirmMessage={`¿Borrar la cuenta de ${name}? También se borran sus inscripciones y avisos. No se puede deshacer.`}
+                            pendingLabel="Borrando…"
+                            aria-label={`Borrar la cuenta de ${name}`}
+                          >
+                            <Trash2 className="size-4" aria-hidden="true" />
+                            Borrar
+                          </ConfirmSubmitButton>
+                        </form>
+                      )}
                     </Td>
                   </tr>
                 );

@@ -95,8 +95,8 @@ En `/admin`, solo para cuentas marcadas como admin:
   - **Cupo:** en parejas. Cuentan las pendientes y las confirmadas; al llenarse, el sitio muestra _Cupo completo_ y la base no deja anotarse (trigger `check_tournament_capacity`). Rechazar una inscripción o subir el cupo libera lugares.
   - **Abren las inscripciones:** fecha que se muestra como “Abre el …” mientras el torneo está en _Próximamente_.
 - **Noticias:** borrador, publicada o programada (fecha futura), con portada.
-- **Jugadores:** alta, edición y foto.
-- **Usuarios:** la categoría de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso.
+- **Jugadores:** alta, edición y foto. Si alguien deja de jugar, tildá _Ya no compite_: sale del ranking y del inicio pero conserva puntos e historial (se puede reactivar).
+- **Usuarios:** la categoría de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso. Desde ahí también se borra una cuenta que ya no se usa (se borran sus inscripciones y avisos; no se puede si es admin o tiene inscripciones en torneos sin terminar).
 - **Sitio:** foto de fondo del inicio y los 4 números de la franja (se calculan solos; elegís cuáles mostrar y podés corregir título o valor).
 - **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
 

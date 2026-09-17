@@ -158,6 +158,21 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
       </div>
 
       <div className="space-y-6">
+        <Card className="space-y-2 p-5 sm:p-6">
+          <label className="flex items-center gap-3 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="inactive"
+              defaultChecked={player ? !player.active : false}
+              className="size-5 accent-noche-950"
+            />
+            Ya no compite
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Sale del ranking y del inicio, pero conserva sus puntos y su
+            historial. Destildalo para que vuelva.
+          </p>
+        </Card>
         <Card className="space-y-5 p-5 sm:p-6">
           <ImageUpload
             name="photo_url"

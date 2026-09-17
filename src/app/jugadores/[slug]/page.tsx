@@ -75,6 +75,7 @@ export default async function PlayerPage({
                 {player.side && (
                   <Badge tone="inverse">{sideLabel(player.side)}</Badge>
                 )}
+                {!player.active && <Badge tone="inverse">Ya no compite</Badge>}
               </div>
               <h1 className="mt-3 font-display text-5xl leading-none font-bold uppercase sm:text-7xl">
                 {name}
@@ -84,15 +85,27 @@ export default async function PlayerPage({
               </p>
             </div>
             <div className="sm:text-right">
-              <p className="text-xs font-semibold tracking-[0.2em] text-noche-400 uppercase">
-                Ranking {genderLabel(player.gender).toLowerCase()}
-              </p>
-              <p className="font-display text-7xl leading-none font-bold text-oro-400 tabular-nums">
-                #{position}
-              </p>
+              {position ? (
+                <>
+                  <p className="text-xs font-semibold tracking-[0.2em] text-noche-400 uppercase">
+                    Ranking {genderLabel(player.gender).toLowerCase()}
+                  </p>
+                  <p className="font-display text-7xl leading-none font-bold text-oro-400 tabular-nums">
+                    #{position}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs font-semibold tracking-[0.2em] text-noche-400 uppercase">
+                  Ya no compite en el circuito
+                </p>
+              )}
               <ShareButton
                 title={`${name} · Ranking regional`}
-                text={`${name}: #${position} del ranking ${genderLabel(player.gender).toLowerCase()}`}
+                text={
+                  position
+                    ? `${name}: #${position} del ranking ${genderLabel(player.gender).toLowerCase()}`
+                    : `${name} en el ranking regional`
+                }
                 variant="inverse"
                 className="mt-4"
               />

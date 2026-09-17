@@ -20,7 +20,9 @@ export default async function Image({
 
   const position = await getRankingPosition(player);
   return ogImage({
-    eyebrow: `#${position} ranking ${genderLabel(player.gender).toLowerCase()}`,
+    eyebrow: position
+      ? `#${position} ranking ${genderLabel(player.gender).toLowerCase()}`
+      : "Ya no compite",
     title: playerName(player),
     subtitle: `${player.category} · ${formatNumber(player.ranking_points)} pts${player.club ? ` · ${player.club}` : ""}`,
   });

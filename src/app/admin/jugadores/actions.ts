@@ -38,6 +38,7 @@ function readPlayer(formData: FormData) {
     matches_played: wholeNumber(formData, "matches_played"),
     matches_won: wholeNumber(formData, "matches_won"),
     titles: wholeNumber(formData, "titles"),
+    active: !formData.has("inactive"),
   };
 
   const errors: Record<string, string> = {};

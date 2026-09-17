@@ -67,7 +67,7 @@ export async function previewPointsImport(
     return { message: `El archivo tiene más de ${MAX_ROWS} filas.` };
   }
 
-  const players = await getRanking();
+  const players = await getRanking({ includeInactive: true });
   const byName = new Map<string, typeof players>();
   for (const player of players) {
     for (const key of [
@@ -213,7 +213,7 @@ export async function applyPointsImport(input: {
   if (rows.length > MAX_ROWS)
     return { ok: false, message: "Demasiadas filas." };
 
-  const players = await getRanking();
+  const players = await getRanking({ includeInactive: true });
   const existingIds = new Set(players.map((player) => player.id));
   const slugs = new Set(players.map((player) => player.slug));
   const usedIds = new Set<number>();

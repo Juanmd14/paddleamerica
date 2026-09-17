@@ -13,7 +13,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getRanking, getRankingCategories } from "@/lib/data";
 import { formatNumber } from "@/lib/format";
 import { genderLabel, playerGenderOptions, playerName } from "@/lib/labels";
-import { firstParam, slugify } from "@/lib/utils";
+import { cn, firstParam, slugify } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Jugadores" };
 
@@ -28,8 +28,9 @@ export default async function AdminPlayersPage({
     ? rama
     : undefined;
 
+  const estado = firstParam(params.estado);
   const [players, men, women] = await Promise.all([
-    getRanking({ gender }),
+    getRanking({ gender, includeInactive: true }),
     getRankingCategories("masculino"),
     getRankingCategories("femenino"),
   ]);
@@ -42,6 +43,11 @@ export default async function AdminPlayersPage({
   const visible = players.filter(
     (player) =>
       (!category || player.category === category) &&
+      (estado === "inactivos"
+        ? !player.active
+        : estado === "activos"
+          ? player.active
+          : true) &&
       (!needle ||
         slugify(
           `${player.first_name} ${player.last_name} ${player.club ?? ""} ${player.city ?? ""}`,
@@ -109,6 +115,16 @@ export default async function AdminPlayersPage({
             </option>
           ))}
         </Select>
+        <Select
+          name="estado"
+          defaultValue={estado ?? ""}
+          aria-label="Estado"
+          className="sm:w-44"
+        >
+          <option value="">Todos</option>
+          <option value="activos">Compiten</option>
+          <option value="inactivos">Ya no compiten</option>
+        </Select>
         <Button type="submit" variant="secondary">
           Filtrar
         </Button>
@@ -130,14 +146,26 @@ export default async function AdminPlayersPage({
               {visible.map((player) => {
                 const name = playerName(player);
                 return (
-                  <tr key={player.id} className="hover:bg-muted/60">
+                  <tr
+                    key={player.id}
+                    className={cn(
+                      "hover:bg-muted/60",
+                      !player.active && "text-muted-foreground",
+                    )}
+                  >
                     <Td>
                       <Link
                         href={`/admin/jugadores/${player.id}`}
                         className="flex items-center gap-3 font-semibold hover:text-accent"
                       >
-                        <Avatar name={name} src={player.photo_url} size="sm" />
+                        <Avatar
+                          name={name}
+                          src={player.photo_url}
+                          size="sm"
+                          className={cn(!player.active && "opacity-50")}
+                        />
                         {name}
+                        {!player.active && <Badge>Ya no compite</Badge>}
                       </Link>
                     </Td>
                     <Td className="text-foreground-soft">

@@ -126,6 +126,7 @@ export type Database = {
       }
       players: {
         Row: {
+          active: boolean
           bio: string | null
           category: string
           city: string | null
@@ -144,6 +145,7 @@ export type Database = {
           titles: number
         }
         Insert: {
+          active?: boolean
           bio?: string | null
           category: string
           city?: string | null
@@ -162,6 +164,7 @@ export type Database = {
           titles?: number
         }
         Update: {
+          active?: boolean
           bio?: string | null
           category?: string
           city?: string | null
@@ -439,6 +442,7 @@ export type Database = {
         Args: { p_registration_id: number }
         Returns: string
       }
+      delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
       get_public_profiles: {
         Args: { p_ids: string[] }
         Returns: {

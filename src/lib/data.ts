@@ -52,14 +52,18 @@ export async function getRanking({
   gender,
   category,
   limit,
+  includeInactive = false,
 }: {
   gender?: string;
   /** "1ra", "5ta"... El ranking del circuito es por categoría y rama. */
   category?: string;
   limit?: number;
+  /** Solo el panel: también los que ya no compiten. */
+  includeInactive?: boolean;
 } = {}): Promise<Player[]> {
   if (isDemoMode) {
     return demoPlayers
+      .filter((player) => includeInactive || player.active)
       .filter((player) => !gender || player.gender === gender)
       .filter((player) => !category || player.category === category)
       .toSorted((a, b) => b.ranking_points - a.ranking_points)
@@ -71,6 +75,7 @@ export async function getRanking({
     .from("players")
     .select("*")
     .order("ranking_points", { ascending: false });
+  if (!includeInactive) query = query.eq("active", true);
   if (gender) query = query.eq("gender", gender);
   if (category) query = query.eq("category", category);
   if (limit) query = query.limit(limit);
@@ -158,7 +163,7 @@ export async function getCategoryCounts(
 
   if (isDemoMode) {
     for (const player of demoPlayers) {
-      if (player.gender !== gender) continue;
+      if (player.gender !== gender || !player.active) continue;
       counts[player.category] = (counts[player.category] ?? 0) + 1;
     }
     return counts;
@@ -168,7 +173,8 @@ export async function getCategoryCounts(
   const { data, error } = await supabase
     .from("players")
     .select("category")
-    .eq("gender", gender);
+    .eq("gender", gender)
+    .eq("active", true);
   if (error) throw error;
 
   for (const { category } of data) {
@@ -192,11 +198,15 @@ export const getPlayer = cache(async (slug: string): Promise<Player | null> => {
   return data;
 });
 
-/** Posición del jugador en el ranking de su rama (1 = primero). */
-export async function getRankingPosition(player: Player): Promise<number> {
+/** Posición del jugador en el ranking de su rama (1 = primero). Null si ya no compite. */
+export async function getRankingPosition(
+  player: Player,
+): Promise<number | null> {
+  if (!player.active) return null;
   if (isDemoMode) {
     const ahead = demoPlayers.filter(
       (other) =>
+        other.active &&
         other.gender === player.gender &&
         other.ranking_points > player.ranking_points,
     );
@@ -207,6 +217,7 @@ export async function getRankingPosition(player: Player): Promise<number> {
   const { count, error } = await supabase
     .from("players")
     .select("id", { count: "exact", head: true })
+    .eq("active", true)
     .eq("gender", player.gender)
     .gt("ranking_points", player.ranking_points);
   if (error) throw error;
@@ -414,12 +425,12 @@ export async function getStats(): Promise<Record<StatKey, number>> {
   let tournaments: Pick<Tournament, "id" | "city" | "venue" | "starts_on">[];
 
   if (isDemoMode) {
-    players = demoPlayers;
+    players = demoPlayers.filter((player) => player.active);
     tournaments = demoTournaments;
   } else {
     const supabase = await createClient();
     const [playersResult, tournamentsResult] = await Promise.all([
-      supabase.from("players").select("city, club"),
+      supabase.from("players").select("city, club").eq("active", true),
       supabase.from("tournaments").select("id, city, venue, starts_on"),
     ]);
     if (playersResult.error) throw playersResult.error;
@@ -771,13 +782,17 @@ export async function getTournamentRegistrations(
 }
 
 /** Todas las cuentas, para asignar categorías. Primero las que no tienen. */
-export async function getAllProfiles(): Promise<AdminProfile[]> {
+export async function getAllProfiles(): Promise<
+  (AdminProfile & Pick<Profile, "is_admin">)[]
+> {
   if (isDemoMode) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, phone, username, avatar_url, category")
+    .select(
+      "id, full_name, email, phone, username, avatar_url, category, is_admin",
+    )
     .order("category", { ascending: true, nullsFirst: true })
     .order("full_name", { ascending: true });
   if (error) throw error;
@@ -813,7 +828,7 @@ export async function getAdminDashboard(): Promise<AdminDashboard> {
   const [tournaments, news, players, lastImport] = await Promise.all([
     getAllTournaments(),
     getAllNews(),
-    getRanking(),
+    getRanking({ includeInactive: true }),
     getLastPointsImport(),
   ]);
 
