@@ -96,11 +96,14 @@ En `/admin`, solo para cuentas marcadas como admin:
   - **Abren las inscripciones:** día y hora (argentina). Mientras el torneo está en _Próximamente_, la tarjeta muestra “Abre el 14/9 a las 12:00” y a esa hora las inscripciones se abren solas: una tarea de Supabase (`pg_cron`, job `abrir-inscripciones`) revisa cada minuto y pasa el torneo a _Inscripciones abiertas_.
 - **Noticias:** borrador, publicada o programada (fecha futura), con portada.
 - **Jugadores:** alta, edición y foto. Si alguien deja de jugar, tildá _Ya no compite_: sale del ranking y del inicio pero conserva puntos e historial (se puede reactivar).
-- **Usuarios:** la categoría de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso. Desde ahí también se borra una cuenta que ya no se usa (se borran sus inscripciones y avisos; no se puede si es admin o tiene inscripciones en torneos sin terminar).
+- **Usuarios:** cada cuenta tiene su ficha (contacto, inscripciones, categoría). **Las cuentas y el ranking son cosas distintas:** una cuenta recién creada no tiene puntos. Desde la ficha, en _Ranking y puntos_, la sumás al ranking con sus **puntos iniciales** (los que trae de antes) o la vinculás con un jugador que ya estaba. Después los puntos se corrigen con _Sumar o restar puntos_ o con la carga de Excel.
+- **Categoría:** la de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso. Desde ahí también se borra una cuenta que ya no se usa (se borran sus inscripciones y avisos; no se puede si es admin o tiene inscripciones en torneos sin terminar).
 - **Sitio:** foto de fondo del inicio y los 4 números de la franja (se calculan solos; elegís cuáles mostrar y podés corregir título o valor).
 - **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
 
-**Marcar a alguien como admin:** la persona se registra en el sitio y después, en el **SQL Editor** de Supabase (o con el CLI):
+**Nombrar a otro admin:** la persona se registra en el sitio y un admin entra a **Panel → Usuarios → (su cuenta) → Hacer admin**. No se da admin automáticamente por email: con la confirmación por mail apagada, cualquiera podría registrarse con ese email antes que el dueño. Confirmá que la cuenta es de esa persona antes de nombrarla.
+
+El primer admin (cuando todavía no hay ninguno) se marca desde el **SQL Editor** de Supabase:
 
 ```bash
 npx supabase db query --linked "update public.profiles set is_admin = true where email = 'su-email@ejemplo.com'"

@@ -22,6 +22,7 @@ export const demoPlayers: Player[] = [
     titles: 4,
     bio: "Número uno del ranking regional. Drive agresivo, juega en pareja con Nicolás Ibarra desde 2024.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -41,6 +42,7 @@ export const demoPlayers: Player[] = [
     titles: 3,
     bio: "Especialista en la bandeja y la víbora. Campeón del Clásico del Oeste 2026.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -60,6 +62,7 @@ export const demoPlayers: Player[] = [
     titles: 2,
     bio: "La revelación de la temporada: subió de 8va a 7ma en un año.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -79,6 +82,7 @@ export const demoPlayers: Player[] = [
     titles: 1,
     bio: "Revés sólido y mucha lectura de juego. Compañero de Martín Gómez.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -98,6 +102,7 @@ export const demoPlayers: Player[] = [
     titles: 1,
     bio: "Fijo en todos los torneos del circuito desde hace tres temporadas.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -117,6 +122,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Debutó en el circuito en 2025 y ya pelea los primeros puestos de 8va.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -136,6 +142,7 @@ export const demoPlayers: Player[] = [
     titles: 5,
     bio: "Líder del ranking femenino con cinco títulos regionales.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -155,6 +162,7 @@ export const demoPlayers: Player[] = [
     titles: 3,
     bio: "Drive potente y gran definición por arriba. Finalista de la Copa Aniversario.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -174,6 +182,7 @@ export const demoPlayers: Player[] = [
     titles: 2,
     bio: "Campeona de la Copa Aniversario 2026 junto a Florencia Molina.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -193,6 +202,7 @@ export const demoPlayers: Player[] = [
     titles: 1,
     bio: "Campeona de la Copa Aniversario 2026 y referente del pádel en Carlos Tejedor.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -212,6 +222,7 @@ export const demoPlayers: Player[] = [
     titles: 1,
     bio: "Juega en América desde chica y es una de las promesas del circuito.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -231,6 +242,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Constancia pura: no se perdió ningún torneo de la temporada.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -250,6 +262,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Arrancó a jugar en 2026 y no se pierde una fecha del circuito.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -269,6 +282,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Revés paciente. Juega siempre con Ezequiel Navarro.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -288,6 +302,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Viene del tenis y se está acostumbrando a jugar con las paredes.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -307,6 +322,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "El más regular de los que arrancaron este año en La Blindex.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -326,6 +342,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Debutó en el Abierto de Primavera y sumó sus primeros puntos.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -345,6 +362,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Juega los martes a la noche y se anotó a su primer torneo.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -364,6 +382,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Empezó en la escuelita del club y ya juega todos los torneos.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -383,6 +402,7 @@ export const demoPlayers: Player[] = [
     titles: 0,
     bio: "Hermana de Lucas Ferreyra. Arrancó en 2026 y sube rápido.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -402,6 +422,7 @@ export const demoPlayers: Player[] = [
     titles: 2,
     bio: "El de más experiencia del circuito: juega desde que abrió La Blindex.",
     active: true,
+    profile_id: null,
     created_at,
   },
   {
@@ -421,6 +442,7 @@ export const demoPlayers: Player[] = [
     titles: 1,
     bio: "Bandeja prolija y mucho oficio. Compañero de Diego Sánchez.",
     active: true,
+    profile_id: null,
     created_at,
   },
 ];

@@ -39,8 +39,10 @@ import {
   getMyNotifications,
   getMyProfile,
   getMyRegistrations,
+  getPlayerByProfileId,
+  getRankingPosition,
 } from "@/lib/data";
-import { formatDate, formatDateRange } from "@/lib/format";
+import { formatDate, formatDateRange, formatNumber } from "@/lib/format";
 import { registrationStatus, tournamentStatus } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { cn, firstParam } from "@/lib/utils";
@@ -96,12 +98,15 @@ export default async function AccountPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/mi-cuenta");
 
-  const [profile, registrations, notifications, params] = await Promise.all([
-    getMyProfile(),
-    getMyRegistrations(),
-    getMyNotifications(),
-    searchParams,
-  ]);
+  const [profile, registrations, notifications, player, params] =
+    await Promise.all([
+      getMyProfile(),
+      getMyRegistrations(),
+      getMyNotifications(),
+      getPlayerByProfileId(user.id),
+      searchParams,
+    ]);
+  const position = player ? await getRankingPosition(player) : null;
   const message = firstParam(params.message);
   const section: SectionKey =
     SECTIONS.find((item) => item.key === firstParam(params.seccion))?.key ??
@@ -189,7 +194,23 @@ export default async function AccountPage({
           </div>
 
           {/* Resumen: cada número lleva a la sección donde se resuelve. */}
-          <ul className="mt-6 grid grid-cols-3 gap-2 sm:mt-8 sm:gap-4">
+          <ul
+            className={cn(
+              "mt-6 grid gap-2 sm:mt-8 sm:gap-4",
+              player ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3",
+            )}
+          >
+            {player && (
+              <SummaryTile
+                href={`/jugadores/${player.slug}`}
+                value={formatNumber(player.ranking_points)}
+                label={
+                  position
+                    ? `Puntos · #${position} en el ranking`
+                    : "Puntos en el ranking"
+                }
+              />
+            )}
             <SummaryTile
               href={sectionHref("torneos")}
               value={activeUpcoming}
@@ -419,7 +440,7 @@ function SummaryTile({
   highlight = false,
 }: {
   href: string;
-  value: number;
+  value: number | string;
   label: string;
   highlight?: boolean;
 }) {

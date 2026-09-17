@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { requireAdmin } from "@/lib/auth";
-import { getAllProfiles } from "@/lib/data";
+import { getAllProfiles, getRanking } from "@/lib/data";
+import { formatNumber } from "@/lib/format";
 import { firstParam, slugify } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Usuarios" };
@@ -25,16 +26,31 @@ export default async function AdminUsersPage({
   const params = await searchParams;
   const error = firstParam(params.error);
   const q = firstParam(params.q)?.trim() ?? "";
-  const onlyMissing = firstParam(params.categoria) === "sin";
+  // "categoria=sin" queda por los links viejos.
+  const filtro =
+    firstParam(params.filtro) ??
+    (firstParam(params.categoria) === "sin" ? "sin-categoria" : "");
 
-  const profiles = await getAllProfiles();
+  const [profiles, players] = await Promise.all([
+    getAllProfiles(),
+    getRanking({ includeInactive: true }),
+  ]);
+  const playerOf = new Map(
+    players
+      .filter((player) => player.profile_id)
+      .map((player) => [player.profile_id, player]),
+  );
   const missing = profiles.filter((profile) => !profile.category).length;
+  const outOfRanking = profiles.filter(
+    (profile) => !playerOf.has(profile.id),
+  ).length;
 
   // Búsqueda sin tildes por nombre, usuario o email.
   const needle = slugify(q);
   const visible = profiles.filter(
     (profile) =>
-      (!onlyMissing || !profile.category) &&
+      (filtro !== "sin-categoria" || !profile.category) &&
+      (filtro !== "sin-ranking" || !playerOf.has(profile.id)) &&
       (!needle ||
         slugify(
           `${profile.full_name ?? ""} ${profile.username} ${profile.email ?? ""}`,
@@ -45,7 +61,7 @@ export default async function AdminUsersPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Usuarios"
-        description={`La categoría de cada jugador la asignás vos: define en qué torneos se puede anotar.${missing > 0 ? ` ${missing} ${missing === 1 ? "cuenta no tiene" : "cuentas no tienen"} categoría.` : ""}`}
+        description={`Tocá una cuenta para ver su ficha, asignarle categoría o sumarla al ranking con sus puntos.${missing > 0 ? ` ${missing} sin categoría.` : ""}${outOfRanking > 0 ? ` ${outOfRanking} fuera del ranking.` : ""}`}
       />
       {params.borrada && <Alert tone="success">Borramos la cuenta.</Alert>}
       {error && <Alert tone="danger">{error}</Alert>}
@@ -66,13 +82,14 @@ export default async function AdminUsersPage({
           />
         </div>
         <Select
-          name="categoria"
-          defaultValue={onlyMissing ? "sin" : ""}
-          aria-label="Categoría"
+          name="filtro"
+          defaultValue={filtro}
+          aria-label="Filtrar cuentas"
           className="sm:w-48"
         >
           <option value="">Todas las cuentas</option>
-          <option value="sin">Sin categoría</option>
+          <option value="sin-categoria">Sin categoría</option>
+          <option value="sin-ranking">Fuera del ranking</option>
         </Select>
         <Button type="submit" variant="secondary">
           Filtrar
@@ -87,6 +104,7 @@ export default async function AdminUsersPage({
                 <Th>Usuario</Th>
                 <Th>Contacto</Th>
                 <Th>Categoría</Th>
+                <Th>Ranking</Th>
                 <Th className="text-right">
                   <span className="sr-only">Acciones</span>
                 </Th>
@@ -131,6 +149,28 @@ export default async function AdminUsersPage({
                         name={name}
                         category={profile.category}
                       />
+                    </Td>
+                    <Td className="whitespace-nowrap">
+                      {playerOf.get(profile.id) ? (
+                        <Link
+                          href={`/admin/jugadores/${playerOf.get(profile.id)!.id}#puntos`}
+                          className="font-display text-xl font-bold tabular-nums hover:text-accent"
+                        >
+                          {formatNumber(
+                            playerOf.get(profile.id)!.ranking_points,
+                          )}{" "}
+                          <span className="font-sans text-xs font-normal text-muted-foreground">
+                            pts
+                          </span>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/admin/usuarios/${profile.id}`}
+                          className="text-sm font-semibold text-accent hover:text-accent-hover"
+                        >
+                          Agregar al ranking
+                        </Link>
+                      )}
                     </Td>
                     <Td className="text-right">
                       {profile.is_admin || profile.id === me.id ? (

@@ -735,6 +735,22 @@ export async function getPlayerById(id: number): Promise<Player | null> {
   return data;
 }
 
+/** El jugador del ranking vinculado a una cuenta, si tiene. */
+export const getPlayerByProfileId = cache(
+  async (profileId: string): Promise<Player | null> => {
+    if (isDemoMode) return null;
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+);
+
 /** Inscripciones de un torneo con los perfiles de los dos jugadores (email y teléfono incluidos). */
 export async function getTournamentRegistrations(
   tournamentId: number,

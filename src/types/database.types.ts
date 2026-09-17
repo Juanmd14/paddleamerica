@@ -139,6 +139,7 @@ export type Database = {
           matches_played: number
           matches_won: number
           photo_url: string | null
+          profile_id: string | null
           ranking_points: number
           side: string | null
           slug: string
@@ -158,6 +159,7 @@ export type Database = {
           matches_played?: number
           matches_won?: number
           photo_url?: string | null
+          profile_id?: string | null
           ranking_points?: number
           side?: string | null
           slug: string
@@ -177,6 +179,7 @@ export type Database = {
           matches_played?: number
           matches_won?: number
           photo_url?: string | null
+          profile_id?: string | null
           ranking_points?: number
           side?: string | null
           slug?: string
@@ -497,6 +500,10 @@ export type Database = {
           id: string
           username: string
         }[]
+      }
+      set_user_admin: {
+        Args: { p_is_admin: boolean; p_user_id: string }
+        Returns: undefined
       }
       set_profile_category: {
         Args: { p_category?: number; p_user_id: string }

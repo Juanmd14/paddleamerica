@@ -1,5 +1,6 @@
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Trash2, UserRound } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   adjustPlayerPoints,
@@ -13,7 +14,11 @@ import { PointsAdjuster } from "@/components/admin/points-adjuster";
 import { Alert } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
-import { getPlayerById, getPlayerPointChanges } from "@/lib/data";
+import {
+  getPlayerById,
+  getPlayerPointChanges,
+  getProfileById,
+} from "@/lib/data";
 import { playerName } from "@/lib/labels";
 import { firstParam } from "@/lib/utils";
 
@@ -29,9 +34,10 @@ export default async function EditPlayerPage({
   const player = await getPlayerById(Number(id));
   if (!player) notFound();
 
-  const [query, history] = await Promise.all([
+  const [query, history, account] = await Promise.all([
     searchParams,
     getPlayerPointChanges(player.id),
+    player.profile_id ? getProfileById(player.profile_id) : null,
   ]);
   const error = firstParam(query.error);
   const saved = firstParam(query.guardado);
@@ -55,6 +61,32 @@ export default async function EditPlayerPage({
       />
       {error && <Alert tone="danger">{error}</Alert>}
       {saved && <Alert tone="success">Creamos el jugador.</Alert>}
+      <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <UserRound className="size-4" aria-hidden="true" />
+        {account ? (
+          <>
+            Cuenta vinculada:{" "}
+            <Link
+              href={`/admin/usuarios/${account.id}`}
+              className="font-semibold text-accent hover:text-accent-hover"
+            >
+              {account.full_name || `@${account.username}`} · @
+              {account.username}
+            </Link>
+          </>
+        ) : (
+          <>
+            Sin cuenta vinculada. Se vincula desde la ficha del usuario, en{" "}
+            <Link
+              href="/admin/usuarios?filtro=sin-ranking"
+              className="font-semibold text-accent hover:text-accent-hover"
+            >
+              Usuarios
+            </Link>
+            .
+          </>
+        )}
+      </p>
 
       <PlayerForm
         action={updatePlayer.bind(null, player.id)}
