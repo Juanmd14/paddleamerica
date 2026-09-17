@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const sections = [
   { href: "/admin", label: "Resumen", exact: true },
   { href: "/admin/torneos", label: "Torneos" },
+  { href: "/admin/inscripciones", label: "Para confirmar" },
   { href: "/admin/noticias", label: "Noticias" },
   { href: "/admin/jugadores", label: "Jugadores" },
   { href: "/admin/usuarios", label: "Usuarios" },

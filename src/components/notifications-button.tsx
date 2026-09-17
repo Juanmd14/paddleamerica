@@ -186,7 +186,7 @@ export function NotificationsButton({ count }: { count: number }) {
                     ))}
                     {inbox.adminPending > 0 && (
                       <InboxLink
-                        href="/admin/torneos"
+                        href="/admin/inscripciones"
                         onClick={close}
                         icon={
                           <ClipboardCheck

@@ -90,6 +90,7 @@ export async function setRegistrationStatus(
 
   revalidatePath(`/admin/torneos/${tournament.id}/inscripciones`);
   revalidatePath("/admin");
+  revalidatePath("/admin/inscripciones");
   revalidatePath("/admin/torneos");
   revalidatePath(`/torneos/${tournament.slug}`);
   revalidatePath("/mi-cuenta");

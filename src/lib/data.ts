@@ -748,7 +748,31 @@ export async function getTournamentRegistrations(
     .eq("tournament_id", tournamentId)
     .order("created_at", { ascending: true });
   if (error) throw error;
+  return withAdminProfiles(registrations);
+}
+
+/** Inscripciones para confirmar de todos los torneos, las más viejas primero. */
+export async function getPendingRegistrations(): Promise<
+  (RegistrationWithProfile & { tournament: Tournament })[]
+> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data: registrations, error } = await supabase
+    .from("tournament_registrations")
+    .select("*, tournament:tournaments(*)")
+    .eq("status", "pendiente")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return withAdminProfiles(registrations);
+}
+
+/** Suma a cada inscripción los perfiles completos de los dos jugadores (solo panel). */
+async function withAdminProfiles<T extends Registration>(
+  registrations: T[],
+): Promise<(T & Omit<RegistrationWithProfile, keyof Registration>)[]> {
   if (registrations.length === 0) return [];
+  const supabase = await createClient();
 
   // user_id y partner_id apuntan a auth.users, así que los perfiles se traen aparte.
   const ids = [

@@ -87,9 +87,15 @@ export default async function AdminTournamentsPage({
                         {tournament.registrations}
                       </Link>
                       {tournament.pending > 0 && (
-                        <span className="ml-2 rounded-full bg-oro-100 px-2 py-0.5 text-xs font-semibold text-oro-800">
-                          {tournament.pending} pendientes
-                        </span>
+                        <Link
+                          href={`/admin/torneos/${tournament.id}/inscripciones?estado=pendiente`}
+                          className="ml-2 rounded-full bg-oro-100 px-2 py-0.5 text-xs font-semibold text-oro-800 transition-colors hover:bg-oro-200"
+                        >
+                          {tournament.pending}{" "}
+                          {tournament.pending === 1
+                            ? "pendiente"
+                            : "pendientes"}
+                        </Link>
                       )}
                     </Td>
                   </tr>

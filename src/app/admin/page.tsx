@@ -1,4 +1,5 @@
 import {
+  ChevronRight,
   ClipboardCheck,
   FileSpreadsheet,
   Newspaper,
@@ -17,6 +18,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getAdminDashboard } from "@/lib/data";
 import { formatDate, formatDateRange, formatNumber } from "@/lib/format";
 import { tournamentStatus } from "@/lib/labels";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Resumen" };
 
@@ -30,11 +32,28 @@ export default async function AdminHomePage() {
       label: "Inscripciones pendientes",
       value: pendingRegistrations,
       icon: ClipboardCheck,
+      href: "/admin/inscripciones",
+      action: pendingRegistrations > 0 ? "Confirmar" : null,
       highlight: pendingRegistrations > 0,
     },
-    { label: "Torneos", value: counts.tournaments, icon: Trophy },
-    { label: "Noticias", value: counts.news, icon: Newspaper },
-    { label: "Jugadores", value: counts.players, icon: Users },
+    {
+      label: "Torneos",
+      value: counts.tournaments,
+      icon: Trophy,
+      href: "/admin/torneos",
+    },
+    {
+      label: "Noticias",
+      value: counts.news,
+      icon: Newspaper,
+      href: "/admin/noticias",
+    },
+    {
+      label: "Jugadores",
+      value: counts.players,
+      icon: Users,
+      href: "/admin/jugadores",
+    },
   ];
 
   return (
@@ -64,22 +83,38 @@ export default async function AdminHomePage() {
         }
       />
 
-      <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, highlight }) => (
-          <Card
-            key={label}
-            className={highlight ? "border-oro-300 bg-oro-50 p-5" : "p-5"}
-          >
-            <dt className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </dt>
-            <dd className="mt-2 font-display text-4xl leading-none font-bold tabular-nums">
-              {formatNumber(value)}
-            </dd>
-          </Card>
+      <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {stats.map(({ label, value, icon: Icon, href, action, highlight }) => (
+          <li key={label}>
+            <Link
+              href={href}
+              className={cn(
+                "group flex h-full flex-col rounded-card border p-5 transition-colors",
+                highlight
+                  ? "border-oro-300 bg-oro-50 hover:border-oro-400 hover:bg-oro-100"
+                  : "border-border bg-surface hover:border-border-strong hover:bg-muted/50",
+              )}
+            >
+              <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </span>
+              <span className="mt-2 font-display text-4xl leading-none font-bold tabular-nums">
+                {formatNumber(value)}
+              </span>
+              {action && (
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-accent">
+                  {action}
+                  <ChevronRight
+                    className="size-4 transition-transform group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </span>
+              )}
+            </Link>
+          </li>
         ))}
-      </dl>
+      </ul>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="overflow-hidden lg:col-span-2">
@@ -120,7 +155,7 @@ export default async function AdminHomePage() {
                     </div>
                     <Badge tone={status.tone}>{status.label}</Badge>
                     <Link
-                      href={`/admin/torneos/${tournament.id}/inscripciones`}
+                      href={`/admin/torneos/${tournament.id}/inscripciones${tournament.pending > 0 ? "?estado=pendiente" : ""}`}
                       className="text-sm font-semibold text-accent hover:text-accent-hover"
                     >
                       {tournament.registrations} inscriptos
