@@ -5,6 +5,7 @@ import {
   Newspaper,
   Plus,
   Trophy,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { Metadata } from "next";
@@ -24,8 +25,13 @@ export const metadata: Metadata = { title: "Resumen" };
 
 export default async function AdminHomePage() {
   const user = await requireAdmin();
-  const { pendingRegistrations, upcoming, counts, lastImport } =
-    await getAdminDashboard();
+  const {
+    pendingRegistrations,
+    accountsWithoutCategory,
+    upcoming,
+    counts,
+    lastImport,
+  } = await getAdminDashboard();
 
   const stats = [
     {
@@ -82,6 +88,30 @@ export default async function AdminHomePage() {
           </>
         }
       />
+
+      {accountsWithoutCategory > 0 && (
+        <Link
+          href="/admin/usuarios?categoria=sin"
+          className="group flex items-center gap-3 rounded-card border border-pista-200 bg-pista-50 px-5 py-4 text-pista-800 transition-colors hover:bg-pista-100"
+        >
+          <UserRound className="size-5 shrink-0" aria-hidden="true" />
+          <span className="flex-1">
+            <span className="font-semibold">
+              {accountsWithoutCategory}{" "}
+              {accountsWithoutCategory === 1
+                ? "cuenta espera su categoría"
+                : "cuentas esperan su categoría"}
+            </span>{" "}
+            <span className="text-sm">
+              Sin categoría no se pueden anotar en torneos con categoría.
+            </span>
+          </span>
+          <ChevronRight
+            className="size-5 shrink-0 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </Link>
+      )}
 
       <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, href, action, highlight }) => (
