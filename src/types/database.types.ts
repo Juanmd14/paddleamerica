@@ -498,6 +498,10 @@ export type Database = {
           username: string
         }[]
       }
+      set_profile_admin: {
+        Args: { p_is_admin: boolean; p_user_id: string }
+        Returns: undefined
+      }
       set_profile_category: {
         Args: { p_category?: number; p_user_id: string }
         Returns: undefined

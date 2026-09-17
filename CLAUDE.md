@@ -10,7 +10,7 @@ Regional padel site: tournaments, player ranking and news.
 - **Supabase:** project `hqlxmtyhrldvvfdmocuq` (São Paulo), with the example data from `supabase/seed.sql`.
   - Auth → URL Configuration must list `http://localhost:3000/**` and `https://paddleamerica.vercel.app/**`.
 - **Email:** "Confirm email" is **OFF** and there is no custom SMTP yet. The plan is Resend once the domain is bought (around the end of September 2026); steps are in the README "Emails" section. Turn Confirm email back ON only after SMTP works. The password-recovery email flow is untested.
-- **Admins:** `sofiher149@gmail.com` is a provisional admin. The site owner's email will be added later with `update public.profiles set is_admin = true where email = '...'`. Test accounts were deleted.
+- **Admins:** `sofiher149@gmail.com` is admin and stays admin. `agustinjampi@gmail.com` (the owner) signed up on 2026-09-17 and will also be admin, made from **Panel → Usuarios → his page → Hacer admin** (`set_profile_admin`). `sofiher149+prueba@gmail.com` ("Robertito") is a test account.
 - **Hosting:** the owner may move to Hostinger. It needs a Node.js web app plan, because this app can't be a static export.
 
 - UI text is in Spanish (Argentina, voseo: "anotate", "ingresá").

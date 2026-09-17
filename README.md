@@ -100,7 +100,7 @@ En `/admin`, solo para cuentas marcadas como admin:
 - **Sitio:** foto de fondo del inicio y los 4 números de la franja (se calculan solos; elegís cuáles mostrar y podés corregir título o valor).
 - **Carga de puntos:** subí un Excel (.xlsx) o CSV, elegí si _reemplaza_ el total o _suma_ los puntos de un torneo, revisá la vista previa y aplicá. La última carga se puede deshacer. La planilla modelo trae la columna **Código** (el slug del jugador) para que no haya errores al relacionar filas.
 
-**Marcar a alguien como admin:** la persona se registra en el sitio y después, en el **SQL Editor** de Supabase (o con el CLI):
+**Marcar a alguien como admin:** la persona se registra en el sitio y después un admin abre **Panel → Usuarios → su ficha → Hacer admin** (le llega un aviso). Desde el mismo botón se quita el admin. Nadie puede quitarse el admin a sí mismo y siempre queda al menos uno. Si no queda ningún admin con acceso, en el **SQL Editor** de Supabase (o con el CLI):
 
 ```bash
 npx supabase db query --linked "update public.profiles set is_admin = true where email = 'su-email@ejemplo.com'"

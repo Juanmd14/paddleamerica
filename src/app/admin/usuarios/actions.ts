@@ -39,6 +39,36 @@ export async function setProfileCategory(
   return { ok: true };
 }
 
+const ADMIN_ERRORS: Record<string, string> = {
+  es_tu_cuenta:
+    "No podés quitarte el admin a vos mismo: pedíselo a otro admin.",
+  ultimo_admin: "Tiene que quedar al menos un admin.",
+  usuario_no_existe: "Esta cuenta ya no existe.",
+};
+
+/** Hace admin (o le quita el admin) a una cuenta. La base no deja quitarse el propio ni dejar el sitio sin admins. */
+export async function setProfileAdmin(
+  userId: string,
+  makeAdmin: boolean,
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_profile_admin", {
+    p_user_id: userId,
+    p_is_admin: makeAdmin,
+  });
+  if (error) {
+    const message =
+      ADMIN_ERRORS[error.message] ??
+      "No pudimos cambiar el permiso. Probá de nuevo.";
+    redirect(`/admin/usuarios/${userId}?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
+  redirect(`/admin/usuarios/${userId}?admin=${makeAdmin ? 1 : 0}`);
+}
+
 const DELETE_ERRORS: Record<string, string> = {
   es_tu_cuenta: "No podés borrar tu propia cuenta.",
   es_admin: "No se puede borrar la cuenta de un admin.",

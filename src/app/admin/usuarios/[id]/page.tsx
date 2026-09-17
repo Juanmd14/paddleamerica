@@ -4,13 +4,18 @@ import {
   ListOrdered,
   Mail,
   MessageCircle,
+  ShieldCheck,
+  ShieldOff,
   Trophy,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { setProfileAdmin } from "@/app/admin/usuarios/actions";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ProfileCategoryForm } from "@/components/admin/profile-category-form";
 import { EmptyState } from "@/components/empty-state";
+import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,7 +29,7 @@ import {
   registrationStatus,
   tournamentStatus,
 } from "@/lib/labels";
-import { slugify, whatsappUrl } from "@/lib/utils";
+import { firstParam, slugify, whatsappUrl } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Perfil de usuario" };
 
@@ -34,16 +39,20 @@ const UUID_PATTERN =
 /** Ficha de una cuenta: quién es, cómo contactarla y en qué torneos se anotó. */
 export default async function AdminUserPage({
   params,
+  searchParams,
 }: PageProps<"/admin/usuarios/[id]">) {
   const { id } = await params;
-  await requireAdmin(`/admin/usuarios/${id}`);
+  const me = await requireAdmin(`/admin/usuarios/${id}`);
   if (!UUID_PATTERN.test(id)) notFound();
 
-  const [profile, registrations, players] = await Promise.all([
+  const [profile, registrations, players, query] = await Promise.all([
     getProfileById(id),
     getUserRegistrations(id),
     getRanking({ includeInactive: true }),
+    searchParams,
   ]);
+  const error = firstParam(query.error);
+  const adminChange = firstParam(query.admin);
   if (!profile) notFound();
 
   const name = profile.full_name || `@${profile.username}`;
@@ -60,8 +69,18 @@ export default async function AdminUserPage({
     (registration) => registration.tournament.status === "finalizado",
   );
 
+  const isMe = profile.id === me.id;
+
   return (
     <div className="space-y-6">
+      {error && <Alert tone="danger">{error}</Alert>}
+      {adminChange && (
+        <Alert tone="success">
+          {adminChange === "1"
+            ? `${name} ahora es admin: ya puede entrar al panel.`
+            : `${name} ya no es admin.`}
+        </Alert>
+      )}
       <Link
         href="/admin/usuarios"
         className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -84,6 +103,40 @@ export default async function AdminUserPage({
                 {name}
               </h1>
               {profile.is_admin && <Badge tone="dark">Admin</Badge>}
+              {isMe ? (
+                <Badge>Sos vos</Badge>
+              ) : (
+                <form
+                  action={setProfileAdmin.bind(
+                    null,
+                    profile.id,
+                    !profile.is_admin,
+                  )}
+                >
+                  <ConfirmSubmitButton
+                    size="sm"
+                    variant={profile.is_admin ? "ghost" : "outline"}
+                    className={
+                      profile.is_admin
+                        ? "text-danger hover:bg-danger-soft hover:text-danger"
+                        : undefined
+                    }
+                    pendingLabel="Guardando…"
+                    confirmMessage={
+                      profile.is_admin
+                        ? `¿Quitarle el admin a ${name}? Deja de ver el panel.`
+                        : `¿Hacer admin a ${name}? Va a poder editar torneos, jugadores, usuarios y puntos.`
+                    }
+                  >
+                    {profile.is_admin ? (
+                      <ShieldOff className="size-4" aria-hidden="true" />
+                    ) : (
+                      <ShieldCheck className="size-4" aria-hidden="true" />
+                    )}
+                    {profile.is_admin ? "Quitar admin" : "Hacer admin"}
+                  </ConfirmSubmitButton>
+                </form>
+              )}
             </div>
             <p className="mt-1 text-muted-foreground">
               @{profile.username} · Cuenta creada el{" "}
