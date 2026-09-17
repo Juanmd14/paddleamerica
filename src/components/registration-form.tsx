@@ -35,6 +35,8 @@ export function RegistrationForm({
   const [selected, setSelected] = useState<PartnerOption | null>(null);
   const [results, setResults] = useState<PartnerOption[]>([]);
   const [searching, setSearching] = useState(false);
+  /** Término de la última búsqueda terminada (para no decir "no encontramos" antes de buscar). */
+  const [searchedTerm, setSearchedTerm] = useState("");
   const term = query.trim().replace(/^@/, "");
   const canSearch = !selected && term.length >= 2;
 
@@ -46,6 +48,7 @@ export function RegistrationForm({
       const found = await searchPartners(slug, term);
       if (!cancelled) {
         setResults(found);
+        setSearchedTerm(term);
         setSearching(false);
       }
     }, 250);
@@ -183,7 +186,10 @@ export function RegistrationForm({
               id="partner-hint"
               className="mt-1.5 text-xs text-muted-foreground"
             >
-              {canSearch && !searching && results.length === 0 ? (
+              {canSearch &&
+              !searching &&
+              searchedTerm === term &&
+              results.length === 0 ? (
                 <>
                   No encontramos a nadie. Tu pareja tiene que tener cuenta:
                   pasale{" "}

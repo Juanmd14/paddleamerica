@@ -6,7 +6,9 @@ import {
   getCategoryCounts,
   getRanking,
   getRankingTrends,
+  getRankingUpdatedAt,
 } from "@/lib/data";
+import { currentYear, formatDate } from "@/lib/format";
 import {
   branchLabel,
   CATEGORIES,
@@ -24,9 +26,6 @@ const GENDERS = ["masculino", "femenino"] as const;
 /** Cuántos entran en la cancha del hero. El resto va a la tabla. */
 const EN_LA_CANCHA = 4;
 
-const TEMPORADA = "2026";
-const ACTUALIZADO = "10 de septiembre de 2026";
-
 export default async function PlayersPage({
   searchParams,
 }: PageProps<"/jugadores">) {
@@ -36,10 +35,12 @@ export default async function PlayersPage({
   const raw = firstParam(categoria);
   const category = isCategory(raw) ? raw : CATEGORIES[0];
 
-  const [players, counts] = await Promise.all([
+  const [players, counts, updatedAt] = await Promise.all([
     getRanking({ gender, category }),
     getCategoryCounts(gender),
+    getRankingUpdatedAt(),
   ]);
+  const actualizado = updatedAt ? formatDate(updatedAt) : null;
 
   // Sobre la categoría entera, para que los puestos subidos sean los reales.
   const trends = await getRankingTrends(players);
@@ -64,7 +65,7 @@ export default async function PlayersPage({
               Ranking regional
             </p>
             <p className="font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase">
-              Temporada {TEMPORADA}
+              Temporada {currentYear()}
             </p>
           </div>
 
@@ -148,7 +149,7 @@ export default async function PlayersPage({
         <CourtPodium
           players={podio}
           title={rankingTitle(category, gender)}
-          eyebrow={`Actualizado al ${ACTUALIZADO}`}
+          eyebrow={actualizado ? `Actualizado al ${actualizado}` : undefined}
           trends={trends}
         />
 
@@ -172,7 +173,7 @@ export default async function PlayersPage({
         <dl className="grid grid-cols-2 border-t border-vidrio-linea md:grid-cols-4">
           <Dato termino="Jugadores" valor={String(players.length)} />
           <Dato termino="Categoría" valor={rankingTitle(category, gender)} />
-          <Dato termino="Actualizado" valor={ACTUALIZADO} />
+          <Dato termino="Actualizado" valor={actualizado ?? "—"} />
           <Dato
             termino="Se actualiza"
             valor="Después de cada torneo del circuito"
