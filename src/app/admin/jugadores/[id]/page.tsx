@@ -62,11 +62,13 @@ export default async function EditPlayerPage({
         submitLabel="Guardar cambios"
       />
 
-      <PointsAdjuster
-        action={adjustPlayerPoints.bind(null, player.id)}
-        points={player.ranking_points}
-        history={history}
-      />
+      <div id="puntos" className="scroll-mt-24">
+        <PointsAdjuster
+          action={adjustPlayerPoints.bind(null, player.id)}
+          points={player.ranking_points}
+          history={history}
+        />
+      </div>
 
       <form
         action={deletePlayer.bind(null, player.id)}

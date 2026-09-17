@@ -118,6 +118,7 @@ export default async function PendingRegistrationsPage() {
                     >
                       <div className="min-w-0 space-y-3">
                         <PairPlayers
+                          adminLinks
                           player={registration.profile}
                           partner={registration.partnerProfile}
                           partnerName={registration.partner_name}

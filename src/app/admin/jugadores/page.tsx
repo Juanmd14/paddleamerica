@@ -58,7 +58,7 @@ export default async function AdminPlayersPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Jugadores"
-        description="Ordenados por puntos. Para actualizar muchos a la vez, usá la carga desde Excel."
+        description="Ordenados por puntos. Para corregirle los puntos a uno, tocá “Corregir”; para actualizar muchos a la vez, usá la carga desde Excel."
         actions={
           <>
             <ButtonLink href="/admin/puntos" size="sm" variant="outline">
@@ -177,8 +177,16 @@ export default async function AdminPlayersPage({
                     <Td className="text-foreground-soft">
                       {[player.club, player.city].filter(Boolean).join(" · ")}
                     </Td>
-                    <Td className="text-right font-display text-xl font-bold tabular-nums">
-                      {formatNumber(player.ranking_points)}
+                    <Td className="text-right whitespace-nowrap">
+                      <span className="block font-display text-xl leading-none font-bold tabular-nums">
+                        {formatNumber(player.ranking_points)}
+                      </span>
+                      <Link
+                        href={`/admin/jugadores/${player.id}#puntos`}
+                        className="text-xs font-semibold text-accent hover:text-accent-hover"
+                      >
+                        Corregir
+                      </Link>
                     </Td>
                   </tr>
                 );

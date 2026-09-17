@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { categoryName } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -12,10 +14,13 @@ function PersonRow({
   person,
   fallbackName,
   label,
+  href,
 }: {
   person: Person | null;
   fallbackName: string;
   label?: string;
+  /** Si viene, la fila lleva a la ficha de la persona. */
+  href?: string;
 }) {
   const name = person?.full_name || fallbackName;
   const details = [
@@ -25,10 +30,10 @@ function PersonRow({
       : person && "sin categoría",
   ].filter(Boolean);
 
-  return (
-    <li className="flex min-w-0 items-center gap-3">
+  const content = (
+    <>
       <Avatar name={name} src={person?.avatar_url} size="sm" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">
           {name}
           {label && (
@@ -44,6 +49,26 @@ function PersonRow({
           </p>
         )}
       </div>
+    </>
+  );
+
+  return (
+    <li className="min-w-0">
+      {href ? (
+        <Link
+          href={href}
+          className="group -m-2 flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
+          title={`Ver el perfil de ${name}`}
+        >
+          {content}
+          <ChevronRight
+            className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </Link>
+      ) : (
+        <div className="flex items-center gap-3">{content}</div>
+      )}
     </li>
   );
 }
@@ -54,6 +79,7 @@ export function PairPlayers({
   partner,
   partnerName,
   meId,
+  adminLinks = false,
   className,
 }: {
   player: Person | null;
@@ -62,10 +88,14 @@ export function PairPlayers({
   partnerName: string;
   /** Para marcar cuál de los dos es el usuario que mira. */
   meId?: string;
+  /** En el panel: cada jugador lleva a su ficha de usuario. */
+  adminLinks?: boolean;
   className?: string;
 }) {
   const isMe = (person: Person | null) =>
     meId !== undefined && person?.id === meId;
+  const hrefOf = (person: Person | null) =>
+    adminLinks && person ? `/admin/usuarios/${person.id}` : undefined;
 
   return (
     <ul className={cn("grid gap-3 sm:grid-cols-2", className)}>
@@ -73,11 +103,13 @@ export function PairPlayers({
         person={player}
         fallbackName="Jugador"
         label={isMe(player) ? "vos" : undefined}
+        href={hrefOf(player)}
       />
       <PersonRow
         person={partner}
         fallbackName={partnerName}
         label={isMe(partner) ? "vos" : undefined}
+        href={hrefOf(partner)}
       />
     </ul>
   );

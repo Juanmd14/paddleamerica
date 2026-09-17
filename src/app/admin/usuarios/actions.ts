@@ -35,6 +35,7 @@ export async function setProfileCategory(
   }
 
   revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
   return { ok: true };
 }
 

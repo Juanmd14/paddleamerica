@@ -156,6 +156,7 @@ export default async function TournamentRegistrationsPage({
                   <tr key={registration.id} className="align-top">
                     <Td className="min-w-64">
                       <PairPlayers
+                        adminLinks
                         player={registration.profile}
                         partner={registration.partnerProfile}
                         partnerName={registration.partner_name}

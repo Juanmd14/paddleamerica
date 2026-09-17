@@ -1,5 +1,6 @@
 import { Search, Trash2, UserRound } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { deleteUserAccount } from "@/app/admin/usuarios/actions";
 import { AdminPageHeader, Table, Td, Th } from "@/components/admin/admin-ui";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
@@ -97,19 +98,24 @@ export default async function AdminUsersPage({
                 return (
                   <tr key={profile.id} className="align-top">
                     <Td className="min-w-56">
-                      <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/usuarios/${profile.id}`}
+                        className="group flex items-center gap-3"
+                      >
                         <Avatar
                           name={name}
                           src={profile.avatar_url}
                           size="sm"
                         />
                         <div className="min-w-0">
-                          <p className="font-semibold">{name}</p>
+                          <p className="font-semibold group-hover:text-accent">
+                            {name}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            @{profile.username}
+                            @{profile.username} · Ver perfil
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     </Td>
                     <Td className="text-foreground-soft">
                       <p>{profile.email}</p>

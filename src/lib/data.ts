@@ -767,6 +767,36 @@ export async function getPendingRegistrations(): Promise<
   return withAdminProfiles(registrations);
 }
 
+/** Ficha de una cuenta para el panel. */
+export async function getProfileById(id: string): Promise<Profile | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { ...data, avatar_url: safeAvatarUrl(data.avatar_url) } : null;
+}
+
+/** Inscripciones de una cuenta (como quien se anotó o como pareja), las más nuevas primero. */
+export async function getUserRegistrations(
+  userId: string,
+): Promise<(RegistrationWithProfile & { tournament: Tournament })[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data: registrations, error } = await supabase
+    .from("tournament_registrations")
+    .select("*, tournament:tournaments(*)")
+    .or(`user_id.eq.${userId},partner_id.eq.${userId}`)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return withAdminProfiles(registrations);
+}
+
 /** Suma a cada inscripción los perfiles completos de los dos jugadores (solo panel). */
 async function withAdminProfiles<T extends Registration>(
   registrations: T[],
