@@ -24,7 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import { Input, Label, Select } from "@/components/ui/input";
 import { formatNumber } from "@/lib/format";
-import { playerGenderOptions } from "@/lib/labels";
+import { branchLabel, CATEGORIES, playerGenderOptions } from "@/lib/labels";
 import {
   applyMapping,
   COLUMN_FIELDS,
@@ -32,10 +32,37 @@ import {
   type ColumnMapping,
   detectColumns,
   type ImportMode,
+  normalizeText,
   parseCsv,
   splitSheet,
+  suggestMode,
 } from "@/lib/points-import";
 import { cn } from "@/lib/utils";
+
+/** Avisos de una fila ya relacionada con un jugador: cosas que el archivo no cambia. */
+function rowWarnings(row: PreviewRow, player: PlayerOption | undefined) {
+  if (!player) return [];
+  const warnings: string[] = [];
+  if (row.gender && row.gender !== player.gender) {
+    warnings.push(
+      `En el archivo dice ${branchLabel(row.gender)}, pero este jugador es de ${branchLabel(player.gender)}. Fijate que sea la persona correcta.`,
+    );
+  }
+  if (
+    row.category &&
+    normalizeText(row.category) !== normalizeText(player.category)
+  ) {
+    warnings.push(
+      `La categoría del archivo (${row.category}) no se aplica: sigue en ${player.category}. Se cambia desde Jugadores.`,
+    );
+  }
+  if (!player.active) {
+    warnings.push(
+      "Ya no compite: los puntos se cargan, pero no aparece en el ranking.",
+    );
+  }
+  return warnings;
+}
 
 type Decision =
   | { action: "player"; playerId: number }
@@ -74,10 +101,12 @@ export function PointsImporter({
     null,
   );
   const [mapping, setMapping] = useState<ColumnMapping | null>(null);
-  const [mode, setMode] = useState<ImportMode>("reemplazar");
+  const [mode, setMode] = useState<ImportMode>("sumar");
+  /** El tipo de carga salió del encabezado de una planilla modelo. */
+  const [detectedMode, setDetectedMode] = useState(false);
   const [label, setLabel] = useState("");
   const [defaultGender, setDefaultGender] = useState("masculino");
-  const [defaultCategory, setDefaultCategory] = useState(categories[0] ?? "");
+  const [defaultCategory, setDefaultCategory] = useState<string>(CATEGORIES[0]);
 
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
   const [players, setPlayers] = useState<PlayerOption[]>([]);
@@ -116,6 +145,9 @@ export function PointsImporter({
       setFileName(file.name);
       setSheet(parsed);
       setMapping(detectColumns(parsed.header));
+      const suggested = suggestMode(parsed.header);
+      setDetectedMode(suggested !== null);
+      if (suggested) setMode(suggested);
     } catch (readError) {
       console.error(readError);
       setError(
@@ -154,7 +186,7 @@ export function PointsImporter({
         Object.fromEntries(
           response.rows.map((row): [number, Decision] => [
             row.line,
-            row.error
+            row.error || row.noPoints
               ? { action: "skip" }
               : row.match === "exact" && row.playerId !== null
                 ? { action: "player", playerId: row.playerId }
@@ -168,13 +200,40 @@ export function PointsImporter({
   }
 
   const summary = useMemo(() => {
-    const counts = { update: 0, create: 0, skip: 0, errors: 0, review: 0 };
+    const counts = {
+      update: 0,
+      create: 0,
+      skip: 0,
+      errors: 0,
+      review: 0,
+      noPoints: 0,
+      masculino: 0,
+      femenino: 0,
+      /** Jugadores nuevos a los que el archivo no les da rama o categoría. */
+      missingGender: 0,
+      missingCategory: 0,
+    };
     for (const row of preview ?? []) {
       const decision = decisions[row.line];
+      if (row.noPoints) {
+        counts.noPoints++;
+        continue;
+      }
       if (row.error) counts.errors++;
       else if (decision?.action === "player") counts.update++;
       else if (decision?.action === "create") counts.create++;
       else counts.skip++;
+
+      if (!row.error && decision?.action === "player") {
+        const gender = playersById.get(decision.playerId)?.gender;
+        if (gender === "masculino" || gender === "femenino") counts[gender]++;
+      }
+      if (!row.error && decision?.action === "create") {
+        const gender = row.gender ?? defaultGender;
+        if (gender === "masculino" || gender === "femenino") counts[gender]++;
+        if (!row.gender) counts.missingGender++;
+        if (!row.category) counts.missingCategory++;
+      }
       if (
         !row.error &&
         row.match === "ambiguous" &&
@@ -184,7 +243,12 @@ export function PointsImporter({
       }
     }
     return counts;
-  }, [preview, decisions]);
+  }, [preview, decisions, playersById, defaultGender]);
+
+  const categoryChoices = useMemo(
+    () => [...new Set([...CATEGORIES, ...categories])],
+    [categories],
+  );
 
   function handleApply() {
     if (!preview) return;
@@ -285,7 +349,7 @@ export function PointsImporter({
 
       <Card className="p-5 sm:p-6">
         <h2 className="font-display text-2xl font-bold uppercase">
-          1. Subí el archivo
+          1. Subí la planilla
         </h2>
         <label
           htmlFor="points-file"
@@ -315,62 +379,35 @@ export function PointsImporter({
         <Card className="space-y-6 p-5 sm:p-6">
           <div>
             <h2 className="font-display text-2xl font-bold uppercase">
-              2. Revisá las columnas
+              2. Revisá qué se carga
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Las detectamos por el encabezado. Corregí las que no estén bien.{" "}
-              {sheet.body.length} filas con datos.
+              {sheet.body.length} filas con datos. Si subiste la planilla
+              modelo, no hace falta tocar nada acá.
             </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {COLUMN_FIELDS.map(({ key, label: fieldLabel }) => (
-              <div key={key}>
-                <Label htmlFor={`column-${key}`}>
-                  {fieldLabel}
-                  {key === "points" && <span className="text-danger"> *</span>}
-                </Label>
-                <Select
-                  id={`column-${key}`}
-                  value={mapping[key] ?? ""}
-                  onChange={(event) => {
-                    reset();
-                    setMapping({
-                      ...mapping,
-                      [key as ColumnKey]:
-                        event.target.value === ""
-                          ? null
-                          : Number(event.target.value),
-                    });
-                  }}
-                >
-                  <option value="">—</option>
-                  {sheet.header.map((title, index) => (
-                    <option key={index} value={index}>
-                      {title || `Columna ${index + 1}`}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            ))}
           </div>
 
           <fieldset>
             <legend className="text-sm font-medium text-foreground-soft">
-              ¿Qué traen los puntos?
+              ¿Qué puntos trae la planilla?
             </legend>
+            {detectedMode && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Lo elegimos por el título de la columna de puntos.
+              </p>
+            )}
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
               {(
                 [
                   {
-                    value: "reemplazar",
-                    title: "El total acumulado",
-                    text: "Reemplaza los puntos de cada jugador por los del archivo (y PJ, PG y títulos si vienen).",
+                    value: "sumar",
+                    title: "Los de un torneo",
+                    text: "Se suman a los que ya tiene cada jugador. Es lo habitual después de cada fecha.",
                   },
                   {
-                    value: "sumar",
-                    title: "Los puntos de un torneo",
-                    text: "Suma los puntos del archivo a los que ya tiene cada jugador (y PJ, PG y títulos si vienen).",
+                    value: "reemplazar",
+                    title: "Los totales",
+                    text: "Pisan los puntos de cada jugador con los del archivo. Sirve para corregir el ranking entero.",
                   },
                 ] as const
               ).map((option) => (
@@ -390,6 +427,7 @@ export function PointsImporter({
                     checked={mode === option.value}
                     onChange={() => {
                       reset();
+                      setDetectedMode(false);
                       setMode(option.value);
                     }}
                     className="mt-1 accent-noche-950"
@@ -403,69 +441,80 @@ export function PointsImporter({
                 </label>
               ))}
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              En los dos casos, los jugadores que no están en el archivo (o que
+              tienen los puntos vacíos) no se tocan. PJ, PG y títulos se suman o
+              reemplazan igual que los puntos, si vienen.
+            </p>
           </fieldset>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <Label htmlFor="import-label">
-                Nombre de la carga{" "}
-                <span className="font-normal text-muted-foreground">
-                  (opcional)
-                </span>
-              </Label>
-              <Input
-                id="import-label"
-                list="tournament-names"
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-                placeholder={
-                  mode === "sumar"
-                    ? "Ej. Abierto de Primavera"
-                    : "Ej. Ranking septiembre"
-                }
-              />
-              <datalist id="tournament-names">
-                {tournamentNames.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <Label htmlFor="default-gender">Rama para jugadores nuevos</Label>
-              <Select
-                id="default-gender"
-                value={defaultGender}
-                onChange={(event) => setDefaultGender(event.target.value)}
-              >
-                {playerGenderOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="default-category">
-                Categoría para jugadores nuevos
-              </Label>
-              <Input
-                id="default-category"
-                list="category-options"
-                value={defaultCategory}
-                onChange={(event) => setDefaultCategory(event.target.value)}
-                placeholder="Ej. 3ra"
-              />
-              <datalist id="category-options">
-                {categories.map((category) => (
-                  <option key={category} value={category} />
-                ))}
-              </datalist>
-            </div>
+          <div>
+            <Label htmlFor="import-label">
+              Nombre de la carga{" "}
+              <span className="font-normal text-muted-foreground">
+                (queda en el historial de cada jugador)
+              </span>
+            </Label>
+            <Input
+              id="import-label"
+              list="tournament-names"
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              placeholder={
+                mode === "sumar"
+                  ? "Ej. Abierto de Primavera"
+                  : "Ej. Corrección ranking septiembre"
+              }
+              className="sm:max-w-md"
+            />
+            <datalist id="tournament-names">
+              {tournamentNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
           </div>
-          <p className="-mt-2 text-xs text-muted-foreground">
-            La rama y la categoría del archivo tienen prioridad; estas se usan
-            solo si faltan.
-          </p>
+
+          <details className="group rounded-lg border border-border">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-foreground-soft">
+              Columnas del archivo{" "}
+              <span className="font-normal text-muted-foreground">
+                (las detectamos solas; abrí solo si usás un Excel propio)
+              </span>
+            </summary>
+            <div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2 lg:grid-cols-4">
+              {COLUMN_FIELDS.map(({ key, label: fieldLabel }) => (
+                <div key={key}>
+                  <Label htmlFor={`column-${key}`}>
+                    {fieldLabel}
+                    {key === "points" && (
+                      <span className="text-danger"> *</span>
+                    )}
+                  </Label>
+                  <Select
+                    id={`column-${key}`}
+                    value={mapping[key] ?? ""}
+                    onChange={(event) => {
+                      reset();
+                      setMapping({
+                        ...mapping,
+                        [key as ColumnKey]:
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                      });
+                    }}
+                  >
+                    <option value="">—</option>
+                    {sheet.header.map((title, index) => (
+                      <option key={index} value={index}>
+                        {title || `Columna ${index + 1}`}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              ))}
+            </div>
+          </details>
 
           <Button onClick={handlePreview} disabled={isPending}>
             {isPending && !preview ? (
@@ -485,7 +534,7 @@ export function PointsImporter({
         <Card className="overflow-hidden">
           <div className="space-y-3 p-5 sm:p-6">
             <h2 className="font-display text-2xl font-bold uppercase">
-              3. Confirmá los cambios
+              3. Revisá y confirmá
             </h2>
             <div className="flex flex-wrap gap-2">
               <Badge tone="success">{summary.update} se actualizan</Badge>
@@ -500,6 +549,79 @@ export function PointsImporter({
                 </Badge>
               )}
             </div>
+            {summary.update + summary.create > 0 && (
+              <p className="text-sm text-foreground-soft">
+                Se cargan {summary.masculino}{" "}
+                {summary.masculino === 1 ? "caballero" : "caballeros"} y{" "}
+                {summary.femenino} {summary.femenino === 1 ? "dama" : "damas"}.
+                Cada uno suma en su propio ranking.
+              </p>
+            )}
+            {summary.noPoints > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {summary.noPoints}{" "}
+                {summary.noPoints === 1
+                  ? "fila tiene los puntos vacíos"
+                  : "filas tienen los puntos vacíos"}
+                : no jugaron, no se tocan y no aparecen abajo.
+              </p>
+            )}
+
+            {(summary.missingGender > 0 || summary.missingCategory > 0) && (
+              <div className="space-y-3 rounded-lg border border-warning-border bg-warning-soft p-4 text-warning">
+                <p className="flex items-start gap-2 text-sm font-medium">
+                  <AlertTriangle
+                    className="mt-0.5 size-4 shrink-0"
+                    aria-hidden="true"
+                  />
+                  {summary.missingGender > 0
+                    ? `${summary.missingGender} ${summary.missingGender === 1 ? "jugador nuevo no tiene" : "jugadores nuevos no tienen"} rama en el archivo. Si hay damas y caballeros mezclados, agregá la columna Rama y volvé a subirlo; si son todos de la misma rama, elegila acá.`
+                    : `${summary.missingCategory} ${summary.missingCategory === 1 ? "jugador nuevo no tiene" : "jugadores nuevos no tienen"} categoría en el archivo. Elegila acá.`}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {summary.missingGender > 0 && (
+                    <div>
+                      <Label htmlFor="default-gender">
+                        Rama de los nuevos sin rama
+                      </Label>
+                      <Select
+                        id="default-gender"
+                        value={defaultGender}
+                        onChange={(event) =>
+                          setDefaultGender(event.target.value)
+                        }
+                      >
+                        {playerGenderOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {branchLabel(option.value)}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+                  {summary.missingCategory > 0 && (
+                    <div>
+                      <Label htmlFor="default-category">
+                        Categoría de los nuevos sin categoría
+                      </Label>
+                      <Select
+                        id="default-category"
+                        value={defaultCategory}
+                        onChange={(event) =>
+                          setDefaultCategory(event.target.value)
+                        }
+                      >
+                        {categoryChoices.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <Table>
             <thead>
@@ -512,6 +634,7 @@ export function PointsImporter({
             </thead>
             <tbody>
               {preview.map((row) => {
+                if (row.noPoints) return null;
                 const decision = decisions[row.line] ?? { action: "skip" };
                 const player =
                   decision.action === "player"
@@ -527,6 +650,7 @@ export function PointsImporter({
                 const candidates = row.candidates
                   .map((id) => playersById.get(id))
                   .filter((candidate) => !!candidate);
+                const warnings = rowWarnings(row, player);
 
                 return (
                   <tr
@@ -539,7 +663,12 @@ export function PointsImporter({
                     <Td>
                       <p className="font-medium">{row.name || "—"}</p>
                       <p className="text-xs text-muted-foreground">
-                        {[row.category, row.club, row.city]
+                        {[
+                          row.gender && branchLabel(row.gender),
+                          row.category,
+                          row.club,
+                          row.city,
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
@@ -592,7 +721,9 @@ export function PointsImporter({
                             <optgroup label="Coincidencias">
                               {candidates.map((candidate) => (
                                 <option key={candidate.id} value={candidate.id}>
-                                  {candidate.name} · {candidate.category}
+                                  {candidate.name} ·{" "}
+                                  {branchLabel(candidate.gender)} ·{" "}
+                                  {candidate.category}
                                 </option>
                               ))}
                             </optgroup>
@@ -600,7 +731,8 @@ export function PointsImporter({
                           <optgroup label="Todos los jugadores">
                             {players.map((option) => (
                               <option key={option.id} value={option.id}>
-                                {option.name} · {option.category}
+                                {option.name} · {branchLabel(option.gender)} ·{" "}
+                                {option.category}
                               </option>
                             ))}
                           </optgroup>
@@ -617,6 +749,18 @@ export function PointsImporter({
                             Coincide
                           </p>
                         )}
+                      {warnings.map((warning) => (
+                        <p
+                          key={warning}
+                          className="mt-1 flex max-w-72 items-start gap-1 text-xs text-warning"
+                        >
+                          <AlertTriangle
+                            className="mt-px size-3.5 shrink-0"
+                            aria-hidden="true"
+                          />
+                          {warning}
+                        </p>
+                      ))}
                     </Td>
                     <Td className="text-right whitespace-nowrap tabular-nums">
                       {next === null ? (

@@ -5,6 +5,26 @@
 
 export type ImportMode = "reemplazar" | "sumar";
 
+/**
+ * Título de la columna de puntos en cada planilla modelo. Al subirla, de ahí
+ * se deduce si los puntos se suman (torneo) o reemplazan (totales).
+ */
+export const TEMPLATE_POINTS_HEADER = {
+  sumar: "Puntos del torneo",
+  reemplazar: "Puntos totales",
+} satisfies Record<ImportMode, string>;
+
+/** Si el encabezado es el de una planilla modelo, qué tipo de carga es. */
+export function suggestMode(header: string[]): ImportMode | null {
+  const titles = header.map(normalizeText);
+  for (const mode of ["sumar", "reemplazar"] as const) {
+    if (titles.includes(normalizeText(TEMPLATE_POINTS_HEADER[mode]))) {
+      return mode;
+    }
+  }
+  return null;
+}
+
 export const COLUMN_FIELDS = [
   { key: "code", label: "Código" },
   { key: "fullName", label: "Nombre y apellido" },
@@ -44,7 +64,14 @@ const HEADER_ALIASES: Record<ColumnKey, string[]> = {
   category: ["categoria", "cat"],
   club: ["club"],
   city: ["ciudad", "localidad"],
-  points: ["puntos", "pts", "puntaje", "total", "puntos totales"],
+  points: [
+    "puntos",
+    "pts",
+    "puntaje",
+    "total",
+    "puntos totales",
+    "puntos del torneo",
+  ],
   matchesPlayed: ["pj", "partidos jugados", "jugados"],
   matchesWon: ["pg", "partidos ganados", "ganados"],
   titles: ["titulos", "campeonatos"],

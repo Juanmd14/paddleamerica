@@ -25,6 +25,7 @@ export type PlayerOption = {
   gender: string;
   category: string;
   points: number;
+  active: boolean;
 };
 
 export type PreviewRow = {
@@ -44,6 +45,8 @@ export type PreviewRow = {
   match: "exact" | "ambiguous" | "none";
   playerId: number | null;
   candidates: number[];
+  /** La celda de puntos está vacía: no jugó, la fila no se toca. */
+  noPoints?: boolean;
   error?: string;
 };
 
@@ -61,8 +64,9 @@ export async function previewPointsImport(
 ): Promise<PreviewResult> {
   await requireAdmin();
   if (!isMode(mode)) return { message: "Elegí si la carga reemplaza o suma." };
-  if (rows.length === 0)
+  if (rows.length === 0) {
     return { message: "El archivo no tiene filas con datos." };
+  }
   if (rows.length > MAX_ROWS) {
     return { message: `El archivo tiene más de ${MAX_ROWS} filas.` };
   }
@@ -107,8 +111,9 @@ export async function previewPointsImport(
       candidates: [],
     };
 
+    if (points === null) return { ...base, noPoints: true };
     if (!name) return { ...base, error: "Falta el nombre o el código." };
-    if (points === null || Number.isNaN(points)) {
+    if (Number.isNaN(points)) {
       return { ...base, error: "Los puntos tienen que ser un número entero." };
     }
     if ([matchesPlayed, matchesWon, titles].some(Number.isNaN)) {
@@ -172,6 +177,7 @@ export async function previewPointsImport(
       gender: player.gender,
       category: player.category,
       points: player.ranking_points,
+      active: player.active,
     })),
   };
 }

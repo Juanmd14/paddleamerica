@@ -1,4 +1,4 @@
-import { Download, RotateCcw } from "lucide-react";
+import { BookOpen, ChevronDown, Download, RotateCcw } from "lucide-react";
 import type { Metadata } from "next";
 import { undoLastPointsImport } from "@/app/admin/puntos/actions";
 import { AdminPageHeader } from "@/components/admin/admin-ui";
@@ -19,9 +19,22 @@ import { firstParam } from "@/lib/utils";
 export const metadata: Metadata = { title: "Carga de puntos" };
 
 const templates = [
-  { href: "/admin/puntos/planilla?rama=masculino", label: "Masculino" },
-  { href: "/admin/puntos/planilla?rama=femenino", label: "Femenino" },
-  { href: "/admin/puntos/planilla", label: "Todos" },
+  {
+    tipo: "torneo",
+    title: "Para cargar un torneo",
+    text: "Puntos vacíos: anotá los que ganó cada uno y dejá vacíos los que no jugaron. Se suman.",
+  },
+  {
+    tipo: "totales",
+    title: "Con los totales actuales",
+    text: "Para corregir el ranking: cambiá los números que estén mal. Se reemplazan.",
+  },
+];
+
+const branches = [
+  { rama: "masculino", label: "Caballeros" },
+  { rama: "femenino", label: "Damas" },
+  { rama: "", label: "Las dos juntas" },
 ];
 
 export default async function PointsImportPage({
@@ -41,7 +54,7 @@ export default async function PointsImportPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Carga de puntos"
-        description="Actualizá el ranking de una vez subiendo un Excel. Antes de aplicar ves exactamente qué cambia."
+        description="Después de cada torneo, subí los resultados en Excel y el ranking se actualiza solo. Antes de guardar ves exactamente qué cambia."
       />
       {params.deshecha && (
         <Alert tone="success">
@@ -49,6 +62,8 @@ export default async function PointsImportPage({
         </Alert>
       )}
       {error && <Alert tone="danger">{error}</Alert>}
+
+      <PointsGuide open={!lastImport} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -61,29 +76,33 @@ export default async function PointsImportPage({
         <div className="space-y-6">
           <Card className="p-5 sm:p-6">
             <h2 className="font-display text-2xl font-bold uppercase">
-              Planilla modelo
+              Planillas modelo
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Bajala con los jugadores actuales, cambiá los puntos y volvé a
-              subirla. La columna <strong>Código</strong> identifica a cada
-              jugador sin errores; para jugadores nuevos dejala vacía.
+              Traen a los jugadores con su <strong>Código</strong>, así cada
+              fila se relaciona sin errores. Completá solo la columna verde.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {templates.map((template) => (
-                <a
-                  key={template.href}
-                  href={template.href}
-                  className={buttonStyles({ variant: "outline", size: "sm" })}
-                >
-                  <Download className="size-4" aria-hidden="true" />
-                  {template.label}
-                </a>
-              ))}
-            </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              También sirve cualquier Excel o CSV con columnas como Jugador (o
-              Nombre y Apellido), Rama, Categoría y Puntos.
-            </p>
+            {templates.map((group) => (
+              <div key={group.tipo} className="mt-5">
+                <p className="text-sm font-semibold">{group.title}</p>
+                <p className="text-xs text-muted-foreground">{group.text}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {branches.map((branch) => (
+                    <a
+                      key={branch.label}
+                      href={`/admin/puntos/planilla?tipo=${group.tipo}${branch.rama ? `&rama=${branch.rama}` : ""}`}
+                      className={buttonStyles({
+                        variant: "outline",
+                        size: "sm",
+                      })}
+                    >
+                      <Download className="size-4" aria-hidden="true" />
+                      {branch.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ))}
           </Card>
 
           <Card className="p-5 sm:p-6">
@@ -127,5 +146,103 @@ export default async function PointsImportPage({
         </div>
       </div>
     </div>
+  );
+}
+
+const guideSteps = [
+  {
+    title: "Bajá la planilla modelo",
+    text: "“Para cargar un torneo” si vas a sumar los puntos de una fecha; “Con los totales actuales” si querés corregir el ranking.",
+  },
+  {
+    title: "Completá la columna verde",
+    text: "Los puntos que ganó cada uno. PJ, PG y títulos son opcionales. Dejá vacíos a los que no jugaron: esas filas no se tocan. No cambies el Código.",
+  },
+  {
+    title: "Jugadores nuevos al final",
+    text: "Agregá una fila con Nombre, Apellido, Rama y Categoría, y el Código vacío. Se crean al aplicar.",
+  },
+  {
+    title: "Subila, revisá y confirmá",
+    text: "Antes de guardar ves quién sube, cuánto, y cualquier fila rara. Si algo quedó mal, “Deshacer esta carga” vuelve todo atrás.",
+  },
+];
+
+/** Guía corta de la carga. Abierta hasta la primera carga; después, a un toque. */
+function PointsGuide({ open }: { open: boolean }) {
+  return (
+    <Card className="overflow-hidden">
+      <details open={open} className="group">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 sm:px-6 [&::-webkit-details-marker]:hidden">
+          <BookOpen
+            className="size-5 shrink-0 text-accent"
+            aria-hidden="true"
+          />
+          <span className="flex-1 font-display text-xl font-bold uppercase">
+            Cómo cargar los resultados
+          </span>
+          <ChevronDown
+            className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+            aria-hidden="true"
+          />
+        </summary>
+
+        <div className="space-y-6 border-t border-border px-5 py-5 sm:px-6">
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {guideSteps.map((step, index) => (
+              <li key={step.title} className="flex gap-3">
+                <span
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary font-display text-base font-bold text-primary-foreground"
+                  aria-hidden="true"
+                >
+                  {index + 1}
+                </span>
+                <div>
+                  <p className="font-semibold">{step.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {step.text}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg bg-pista-50 p-4 text-sm text-pista-800">
+              <p className="font-semibold">¿Damas y caballeros juntos?</p>
+              <p className="mt-1">
+                Se puede, en un mismo archivo. Cada jugador suma en el ranking
+                de su rama y su categoría, así que no se mezclan. Con la
+                planilla modelo no hay que hacer nada más. Si usás un Excel
+                propio, poné una columna <strong>Rama</strong> (Damas o
+                Caballeros): sin ella, los jugadores nuevos se crean todos con
+                la misma rama. Antes de confirmar vas a ver cuántas damas y
+                cuántos caballeros se cargan.
+              </p>
+            </div>
+            <div className="rounded-lg bg-muted p-4 text-sm text-foreground-soft">
+              <p className="font-semibold text-foreground">
+                Lo que el Excel no cambia
+              </p>
+              <ul className="mt-1 list-disc space-y-1 pl-4">
+                <li>
+                  A los jugadores que no están en el archivo o tienen los puntos
+                  vacíos.
+                </li>
+                <li>
+                  La rama, la categoría, el club o la ciudad de alguien que ya
+                  existe: eso se edita en Jugadores. Si la rama o la categoría
+                  del archivo no coinciden, te avisamos.
+                </li>
+                <li>
+                  Si alguien “ya no compite”, los puntos se cargan igual pero
+                  sigue fuera del ranking.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </details>
+    </Card>
   );
 }
