@@ -51,7 +51,7 @@ export function SiteFooter() {
             Crear cuenta
           </Link>
           <Link href="/mi-cuenta" className={linkClass}>
-            Mis inscripciones
+            Mis torneos
           </Link>
         </FooterColumn>
 

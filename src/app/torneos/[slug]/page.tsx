@@ -333,7 +333,7 @@ function RegistrationCard({
               aria-hidden="true"
             />
             {tournament.registration_opens_at
-              ? `Las inscripciones se abren el ${formatDayMonthTime(tournament.registration_opens_at)}. A esa hora vas a poder anotarte acá.`
+              ? `Las inscripciones se abren el ${formatDayMonthTime(tournament.registration_opens_at)}. Desde ese momento vas a poder anotarte acá.`
               : "Las inscripciones todavía no abrieron. Seguinos para enterarte cuándo arrancan."}
           </p>
         ) : tournament.champions ? (

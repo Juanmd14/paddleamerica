@@ -148,14 +148,20 @@ const timeFormatter = new Intl.DateTimeFormat("es-AR", {
   timeZone: APP_TIME_ZONE,
 });
 
+/** " a las 12:00", o nada si es medianoche (fechas cargadas sin hora). */
+function atTime(date: Date) {
+  const time = timeFormatter.format(date);
+  return time === "00:00" ? "" : ` a las ${time}`;
+}
+
 /** "14/9 a las 12:00" (hora argentina). */
 export function formatShortDateTime(value: string) {
   const date = new Date(value);
-  return `${shortDateFormatter.format(date)} a las ${timeFormatter.format(date)}`;
+  return `${shortDateFormatter.format(date)}${atTime(date)}`;
 }
 
 /** "14 de septiembre a las 12:00" (hora argentina). */
 export function formatDayMonthTime(value: string) {
   const date = new Date(value);
-  return `${dayMonthFormatter.format(date)} a las ${timeFormatter.format(date)}`;
+  return `${dayMonthFormatter.format(date)}${atTime(date)}`;
 }

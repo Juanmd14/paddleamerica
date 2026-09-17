@@ -1,6 +1,6 @@
 import { getPlayer, getRankingPosition } from "@/lib/data";
 import { formatNumber } from "@/lib/format";
-import { genderLabel, playerName } from "@/lib/labels";
+import { playerName, rankingTitle } from "@/lib/labels";
 import { ogImage, ogSize } from "@/lib/og";
 
 export const alt = "Jugador del ranking regional";
@@ -21,7 +21,7 @@ export default async function Image({
   const position = await getRankingPosition(player);
   return ogImage({
     eyebrow: position
-      ? `#${position} ranking ${genderLabel(player.gender).toLowerCase()}`
+      ? `#${position} ranking ${rankingTitle(player.category, player.gender)}`
       : "Ya no compite",
     title: playerName(player),
     subtitle: `${player.category} · ${formatNumber(player.ranking_points)} pts${player.club ? ` · ${player.club}` : ""}`,
