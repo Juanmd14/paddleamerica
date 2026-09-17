@@ -881,9 +881,68 @@ async function withAdminProfiles<T extends Registration>(
   }));
 }
 
+/** Cuentas vinculadas a un jugador del ranking, por id de jugador (panel). */
+export async function getLinkedAccounts(): Promise<
+  Map<number, Pick<Profile, "id" | "full_name" | "username" | "avatar_url">>
+> {
+  if (isDemoMode) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, avatar_url, player_id")
+    .not("player_id", "is", null);
+  if (error) throw error;
+  return new Map(
+    data.map(({ player_id, ...profile }) => [
+      player_id as number,
+      { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
+    ]),
+  );
+}
+
+/** Foto de la cuenta vinculada, para jugadores del ranking sin foto propia. */
+export async function getPlayerAccountAvatar(
+  playerId: number,
+): Promise<string | null> {
+  if (isDemoMode) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_player_account_avatar", {
+    p_player_id: playerId,
+  });
+  if (error) {
+    console.error("[foto del jugador]", error);
+    return null;
+  }
+  return safeAvatarUrl(data);
+}
+
+/** Puesto, puntos y tendencia del jugador vinculado a la cuenta (o null). */
+export async function getMyRankingSpot(): Promise<{
+  player: Player;
+  position: number | null;
+  trend?: RankingTrend;
+} | null> {
+  const profile = await getMyProfile();
+  if (!profile?.player_id) return null;
+
+  const player = await getPlayerById(profile.player_id);
+  if (!player) return null;
+
+  const [position, list] = await Promise.all([
+    getRankingPosition(player),
+    player.active
+      ? getRanking({ gender: player.gender, category: player.category })
+      : Promise.resolve([]),
+  ]);
+  const trends = await getRankingTrends(list);
+  return { player, position, trend: trends.get(player.id) };
+}
+
 /** Todas las cuentas, para asignar categorías. Primero las que no tienen. */
 export async function getAllProfiles(): Promise<
-  (AdminProfile & Pick<Profile, "is_admin">)[]
+  (AdminProfile & Pick<Profile, "is_admin" | "player_id">)[]
 > {
   if (isDemoMode) return [];
 
@@ -891,7 +950,7 @@ export async function getAllProfiles(): Promise<
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, phone, username, avatar_url, category, gender, is_admin",
+      "id, full_name, email, phone, username, avatar_url, category, gender, is_admin, player_id",
     )
     .order("category", { ascending: true, nullsFirst: true })
     .order("full_name", { ascending: true });

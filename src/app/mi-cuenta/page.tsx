@@ -27,6 +27,7 @@ import { InvitationResponse } from "@/components/invitation-response";
 import { MarkNotificationsRead } from "@/components/mark-notifications-read";
 import { PairPlayers } from "@/components/pair-players";
 import { ProfileForm } from "@/components/profile-form";
+import { RankingSpotCard } from "@/components/ranking-spot-card";
 import { SubmitButton } from "@/components/submit-button";
 import { SupabaseNotice } from "@/components/supabase-notice";
 import { Alert } from "@/components/ui/alert";
@@ -41,6 +42,7 @@ import {
   getMyNotifications,
   getMyProfile,
   getMyRegistrations,
+  getMyRankingSpot,
 } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
 import {
@@ -102,12 +104,14 @@ export default async function AccountPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/mi-cuenta");
 
-  const [profile, registrations, notifications, params] = await Promise.all([
-    getMyProfile(),
-    getMyRegistrations(),
-    getMyNotifications(),
-    searchParams,
-  ]);
+  const [profile, registrations, notifications, rankingSpot, params] =
+    await Promise.all([
+      getMyProfile(),
+      getMyRegistrations(),
+      getMyNotifications(),
+      getMyRankingSpot(),
+      searchParams,
+    ]);
   const message = firstParam(params.message);
   const section: SectionKey =
     SECTIONS.find((item) => item.key === firstParam(params.seccion))?.key ??
@@ -333,6 +337,13 @@ export default async function AccountPage({
             category={profile?.category ?? null}
             hasRegistrations={registrations.length > 0}
           />
+          {section === "torneos" && rankingSpot && (
+            <RankingSpotCard
+              player={rankingSpot.player}
+              position={rankingSpot.position}
+              trend={rankingSpot.trend}
+            />
+          )}
 
           <SectionPanel
             icon={current.icon}
@@ -374,6 +385,7 @@ export default async function AccountPage({
                       username={profile?.username ?? user.username ?? ""}
                       category={profile?.category ?? null}
                       gender={profile?.gender ?? null}
+                      fromRanking={Boolean(profile?.player_id)}
                     />
                   </div>
                 </SubSection>

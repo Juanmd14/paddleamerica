@@ -1,4 +1,5 @@
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Trash2, UserRound } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
@@ -11,9 +12,15 @@ import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { PlayerForm } from "@/components/admin/player-form";
 import { PointsAdjuster } from "@/components/admin/points-adjuster";
 import { Alert } from "@/components/ui/alert";
+import { Avatar } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
-import { getPlayerById, getPlayerPointChanges } from "@/lib/data";
+import {
+  getLinkedAccounts,
+  getPlayerById,
+  getPlayerPointChanges,
+} from "@/lib/data";
 import { playerName } from "@/lib/labels";
 import { firstParam } from "@/lib/utils";
 
@@ -29,10 +36,12 @@ export default async function EditPlayerPage({
   const player = await getPlayerById(Number(id));
   if (!player) notFound();
 
-  const [query, history] = await Promise.all([
+  const [query, history, linkedAccounts] = await Promise.all([
     searchParams,
     getPlayerPointChanges(player.id),
+    getLinkedAccounts(),
   ]);
+  const account = linkedAccounts.get(player.id);
   const error = firstParam(query.error);
   const saved = firstParam(query.guardado);
   const name = playerName(player);
@@ -55,6 +64,38 @@ export default async function EditPlayerPage({
       />
       {error && <Alert tone="danger">{error}</Alert>}
       {saved && <Alert tone="success">Creamos el jugador.</Alert>}
+
+      <Card className="flex flex-wrap items-center gap-3 p-4 sm:p-5">
+        <UserRound
+          className="size-5 text-muted-foreground"
+          aria-hidden="true"
+        />
+        {account ? (
+          <>
+            <Avatar
+              name={account.full_name || account.username}
+              src={account.avatar_url}
+              size="sm"
+            />
+            <p className="min-w-0 flex-1 text-sm">
+              Cuenta en el sitio:{" "}
+              <Link
+                href={`/admin/usuarios/${account.id}`}
+                className="font-semibold text-accent hover:underline"
+              >
+                {account.full_name || account.username} (@{account.username})
+              </Link>
+              . Si cambiás la categoría o la rama acá, también cambian en su
+              cuenta.
+            </p>
+          </>
+        ) : (
+          <p className="min-w-0 flex-1 text-sm text-muted-foreground">
+            Sin cuenta vinculada. Se vincula desde Panel → Usuarios, en la ficha
+            de la cuenta del jugador.
+          </p>
+        )}
+      </Card>
 
       <PlayerForm
         action={updatePlayer.bind(null, player.id)}

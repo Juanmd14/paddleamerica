@@ -137,6 +137,14 @@ export async function updatePlayer(
     .maybeSingle();
   const { error } = await supabase.from("players").update(values).eq("id", id);
   if (error) {
+    if (error.message === "categoria_del_jugador_invalida") {
+      return {
+        errors: {
+          category:
+            "Tiene una cuenta vinculada: usá una categoría de 1ra a 8va (ej. 6ta).",
+        },
+      };
+    }
     return error.code === "23505"
       ? { errors: { slug: "Ya hay un jugador con ese slug." } }
       : { message: saveErrorMessage(error) };

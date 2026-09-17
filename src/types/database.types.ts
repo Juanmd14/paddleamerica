@@ -195,6 +195,7 @@ export type Database = {
           id: string
           is_admin: boolean
           phone: string | null
+          player_id: number | null
           updated_at: string
           username: string
         }
@@ -208,6 +209,7 @@ export type Database = {
           id: string
           is_admin?: boolean
           phone?: string | null
+          player_id?: number | null
           updated_at?: string
           username: string
         }
@@ -221,10 +223,19 @@ export type Database = {
           id?: string
           is_admin?: boolean
           phone?: string | null
+          player_id?: number | null
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ranking_imports: {
         Row: {
@@ -445,7 +456,13 @@ export type Database = {
         Args: { p_registration_id: number }
         Returns: string
       }
+      category_from_label: { Args: { p_label: string }; Returns: number }
+      category_name: { Args: { p_category: number }; Returns: string }
       delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
+      get_player_account_avatar: {
+        Args: { p_player_id: number }
+        Returns: string
+      }
       get_public_profiles: {
         Args: { p_ids: string[] }
         Returns: {
@@ -465,6 +482,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      link_profile_player: {
+        Args: { p_player_id?: number; p_user_id: string }
+        Returns: undefined
       }
       open_scheduled_registrations: { Args: never; Returns: number }
       pair_category_error: {

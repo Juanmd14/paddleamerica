@@ -61,7 +61,8 @@ export function playerCategoryError(
   category: number | null,
 ) {
   if (!rules.category_min && !rules.category_sum) return null;
-  if (!category) return "Todavía no tenés categoría. La asigna el organizador: hasta entonces no podés anotarte.";
+  if (!category)
+    return "Todavía no tenés categoría. La asigna el organizador: hasta entonces no podés anotarte.";
   const { category_min: min, category_max: max } = rules;
   if (min && max && (category < min || category > max)) {
     return `Sos ${categoryName(category)} y este torneo es de ${categoryRulesLabel(rules)}.`;
@@ -79,7 +80,8 @@ export function pairCategoryError(
   const own = playerCategoryError(rules, player);
   if (own) return own;
   if (!rules.category_min && !rules.category_sum) return null;
-  if (!partner) return `${partnerName} todavía no tiene categoría asignada por el organizador.`;
+  if (!partner)
+    return `${partnerName} todavía no tiene categoría asignada por el organizador.`;
 
   const { category_min: min, category_max: max, category_sum: sum } = rules;
   if (min && max && (partner < min || partner > max)) {
@@ -89,4 +91,13 @@ export function pairCategoryError(
     return `Juntos suman ${player + partner} (${categoryName(player)} + ${categoryName(partner)}) y el torneo pide ${sum} o más.`;
   }
   return null;
+}
+
+/** "6ta" → 6, " 1RA " → 1. Null si no es de 1ra a 8va (igual que category_from_label en SQL). */
+export function categoryFromLabel(label: string | null | undefined) {
+  const match = (label ?? "")
+    .trim()
+    .toLowerCase()
+    .match(/^([1-8])\s*(?:ra|da|ta|ma|va|°|º)?$/);
+  return match ? Number(match[1]) : null;
 }

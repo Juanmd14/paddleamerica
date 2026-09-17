@@ -7,14 +7,23 @@ import {
   ShieldCheck,
   ShieldOff,
   Trophy,
+  Unlink,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { setProfileAdmin } from "@/app/admin/usuarios/actions";
+import {
+  linkProfilePlayer,
+  setProfileAdmin,
+} from "@/app/admin/usuarios/actions";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ProfileCategoryForm } from "@/components/admin/profile-category-form";
 import { ProfileGenderForm } from "@/components/admin/profile-gender-form";
+import {
+  type LinkablePlayer,
+  PlayerLinkPicker,
+  PlayerLinkRow,
+} from "@/components/admin/player-link-picker";
 import { EmptyState } from "@/components/empty-state";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
@@ -22,7 +31,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
 import { categoryName } from "@/lib/categories";
-import { getProfileById, getRanking, getUserRegistrations } from "@/lib/data";
+import {
+  getLinkedAccounts,
+  getProfileById,
+  getRanking,
+  getUserRegistrations,
+} from "@/lib/data";
 import { formatDate, formatDateRange, formatNumber } from "@/lib/format";
 import {
   branchLabel,
@@ -47,21 +61,42 @@ export default async function AdminUserPage({
   const me = await requireAdmin(`/admin/usuarios/${id}`);
   if (!UUID_PATTERN.test(id)) notFound();
 
-  const [profile, registrations, players, query] = await Promise.all([
-    getProfileById(id),
-    getUserRegistrations(id),
-    getRanking({ includeInactive: true }),
-    searchParams,
-  ]);
+  const [profile, registrations, players, linkedAccounts, query] =
+    await Promise.all([
+      getProfileById(id),
+      getUserRegistrations(id),
+      getRanking({ includeInactive: true }),
+      getLinkedAccounts(),
+      searchParams,
+    ]);
   const error = firstParam(query.error);
   const adminChange = firstParam(query.admin);
+  const linkChange = firstParam(query.vinculo);
   if (!profile) notFound();
 
   const name = profile.full_name || `@${profile.username}`;
-  // Las cuentas y el ranking no están vinculados: sugerimos por nombre.
+  const linkedPlayer = profile.player_id
+    ? (players.find((player) => player.id === profile.player_id) ?? null)
+    : null;
+  const account = {
+    userId: profile.id,
+    name,
+    category: profile.category,
+    gender: profile.gender,
+  };
+  const linkablePlayers: LinkablePlayer[] = players.map((player) => ({
+    id: player.id,
+    name: playerName(player),
+    gender: player.gender,
+    category: player.category,
+    points: player.ranking_points,
+    active: player.active,
+    linkedTo: linkedAccounts.get(player.id)?.username ?? null,
+  }));
+  // Sugerencia: jugadores del ranking con el mismo nombre que la cuenta.
   const rankingMatches = profile.full_name
-    ? players.filter(
-        (player) => slugify(playerName(player)) === slugify(profile.full_name!),
+    ? linkablePlayers.filter(
+        (player) => slugify(player.name) === slugify(profile.full_name!),
       )
     : [];
   const confirmed = registrations.filter(
@@ -76,6 +111,13 @@ export default async function AdminUserPage({
   return (
     <div className="space-y-6">
       {error && <Alert tone="danger">{error}</Alert>}
+      {linkChange && (
+        <Alert tone="success">
+          {linkChange === "1"
+            ? `Vinculamos la cuenta de ${name} con su jugador del ranking.`
+            : `Desvinculamos la cuenta de ${name} del ranking.`}
+        </Alert>
+      )}
       {adminChange && (
         <Alert tone="success">
           {adminChange === "1"
@@ -197,30 +239,49 @@ export default async function AdminUserPage({
             <h2 className="font-display text-2xl font-bold uppercase">
               Categoría y rama
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {profile.category
-                ? `Hoy es ${categoryName(profile.category)}. Si la cambiás, le llega un aviso.`
-                : "No tiene categoría: no se puede anotar en torneos con categoría."}
-            </p>
-            <div className="mt-4">
-              <ProfileCategoryForm
-                userId={profile.id}
-                name={name}
-                category={profile.category}
-              />
-            </div>
-            <p className="mt-5 text-sm text-muted-foreground">
-              {profile.gender
-                ? `Rama: ${genderLabel(profile.gender).toLowerCase()}. Si la cambiás, le llega un aviso.`
-                : "Todavía no eligió su rama: no se puede anotar hasta que la elija (o se la asignes vos)."}
-            </p>
-            <div className="mt-3">
-              <ProfileGenderForm
-                userId={profile.id}
-                name={name}
-                gender={profile.gender}
-              />
-            </div>
+            {linkedPlayer ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {profile.category
+                  ? categoryName(profile.category)
+                  : "Sin categoría"}{" "}
+                · {profile.gender ? genderLabel(profile.gender) : "Sin rama"}.
+                Salen de su ficha en el ranking:{" "}
+                <Link
+                  href={`/admin/jugadores/${linkedPlayer.id}`}
+                  className="font-medium text-accent hover:underline"
+                >
+                  cambialas ahí
+                </Link>
+                .
+              </p>
+            ) : (
+              <>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {profile.category
+                    ? `Hoy es ${categoryName(profile.category)}. Si la cambiás, le llega un aviso.`
+                    : "No tiene categoría: no se puede anotar en torneos con categoría."}
+                </p>
+                <div className="mt-4">
+                  <ProfileCategoryForm
+                    userId={profile.id}
+                    name={name}
+                    category={profile.category}
+                  />
+                </div>
+                <p className="mt-5 text-sm text-muted-foreground">
+                  {profile.gender
+                    ? `Rama: ${genderLabel(profile.gender).toLowerCase()}. Si la cambiás, le llega un aviso.`
+                    : "Todavía no eligió su rama: no se puede anotar hasta que la elija (o se la asignes vos)."}
+                </p>
+                <div className="mt-3">
+                  <ProfileGenderForm
+                    userId={profile.id}
+                    name={name}
+                    gender={profile.gender}
+                  />
+                </div>
+              </>
+            )}
           </Card>
 
           <Card className="p-5 sm:p-6">
@@ -228,40 +289,69 @@ export default async function AdminUserPage({
               <ListOrdered className="size-5" aria-hidden="true" />
               En el ranking
             </h2>
-            {rankingMatches.length > 0 ? (
-              <ul className="mt-4 space-y-2">
-                {rankingMatches.map((player) => (
-                  <li key={player.id}>
-                    <Link
-                      href={`/admin/jugadores/${player.id}`}
-                      className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted"
-                    >
-                      <Avatar
-                        name={playerName(player)}
-                        src={player.photo_url}
-                        size="sm"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-semibold">
-                          {playerName(player)}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {branchLabel(player.gender)} · {player.category} ·{" "}
-                          {formatNumber(player.ranking_points)} pts
-                          {!player.active && " · ya no compite"}
-                        </span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-                <li className="text-xs text-muted-foreground">
-                  Coincide por nombre: fijate que sea la misma persona.
-                </li>
-              </ul>
+            {linkedPlayer ? (
+              <div className="mt-4 space-y-3">
+                <Link
+                  href={`/admin/jugadores/${linkedPlayer.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-success/40 bg-success-soft p-3 transition-colors hover:bg-muted"
+                >
+                  <Avatar
+                    name={playerName(linkedPlayer)}
+                    src={linkedPlayer.photo_url}
+                    size="sm"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">
+                      {playerName(linkedPlayer)}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {branchLabel(linkedPlayer.gender)} ·{" "}
+                      {linkedPlayer.category} ·{" "}
+                      {formatNumber(linkedPlayer.ranking_points)} pts
+                      {!linkedPlayer.active && " · ya no compite"}
+                    </span>
+                  </span>
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  La categoría y la rama de la cuenta salen de este jugador: si
+                  las cambiás en su ficha, cambian acá también.
+                </p>
+                <form action={linkProfilePlayer.bind(null, profile.id, null)}>
+                  <ConfirmSubmitButton
+                    size="sm"
+                    variant="ghost"
+                    pendingLabel="Desvinculando…"
+                    confirmMessage={`¿Desvincular la cuenta de ${name} del ranking? La cuenta conserva la categoría y la rama que tiene ahora.`}
+                  >
+                    <Unlink className="size-4" aria-hidden="true" />
+                    Desvincular
+                  </ConfirmSubmitButton>
+                </form>
+              </div>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">
-                No hay ningún jugador del ranking con este nombre.
-              </p>
+              <div className="mt-2 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Vinculala con su jugador del ranking: la categoría y la rama
+                  van a salir de ahí y en Mi cuenta va a ver su puesto.
+                </p>
+                {rankingMatches.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-foreground-soft">
+                      Coincide por nombre
+                    </p>
+                    <ul className="mt-1.5 space-y-2">
+                      {rankingMatches.map((player) => (
+                        <PlayerLinkRow
+                          key={player.id}
+                          player={player}
+                          account={account}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <PlayerLinkPicker account={account} players={linkablePlayers} />
+              </div>
             )}
           </Card>
         </div>

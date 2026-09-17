@@ -7,7 +7,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
-import { getPlayer, getRankingPosition } from "@/lib/data";
+import {
+  getPlayer,
+  getPlayerAccountAvatar,
+  getRankingPosition,
+} from "@/lib/data";
 import { formatNumber } from "@/lib/format";
 import {
   effectiveness,
@@ -38,7 +42,13 @@ export default async function PlayerPage({
   const player = await getPlayer(slug);
   if (!player) notFound();
 
-  const position = await getRankingPosition(player);
+  const [position, accountAvatar] = await Promise.all([
+    getRankingPosition(player),
+    // Sin foto cargada en el ranking, usa la de su cuenta (si está vinculada).
+    player.photo_url
+      ? Promise.resolve(null)
+      : getPlayerAccountAvatar(player.id),
+  ]);
   const name = playerName(player);
   const winRate = effectiveness(player);
 
@@ -65,7 +75,7 @@ export default async function PlayerPage({
           <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
             <Avatar
               name={name}
-              src={player.photo_url}
+              src={player.photo_url ?? accountAvatar}
               size="xl"
               className="ring-4 ring-oro-400"
             />

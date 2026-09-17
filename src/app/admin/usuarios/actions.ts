@@ -30,7 +30,9 @@ export async function setProfileCategory(
       message:
         error.message === "usuario_no_existe"
           ? "Esta cuenta ya no existe."
-          : "No pudimos guardar la categoría. Probá de nuevo.",
+          : error.message === "cuenta_vinculada"
+            ? "Esta cuenta está vinculada al ranking: cambiá la categoría en la ficha del jugador."
+            : "No pudimos guardar la categoría. Probá de nuevo.",
     };
   }
 
@@ -61,13 +63,54 @@ export async function setProfileGender(
       message:
         error.message === "usuario_no_existe"
           ? "Esta cuenta ya no existe."
-          : "No pudimos guardar la rama. Probá de nuevo.",
+          : error.message === "cuenta_vinculada"
+            ? "Esta cuenta está vinculada al ranking: cambiá la rama en la ficha del jugador."
+            : "No pudimos guardar la rama. Probá de nuevo.",
     };
   }
 
   revalidatePath("/admin/usuarios");
   revalidatePath(`/admin/usuarios/${userId}`);
   return { ok: true };
+}
+
+const LINK_ERRORS: Record<string, string> = {
+  usuario_no_existe: "Esta cuenta ya no existe.",
+  jugador_no_existe: "Ese jugador ya no está en el ranking.",
+  jugador_ya_vinculado: "Ese jugador ya está vinculado a otra cuenta.",
+  categoria_del_jugador_invalida:
+    "La categoría del jugador no es de 1ra a 8va: corregila en su ficha y probá de nuevo.",
+};
+
+/**
+ * Vincula la cuenta con un jugador del ranking (o la desvincula, con null).
+ * Desde ahí la categoría y la rama de la cuenta salen del jugador.
+ */
+export async function linkProfilePlayer(
+  userId: string,
+  playerId: number | null,
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("link_profile_player", {
+    p_user_id: userId,
+    p_player_id: playerId ?? undefined,
+  });
+  if (error) {
+    const message =
+      LINK_ERRORS[error.message] ??
+      (error.code === "23505"
+        ? LINK_ERRORS.jugador_ya_vinculado
+        : "No pudimos vincular la cuenta. Probá de nuevo.");
+    redirect(`/admin/usuarios/${userId}?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
+  revalidatePath("/admin/jugadores/[id]", "page");
+  revalidatePath("/jugadores/[slug]", "page");
+  revalidatePath("/mi-cuenta");
+  redirect(`/admin/usuarios/${userId}?vinculo=${playerId ? 1 : 0}`);
 }
 
 const ADMIN_ERRORS: Record<string, string> = {

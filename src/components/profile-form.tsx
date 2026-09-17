@@ -16,6 +16,8 @@ type ProfileFormProps = {
   username: string;
   category: number | null;
   gender: string | null;
+  /** La cuenta está vinculada a un jugador del ranking: categoría y rama salen de ahí. */
+  fromRanking?: boolean;
 };
 
 export function ProfileForm({
@@ -25,6 +27,7 @@ export function ProfileForm({
   username,
   category,
   gender,
+  fromRanking = false,
 }: ProfileFormProps) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(
     updateProfile,
@@ -108,7 +111,9 @@ export function ProfileForm({
             id="profile-gender-hint"
             className="mt-1.5 text-xs text-muted-foreground"
           >
-            Para cambiarla, pedíselo al organizador.
+            {fromRanking
+              ? "Sale de tu ficha en el ranking."
+              : "Para cambiarla, pedíselo al organizador."}
           </p>
         </div>
       ) : (
@@ -145,7 +150,9 @@ export function ProfileForm({
           id="profile-category-hint"
           className="mt-1.5 text-xs text-muted-foreground"
         >
-          La asigna el organizador y define en qué torneos podés anotarte.
+          {fromRanking
+            ? "Sale de tu ficha en el ranking y define en qué torneos podés anotarte."
+            : "La asigna el organizador y define en qué torneos podés anotarte."}
         </p>
       </div>
       <div>
