@@ -881,7 +881,7 @@ async function withAdminProfiles<T extends Registration>(
 
 /** Todas las cuentas, para asignar categorías. Primero las que no tienen. */
 export async function getAllProfiles(): Promise<
-  (AdminProfile & Pick<Profile, "is_admin">)[]
+  (AdminProfile & Pick<Profile, "is_admin" | "gender">)[]
 > {
   if (isDemoMode) return [];
 
@@ -889,7 +889,7 @@ export async function getAllProfiles(): Promise<
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, phone, username, avatar_url, category, is_admin",
+      "id, full_name, email, phone, username, avatar_url, category, gender, is_admin",
     )
     .order("category", { ascending: true, nullsFirst: true })
     .order("full_name", { ascending: true });

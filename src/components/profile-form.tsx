@@ -2,10 +2,12 @@
 
 import { useActionState } from "react";
 import { type ProfileFormState, updateProfile } from "@/app/mi-cuenta/actions";
+import { GenderChoice } from "@/components/gender-choice";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert } from "@/components/ui/alert";
 import { FieldError, Input, Label } from "@/components/ui/input";
 import { categoryName } from "@/lib/categories";
+import { genderLabel } from "@/lib/labels";
 
 type ProfileFormProps = {
   email: string;
@@ -13,6 +15,7 @@ type ProfileFormProps = {
   phone: string;
   username: string;
   category: number | null;
+  gender: string | null;
 };
 
 export function ProfileForm({
@@ -21,6 +24,7 @@ export function ProfileForm({
   phone,
   username,
   category,
+  gender,
 }: ProfileFormProps) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(
     updateProfile,
@@ -89,6 +93,44 @@ export function ProfileForm({
           </p>
         )}
       </div>
+      {gender ? (
+        <div>
+          <Label htmlFor="profile-gender">Tu rama</Label>
+          <Input
+            id="profile-gender"
+            value={genderLabel(gender)}
+            readOnly
+            disabled
+            aria-describedby="profile-gender-hint"
+            className="bg-muted text-muted-foreground"
+          />
+          <p
+            id="profile-gender-hint"
+            className="mt-1.5 text-xs text-muted-foreground"
+          >
+            Para cambiarla, pedíselo al organizador.
+          </p>
+        </div>
+      ) : (
+        <div id="rama" className="scroll-mt-32">
+          <GenderChoice
+            legend="Tu rama"
+            describedBy="profile-gender-hint"
+            invalid={Boolean(errors.gender)}
+          />
+          {errors.gender ? (
+            <FieldError id="profile-gender-hint">{errors.gender}</FieldError>
+          ) : (
+            <p
+              id="profile-gender-hint"
+              className="mt-1.5 text-xs font-medium text-oro-800"
+            >
+              Elegila para poder anotarte en torneos. Se elige una sola vez:
+              después solo la cambia el organizador.
+            </p>
+          )}
+        </div>
+      )}
       <div>
         <Label htmlFor="profile-category">Tu categoría</Label>
         <Input

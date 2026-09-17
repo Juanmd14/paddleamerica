@@ -86,7 +86,8 @@ export function NotificationsButton({ count }: { count: number }) {
     (inbox?.waiting.length ?? 0) +
     (inbox?.adminPending ? 1 : 0) +
     (inbox?.adminWithoutCategory ? 1 : 0) +
-    (inbox?.missingCategory ? 1 : 0);
+    (inbox?.missingCategory ? 1 : 0) +
+    (inbox?.missingGender ? 1 : 0);
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -222,6 +223,18 @@ export function NotificationsButton({ count }: { count: number }) {
                         text={item.text}
                       />
                     ))}
+                    {inbox.missingGender && (
+                      <InboxLink
+                        href="/mi-cuenta?seccion=datos#rama"
+                        onClick={close}
+                        icon={
+                          <UserRound className="size-5" aria-hidden="true" />
+                        }
+                        title="Elegí tu rama"
+                        text="Masculino o femenino. Sin rama no te podés anotar en torneos."
+                        highlight
+                      />
+                    )}
                     {inbox.missingCategory && (
                       <InboxLink
                         href="/mi-cuenta?seccion=datos"

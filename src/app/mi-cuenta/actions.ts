@@ -7,7 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 export type ProfileFormState = {
   ok?: boolean;
   message?: string;
-  errors?: Partial<Record<"full_name" | "phone" | "username", string>>;
+  errors?: Partial<
+    Record<"full_name" | "phone" | "username" | "gender", string>
+  >;
 };
 
 // Igual que profiles_username_format en la base.
@@ -26,6 +28,8 @@ export async function updateProfile(
     .trim()
     .replace(/^@/, "")
     .toLowerCase();
+  // Solo viene si la cuenta todavía no tiene rama (se elige una vez).
+  const gender = String(formData.get("gender") ?? "");
 
   const errors: ProfileFormState["errors"] = {};
   if (fullName.length < 3 || fullName.length > 120) {
@@ -38,9 +42,23 @@ export async function updateProfile(
     errors.username =
       "De 3 a 20 letras o números, sin espacios (podés usar punto y guion bajo).";
   }
+  if (gender && gender !== "masculino" && gender !== "femenino") {
+    errors.gender = "Elegí masculino o femenino.";
+  }
   if (Object.keys(errors).length > 0) return { errors };
 
   const supabase = await createClient();
+  if (gender) {
+    const { error: genderError } = await supabase.rpc("set_my_gender", {
+      p_gender: gender,
+    });
+    if (genderError && genderError.message !== "rama_ya_elegida") {
+      return {
+        errors: { gender: "No pudimos guardar tu rama. Probá de nuevo." },
+      };
+    }
+  }
+
   const { error } = await supabase
     .from("profiles")
     // La categoría no: la asigna un admin (set_profile_category).

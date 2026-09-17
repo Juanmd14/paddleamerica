@@ -191,6 +191,7 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string | null
+          gender: string | null
           id: string
           is_admin: boolean
           phone: string | null
@@ -203,6 +204,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          gender?: string | null
           id: string
           is_admin?: boolean
           phone?: string | null
@@ -215,6 +217,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           is_admin?: boolean
           phone?: string | null
@@ -498,12 +501,17 @@ export type Database = {
           username: string
         }[]
       }
+      set_my_gender: { Args: { p_gender: string }; Returns: undefined }
       set_profile_admin: {
         Args: { p_is_admin: boolean; p_user_id: string }
         Returns: undefined
       }
       set_profile_category: {
         Args: { p_category?: number; p_user_id: string }
+        Returns: undefined
+      }
+      set_profile_gender: {
+        Args: { p_gender?: string; p_user_id: string }
         Returns: undefined
       }
       tournament_spots: {

@@ -39,6 +39,37 @@ export async function setProfileCategory(
   return { ok: true };
 }
 
+/** Asigna, corrige o quita (con "") la rama de una cuenta. Le avisa al jugador. */
+export async function setProfileGender(
+  userId: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const value = text(formData, "gender");
+  if (value && value !== "masculino" && value !== "femenino") {
+    return { message: "Elegí una rama." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_profile_gender", {
+    p_user_id: userId,
+    p_gender: value || undefined,
+  });
+  if (error) {
+    return {
+      message:
+        error.message === "usuario_no_existe"
+          ? "Esta cuenta ya no existe."
+          : "No pudimos guardar la rama. Probá de nuevo.",
+    };
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
+  return { ok: true };
+}
+
 const ADMIN_ERRORS: Record<string, string> = {
   es_tu_cuenta:
     "No podés quitarte el admin a vos mismo: pedíselo a otro admin.",

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { requireAdmin } from "@/lib/auth";
+import { genderLabel } from "@/lib/labels";
 import { getAllProfiles } from "@/lib/data";
 import { firstParam, slugify } from "@/lib/utils";
 
@@ -131,6 +132,17 @@ export default async function AdminUsersPage({
                         name={name}
                         category={profile.category}
                       />
+                      <p
+                        className={
+                          profile.gender
+                            ? "mt-1.5 text-xs text-muted-foreground"
+                            : "mt-1.5 text-xs font-medium text-oro-800"
+                        }
+                      >
+                        {profile.gender
+                          ? genderLabel(profile.gender)
+                          : "Sin rama"}
+                      </p>
                     </Td>
                     <Td className="text-right">
                       {profile.is_admin || profile.id === me.id ? (

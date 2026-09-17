@@ -43,7 +43,11 @@ import {
   getMyRegistrations,
 } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
-import { registrationStatus, tournamentStatus } from "@/lib/labels";
+import {
+  registrationStatus,
+  tournamentStatus,
+  genderLabel,
+} from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { cn, firstParam } from "@/lib/utils";
 import type { Notification, RegistrationWithTournament } from "@/types/models";
@@ -70,7 +74,7 @@ const SECTIONS = [
     key: "datos",
     label: "Mis datos",
     icon: UserRound,
-    description: "Tu foto, nombre, usuario, categoría y contraseña.",
+    description: "Tu foto, nombre, usuario, rama, categoría y contraseña.",
   },
 ] as const;
 
@@ -134,7 +138,7 @@ export default async function AccountPage({
   const counts: Record<SectionKey, number> = {
     torneos: invitations.length,
     avisos: unread,
-    datos: profile?.category ? 0 : 1,
+    datos: (profile?.gender ? 0 : 1) + (profile?.category ? 0 : 1),
   };
   const current = SECTIONS.find((item) => item.key === section)!;
 
@@ -161,6 +165,11 @@ export default async function AccountPage({
                   <span className="font-semibold text-white">
                     @{user.username}
                   </span>
+                )}
+                {profile?.gender ? (
+                  <Badge tone="inverse">{genderLabel(profile.gender)}</Badge>
+                ) : (
+                  <Badge tone="inverse">Sin rama</Badge>
                 )}
                 {profile?.category ? (
                   <Badge tone="primary">
@@ -291,7 +300,7 @@ export default async function AccountPage({
                           {item.key === "datos" && counts.datos > 0 && (
                             <span
                               className="size-2 rounded-full bg-primary"
-                              aria-label="falta la categoría"
+                              aria-label="faltan datos"
                             />
                           )}
                         </Link>
@@ -320,6 +329,7 @@ export default async function AccountPage({
           {message && <Alert tone="success">{message}</Alert>}
           <FirstSteps
             hasPhone={Boolean(profile?.phone)}
+            gender={profile?.gender ?? null}
             category={profile?.category ?? null}
             hasRegistrations={registrations.length > 0}
           />
@@ -363,6 +373,7 @@ export default async function AccountPage({
                       phone={profile?.phone ?? ""}
                       username={profile?.username ?? user.username ?? ""}
                       category={profile?.category ?? null}
+                      gender={profile?.gender ?? null}
                     />
                   </div>
                 </SubSection>
@@ -425,16 +436,30 @@ export default async function AccountPage({
  */
 function FirstSteps({
   hasPhone,
+  gender,
   category,
   hasRegistrations,
 }: {
   hasPhone: boolean;
+  gender: string | null;
   category: number | null;
   hasRegistrations: boolean;
 }) {
-  if (hasPhone && category && hasRegistrations) return null;
+  if (hasPhone && gender && category && hasRegistrations) return null;
 
   const steps = [
+    {
+      done: Boolean(gender),
+      title: gender
+        ? `Tu rama es ${genderLabel(gender).toLowerCase()}`
+        : "Elegí tu rama",
+      text: gender
+        ? "Define si jugás torneos masculinos, femeninos o mixtos."
+        : "Masculino o femenino: define en qué torneos te podés anotar.",
+      action: gender
+        ? null
+        : { href: `${sectionHref("datos")}#rama`, label: "Elegir" },
+    },
     {
       done: hasPhone,
       title: "Cargá tu teléfono",

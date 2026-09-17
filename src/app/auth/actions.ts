@@ -40,7 +40,18 @@ export async function signUp(formData: FormData) {
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const gender = String(formData.get("gender") ?? "");
   const next = safeRedirectPath(formData.get("next"));
+
+  if (gender !== "masculino" && gender !== "femenino") {
+    redirect(
+      withParams("/login", {
+        modo: "registro",
+        error: "Elegí tu rama (masculino o femenino) para crear la cuenta.",
+        next,
+      }),
+    );
+  }
 
   if (fullName.length < 3) {
     redirect(
@@ -57,7 +68,8 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      // handle_new_user guarda la rama en el perfil.
+      data: { full_name: fullName, gender },
       emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=${encodeURIComponent(next)}`,
     },
   });

@@ -31,6 +31,7 @@ export type Inbox = {
   invitations: InboxInvitation[];
   waiting: InboxWaiting[];
   missingCategory: boolean;
+  missingGender: boolean;
   /** Solo admins: inscripciones con la pareja aceptada que falta confirmar. */
   adminPending: number;
   /** Solo admins: cuentas que esperan categoría para poder anotarse. */
@@ -111,6 +112,7 @@ export async function loadInbox(): Promise<Inbox | null> {
         : [];
     }),
     missingCategory: !profile?.category,
+    missingGender: !profile?.gender,
     adminWithoutCategory,
     adminPending: tournaments.reduce(
       (total, tournament) => total + tournament.pending,

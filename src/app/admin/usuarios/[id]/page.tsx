@@ -14,6 +14,7 @@ import { notFound } from "next/navigation";
 import { setProfileAdmin } from "@/app/admin/usuarios/actions";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ProfileCategoryForm } from "@/components/admin/profile-category-form";
+import { ProfileGenderForm } from "@/components/admin/profile-gender-form";
 import { EmptyState } from "@/components/empty-state";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ import { getProfileById, getRanking, getUserRegistrations } from "@/lib/data";
 import { formatDate, formatDateRange, formatNumber } from "@/lib/format";
 import {
   branchLabel,
+  genderLabel,
   playerName,
   registrationStatus,
   tournamentStatus,
@@ -193,7 +195,7 @@ export default async function AdminUserPage({
         <div className="space-y-6">
           <Card className="p-5 sm:p-6">
             <h2 className="font-display text-2xl font-bold uppercase">
-              Categoría
+              Categoría y rama
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {profile.category
@@ -205,6 +207,18 @@ export default async function AdminUserPage({
                 userId={profile.id}
                 name={name}
                 category={profile.category}
+              />
+            </div>
+            <p className="mt-5 text-sm text-muted-foreground">
+              {profile.gender
+                ? `Rama: ${genderLabel(profile.gender).toLowerCase()}. Si la cambiás, le llega un aviso.`
+                : "Todavía no eligió su rama: no se puede anotar hasta que la elija (o se la asignes vos)."}
+            </p>
+            <div className="mt-3">
+              <ProfileGenderForm
+                userId={profile.id}
+                name={name}
+                gender={profile.gender}
               />
             </div>
           </Card>

@@ -5,6 +5,7 @@ import { signIn, signUp } from "@/app/auth/actions";
 import { AuthShell } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert } from "@/components/ui/alert";
+import { GenderChoice } from "@/components/gender-choice";
 import { Input, Label } from "@/components/ui/input";
 import { getCurrentUser } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -85,6 +86,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               minLength={3}
               required
             />
+          </div>
+          <div>
+            <GenderChoice required describedBy="signup-gender-hint" />
+            <p
+              id="signup-gender-hint"
+              className="mt-1.5 text-xs text-muted-foreground"
+            >
+              Define en qué torneos podés anotarte (masculinos, femeninos o
+              mixtos). Después solo la cambia el organizador.
+            </p>
           </div>
           <div>
             <Label htmlFor="signup-email">Email</Label>
