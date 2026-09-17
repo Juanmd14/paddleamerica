@@ -2,6 +2,7 @@ import {
   Check,
   ClipboardList,
   Download,
+  FileSpreadsheet,
   MessageCircle,
   RotateCcw,
   X,
@@ -19,7 +20,11 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
-import { getTournamentById, getTournamentRegistrations } from "@/lib/data";
+import {
+  getPlayersByProfileIds,
+  getTournamentById,
+  getTournamentRegistrations,
+} from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
 import { categoryRulesLabel } from "@/lib/categories";
 import { registrationStatus, spotsInfo } from "@/lib/labels";
@@ -50,6 +55,27 @@ export default async function TournamentRegistrationsPage({
     getTournamentRegistrations(tournament.id),
     searchParams,
   ]);
+
+  // Para la planilla de puntos: quiénes jugaron y cuáles ya están en el ranking.
+  const confirmed = registrations.filter(
+    (registration) => registration.status === "confirmada",
+  );
+  const confirmedAccounts = confirmed.flatMap((registration) =>
+    [registration.profile, registration.partnerProfile].filter(
+      (profile) => profile !== null,
+    ),
+  );
+  const rankedPlayers = await getPlayersByProfileIds(
+    confirmedAccounts.map((profile) => profile.id),
+  );
+  const rankedIds = new Set(rankedPlayers.map((player) => player.profile_id));
+  const outOfRanking = [
+    ...new Map(
+      confirmedAccounts
+        .filter((profile) => !rankedIds.has(profile.id))
+        .map((profile) => [profile.id, profile]),
+    ).values(),
+  ];
   const filter = firstParam(query.estado);
   const visible = filter
     ? registrations.filter((registration) => registration.status === filter)
@@ -104,6 +130,70 @@ export default async function TournamentRegistrationsPage({
             Cuentan las pendientes y las confirmadas. Con el cupo lleno, el
             sitio no deja anotarse; si confirmás de más, el cupo se excede.
           </p>
+        </Card>
+      )}
+
+      {confirmed.length > 0 && (
+        <Card className="space-y-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-xl">
+              <h2 className="flex items-center gap-2 font-display text-2xl font-bold uppercase">
+                <FileSpreadsheet className="size-5" aria-hidden="true" />
+                Puntos del torneo
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Cuando termine, bajá la planilla con los {rankedPlayers.length}{" "}
+                {rankedPlayers.length === 1
+                  ? "jugador confirmado"
+                  : "jugadores confirmados"}
+                , completá los puntos que ganó cada uno y subila en Carga de
+                puntos: se suman a los que ya tienen.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ButtonLink
+                href={`/admin/torneos/${tournament.id}/inscripciones/planilla`}
+                size="sm"
+                prefetch={false}
+                aria-disabled={rankedPlayers.length === 0}
+                className={cn(
+                  rankedPlayers.length === 0 &&
+                    "pointer-events-none opacity-50",
+                )}
+              >
+                <Download className="size-4" aria-hidden="true" />
+                Planilla de puntos
+              </ButtonLink>
+              <ButtonLink href="/admin/puntos" size="sm" variant="outline">
+                Ir a carga de puntos
+              </ButtonLink>
+            </div>
+          </div>
+          {outOfRanking.length > 0 && (
+            <div className="rounded-lg border border-warning-border bg-warning-soft p-4 text-sm text-warning">
+              <p className="font-medium">
+                {outOfRanking.length === 1
+                  ? "Este jugador confirmado no está en el ranking y no va a aparecer en la planilla:"
+                  : "Estos jugadores confirmados no están en el ranking y no van a aparecer en la planilla:"}
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {outOfRanking.map((profile) => (
+                  <li key={profile.id}>
+                    <Link
+                      href={`/admin/usuarios/${profile.id}`}
+                      className="inline-flex rounded-full bg-surface px-3 py-1 font-semibold text-foreground hover:text-accent"
+                    >
+                      {profile.full_name || `@${profile.username}`}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2">
+                Entrá a su ficha y tocá “Agregar al ranking” antes de bajar la
+                planilla.
+              </p>
+            </div>
+          )}
         </Card>
       )}
 

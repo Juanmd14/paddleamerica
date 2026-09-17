@@ -795,6 +795,21 @@ export const getPlayerByProfileId = cache(
   },
 );
 
+/** Los jugadores del ranking vinculados a estas cuentas (las que no tienen, no aparecen). */
+export async function getPlayersByProfileIds(
+  profileIds: string[],
+): Promise<Player[]> {
+  if (isDemoMode || profileIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .in("profile_id", [...new Set(profileIds)]);
+  if (error) throw error;
+  return data;
+}
+
 /** Inscripciones de un torneo con los perfiles de los dos jugadores (email y teléfono incluidos). */
 export async function getTournamentRegistrations(
   tournamentId: number,
