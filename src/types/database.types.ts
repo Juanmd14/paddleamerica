@@ -517,6 +517,10 @@ export type Database = {
         }
         Returns: number
       }
+      release_registration: {
+        Args: { p_registration_id: number }
+        Returns: undefined
+      }
       respond_invitation: {
         Args: { p_accept: boolean; p_registration_id: number }
         Returns: string

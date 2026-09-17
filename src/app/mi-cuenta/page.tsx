@@ -119,16 +119,26 @@ export default async function AccountPage({
     SECTIONS.find((item) => item.key === firstParam(params.seccion))?.key ??
     "torneos";
 
+  // Invitaciones que todavía se pueden responder (el torneo sigue abierto).
   const invitations = registrations.filter(
     (registration) =>
       registration.partner_id === user.id &&
-      registration.status === "invitacion",
+      registration.status === "invitacion" &&
+      registration.tournament.status === "inscripciones",
   );
   const mine = registrations.filter(
     (registration) => !invitations.includes(registration),
   );
   const upcoming = mine.filter(
-    (registration) => registration.tournament.status !== "finalizado",
+    (registration) =>
+      registration.tournament.status !== "finalizado" &&
+      ACTIVE_STATUSES.includes(registration.status),
+  );
+  // Rechazadas o canceladas de torneos que todavía no se jugaron.
+  const rejected = mine.filter(
+    (registration) =>
+      registration.tournament.status !== "finalizado" &&
+      !ACTIVE_STATUSES.includes(registration.status),
   );
   const played = mine.filter(
     (registration) => registration.tournament.status === "finalizado",
@@ -356,6 +366,7 @@ export default async function AccountPage({
               <TournamentsSection
                 invitations={invitations}
                 upcoming={upcoming}
+                rejected={rejected}
                 played={played}
                 userId={user.id}
               />
@@ -688,15 +699,21 @@ function GroupTitle({ title, count }: { title: string; count: number }) {
 function TournamentsSection({
   invitations,
   upcoming,
+  rejected,
   played,
   userId,
 }: {
   invitations: RegistrationWithTournament[];
   upcoming: RegistrationWithTournament[];
+  /** Rechazadas o canceladas de torneos que todavía no se jugaron. */
+  rejected: RegistrationWithTournament[];
   played: RegistrationWithTournament[];
   userId: string;
 }) {
-  if (invitations.length + upcoming.length + played.length === 0) {
+  if (
+    invitations.length + upcoming.length + rejected.length + played.length ===
+    0
+  ) {
     return (
       <div className="p-4 sm:p-6">
         <EmptyState
@@ -781,6 +798,23 @@ function TournamentsSection({
           </p>
         )}
       </section>
+
+      {rejected.length > 0 && (
+        <section className="space-y-3">
+          <GroupTitle title="No confirmadas" count={rejected.length} />
+          <p className="text-sm text-muted-foreground">
+            El organizador no confirmó estas inscripciones. Si fue un error,
+            pedile que las libere y te podés anotar de nuevo.
+          </p>
+          <ul className="space-y-3">
+            {rejected.map((registration) => (
+              <li key={registration.id}>
+                <RegistrationCard registration={registration} userId={userId} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {played.length > 0 && (
         <section className="space-y-3">

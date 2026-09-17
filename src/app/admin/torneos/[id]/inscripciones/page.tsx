@@ -4,13 +4,18 @@ import {
   Download,
   MessageCircle,
   RotateCcw,
+  Undo2,
   X,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { setRegistrationStatus } from "@/app/admin/torneos/[id]/inscripciones/actions";
+import {
+  releaseRegistration,
+  setRegistrationStatus,
+} from "@/app/admin/torneos/[id]/inscripciones/actions";
 import { AdminPageHeader, Table, Td, Th } from "@/components/admin/admin-ui";
+import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { EmptyState } from "@/components/empty-state";
 import { PairPlayers } from "@/components/pair-players";
 import { SpotsBar } from "@/components/spots-bar";
@@ -286,6 +291,25 @@ export default async function TournamentRegistrationsPage({
                               </SubmitButton>
                             </form>
                           )}
+                        {(registration.status === "rechazada" ||
+                          registration.status === "cancelada") && (
+                          <form
+                            action={releaseRegistration.bind(
+                              null,
+                              registration.id,
+                            )}
+                          >
+                            <ConfirmSubmitButton
+                              size="sm"
+                              variant="ghost"
+                              pendingLabel="…"
+                              confirmMessage={`¿Liberar esta inscripción? Se borra de la lista y ${name} se va a poder anotar de nuevo (le avisamos).`}
+                            >
+                              <Undo2 className="size-4" aria-hidden="true" />
+                              Liberar
+                            </ConfirmSubmitButton>
+                          </form>
+                        )}
                       </div>
                     </Td>
                   </tr>

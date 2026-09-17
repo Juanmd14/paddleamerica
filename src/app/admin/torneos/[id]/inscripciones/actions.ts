@@ -7,6 +7,41 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUSES = ["pendiente", "confirmada", "rechazada"] as const;
+
+/**
+ * Borra una inscripción rechazada o cancelada para que esa pareja se pueda
+ * volver a anotar. Le avisa al jugador.
+ */
+export async function releaseRegistration(
+  registrationId: number,
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: registration } = await supabase
+    .from("tournament_registrations")
+    .select("tournament:tournaments(id, slug)")
+    .eq("id", registrationId)
+    .maybeSingle();
+
+  const { error } = await supabase.rpc("release_registration", {
+    p_registration_id: registrationId,
+  });
+  if (error) {
+    console.error("[liberar inscripción]", error);
+    throw new Error("No pudimos liberar la inscripción. Probá de nuevo.");
+  }
+
+  const tournament = registration?.tournament;
+  if (tournament) {
+    revalidatePath(`/admin/torneos/${tournament.id}/inscripciones`);
+    revalidatePath(`/torneos/${tournament.slug}`);
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/inscripciones");
+  revalidatePath("/admin/torneos");
+  revalidatePath("/mi-cuenta");
+}
 type Status = (typeof STATUSES)[number];
 
 /** Cambia el estado. Al confirmar o rechazar avisa a los dos jugadores en su cuenta y por email. */

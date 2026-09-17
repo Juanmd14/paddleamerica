@@ -677,14 +677,21 @@ export async function getUnreadNotificationsCount(): Promise<number> {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .is("read_at", null),
+    // Solo las invitaciones que todavía se pueden responder.
     supabase
       .from("tournament_registrations")
-      .select("id", { count: "exact", head: true })
+      .select("id, tournament:tournaments!inner(status)", {
+        count: "exact",
+        head: true,
+      })
       .eq("partner_id", user.id)
-      .eq("status", "invitacion"),
+      .eq("status", "invitacion")
+      .eq("tournament.status", "inscripciones"),
   ]);
-  if (unread.error) throw unread.error;
-  if (invitations.error) throw invitations.error;
+  // El número de la campanita está en el header de todo el sitio: si falla la
+  // consulta, no vale tirar abajo la página entera.
+  if (unread.error) console.error("[avisos sin leer]", unread.error);
+  if (invitations.error) console.error("[invitaciones]", invitations.error);
   return Math.max(unread.count ?? 0, invitations.count ?? 0);
 }
 

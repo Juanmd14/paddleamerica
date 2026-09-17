@@ -61,6 +61,8 @@ function registrationErrorMessage(
     suma_insuficiente: `Entre los dos no llegan a la suma del torneo${rules}.`,
     ya_inscripto:
       "Ya tenés una inscripción en este torneo. Cancelala para anotarte con otra pareja.",
+    inscripcion_rechazada:
+      "El organizador rechazó tu inscripción en este torneo. Si fue un error, pedile que la libere.",
     pareja_ya_inscripta: `${partner} ya está anotado en este torneo con otra pareja.`,
     cupo_completo:
       "Se completó el cupo. Si se libera un lugar, vas a poder anotarte.",
