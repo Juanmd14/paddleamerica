@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { emailAccounts } from "@/lib/account-emails";
 import { getCurrentUser, safeAvatarUrl } from "@/lib/auth";
 import {
   categoryName,
@@ -8,6 +10,8 @@ import {
   pairCategoryError,
 } from "@/lib/categories";
 import { getMyProfile, getTournament } from "@/lib/data";
+import { isEmailConfigured } from "@/lib/email";
+import { formatDateRange } from "@/lib/format";
 import { genderErrorMessage, pairGenderError } from "@/lib/gender-rules";
 import { genderLabel } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -117,7 +121,7 @@ export async function registerForTournament(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("register_pair", {
+  const { data: registrationId, error } = await supabase.rpc("register_pair", {
     p_tournament_id: tournament.id,
     p_partner_username: values.partner_username,
     p_contact_phone: values.contact_phone,
@@ -133,6 +137,28 @@ export async function registerForTournament(
     return error.message === "pareja_no_existe"
       ? { errors: { partner_username: message }, values }
       : { message, values };
+  }
+
+  if (isEmailConfigured()) {
+    const { data: created } = await supabase
+      .from("tournament_registrations")
+      .select("partner_id")
+      .eq("id", registrationId)
+      .maybeSingle();
+    const dates = formatDateRange(tournament.starts_on, tournament.ends_on);
+    after(() =>
+      emailAccounts([created?.partner_id], {
+        subject: `${user.name} te invitó a jugar el ${tournament.name}`,
+        paragraphs: [
+          `${user.name} te invitó a jugar el ${tournament.name} (${dates}, ${tournament.city}).`,
+          "Aceptá la invitación para quedar anotados. Después el organizador confirma el lugar.",
+        ],
+        button: {
+          label: "Ver la invitación",
+          path: `/torneos/${slug}#inscripcion`,
+        },
+      }),
+    );
   }
 
   // Si todavía no tenía teléfono en su cuenta, queda guardado el de la inscripción.
@@ -223,6 +249,15 @@ export async function respondInvitation(
   if (!user) return { message: "Tu sesión expiró. Ingresá de nuevo." };
 
   const supabase = await createClient();
+  // Para el email: después de rechazar, la inscripción ya no existe.
+  const { data: invitation } = isEmailConfigured()
+    ? await supabase
+        .from("tournament_registrations")
+        .select("user_id, tournament:tournaments(name, slug)")
+        .eq("id", registrationId)
+        .maybeSingle()
+    : { data: null };
+
   const { error } = await supabase.rpc("respond_invitation", {
     p_registration_id: registrationId,
     p_accept: accept,
@@ -239,6 +274,26 @@ export async function respondInvitation(
     };
   }
 
+  if (invitation) {
+    const { name } = invitation.tournament;
+    after(() =>
+      emailAccounts([invitation.user_id], {
+        subject: accept
+          ? `${user.name} aceptó jugar el ${name}`
+          : `${user.name} no aceptó jugar el ${name}`,
+        paragraphs: [
+          accept
+            ? "Ya están anotados. Falta que el organizador confirme el lugar."
+            : "Podés invitar a otra pareja mientras sigan abiertas las inscripciones.",
+        ],
+        button: {
+          label: "Ver el torneo",
+          path: `/torneos/${invitation.tournament.slug}#inscripcion`,
+        },
+      }),
+    );
+  }
+
   revalidateRegistration(slug);
   return {};
 }
@@ -252,12 +307,45 @@ export async function cancelRegistration(
   if (!user) return;
 
   const supabase = await createClient();
+  const { data: registration } = isEmailConfigured()
+    ? await supabase
+        .from("tournament_registrations")
+        .select(
+          "user_id, partner_id, status, tournament:tournaments(name, slug)",
+        )
+        .eq("id", registrationId)
+        .maybeSingle()
+    : { data: null };
+
   const { error } = await supabase.rpc("cancel_registration", {
     p_registration_id: registrationId,
   });
   if (error) {
     console.error("[cancelar inscripción]", error);
     throw new Error(registrationErrorMessage(error.message));
+  }
+
+  if (registration) {
+    const other =
+      registration.user_id === user.id
+        ? registration.partner_id
+        : registration.user_id;
+    const { name } = registration.tournament;
+    after(() =>
+      emailAccounts([other], {
+        subject:
+          registration.status === "invitacion"
+            ? `${user.name} retiró la invitación al ${name}`
+            : `${user.name} canceló la inscripción al ${name}`,
+        paragraphs: [
+          "Si querés jugarlo, podés anotarte con otra pareja mientras sigan abiertas las inscripciones.",
+        ],
+        button: {
+          label: "Ver el torneo",
+          path: `/torneos/${registration.tournament.slug}#inscripcion`,
+        },
+      }),
+    );
   }
 
   revalidateRegistration(slug);

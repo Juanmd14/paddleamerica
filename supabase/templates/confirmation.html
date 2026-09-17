@@ -65,7 +65,7 @@
                   empezar a anotarte en los torneos.
                 </p>
                 <a
-                  href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+                  href="{{ if eq .RedirectTo .SiteURL }}{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email{{ else }}{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email{{ end }}"
                   style="
                     display: inline-block;
                     background: #ffbb1f;

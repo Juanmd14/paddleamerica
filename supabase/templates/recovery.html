@@ -65,7 +65,7 @@
                   elegir una contraseña nueva.
                 </p>
                 <a
-                  href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery"
+                  href="{{ if eq .RedirectTo .SiteURL }}{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery{{ else }}{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery{{ end }}"
                   style="
                     display: inline-block;
                     background: #ffbb1f;

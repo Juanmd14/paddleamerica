@@ -1,6 +1,11 @@
 import "server-only";
 import { siteConfig } from "@/lib/site";
 
+/** ¿Están RESEND_API_KEY y EMAIL_FROM? Sin eso, los avisos quedan solo en la cuenta. */
+export function isEmailConfigured() {
+  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+}
+
 type Email = {
   to: string;
   subject: string;

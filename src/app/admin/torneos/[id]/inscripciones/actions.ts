@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { emailProfiles } from "@/lib/account-emails";
 import { requireAdmin } from "@/lib/auth";
-import { emailLayout, sendEmail } from "@/lib/email";
-import { siteConfig } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUSES = ["pendiente", "confirmada", "rechazada"] as const;
@@ -66,26 +66,17 @@ export async function setRegistrationStatus(
       .from("profiles")
       .select("email, full_name")
       .in("id", players);
-    for (const profile of profiles ?? []) {
-      if (!profile.email) continue;
-      const greeting = profile.full_name
-        ? `Hola, ${profile.full_name.split(" ")[0]}.`
-        : "Hola.";
-      await sendEmail({
-        to: profile.email,
+    after(() =>
+      emailProfiles(profiles ?? [], {
         subject: title,
-        html: emailLayout({
-          title: confirmed
-            ? "¡Inscripción confirmada!"
-            : "Inscripción rechazada",
-          paragraphs: [greeting, `${title}.`, body],
-          button: {
-            label: "Ver mi cuenta",
-            href: `${siteConfig.url}/mi-cuenta`,
-          },
-        }),
-      });
-    }
+        title: confirmed ? "¡Inscripción confirmada!" : "Inscripción rechazada",
+        paragraphs: [`${title}.`, body],
+        button: {
+          label: "Ver el torneo",
+          path: `/torneos/${tournament.slug}#inscripcion`,
+        },
+      }),
+    );
   }
 
   revalidatePath(`/admin/torneos/${tournament.id}/inscripciones`);

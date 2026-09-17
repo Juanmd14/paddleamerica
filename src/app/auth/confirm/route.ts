@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = safeRedirectPath(searchParams.get("next"));
+  // Sin next (por ejemplo, si Supabase usó la Site URL), a donde corresponde.
+  const next = safeRedirectPath(
+    searchParams.get("next"),
+    type === "recovery" ? "/mi-cuenta/contrasena" : "/mi-cuenta",
+  );
 
   const supabase = await createClient();
   let verified = false;

@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { emailProfiles } from "@/lib/account-emails";
 import { redirect } from "next/navigation";
 import { type FormState, text } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
-import { isCategoryNumber } from "@/lib/categories";
+import { categoryName, isCategoryNumber } from "@/lib/categories";
 import { createClient } from "@/lib/supabase/server";
 
 /** Asigna (o quita, con "") la categoría de una cuenta. Le avisa al jugador. */
@@ -21,6 +23,12 @@ export async function setProfileCategory(
   }
 
   const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("profiles")
+    .select("category, email, full_name")
+    .eq("id", userId)
+    .maybeSingle();
+
   const { error } = await supabase.rpc("set_profile_category", {
     p_user_id: userId,
     p_category: category,
@@ -34,6 +42,18 @@ export async function setProfileCategory(
             ? "Esta cuenta está vinculada al ranking: cambiá la categoría en la ficha del jugador."
             : "No pudimos guardar la categoría. Probá de nuevo.",
     };
+  }
+
+  if (before && category && before.category !== category) {
+    after(() =>
+      emailProfiles([before], {
+        subject: `Tu categoría es ${categoryName(category)}`,
+        paragraphs: [
+          "La asignó el organizador. Ya podés anotarte en los torneos de tu categoría.",
+        ],
+        button: { label: "Ver torneos", path: "/torneos" },
+      }),
+    );
   }
 
   revalidatePath("/admin/usuarios");
@@ -127,6 +147,14 @@ export async function setProfileAdmin(
 ): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const { data: account } = makeAdmin
+    ? await supabase
+        .from("profiles")
+        .select("email, full_name, is_admin")
+        .eq("id", userId)
+        .maybeSingle()
+    : { data: null };
+
   const { error } = await supabase.rpc("set_profile_admin", {
     p_user_id: userId,
     p_is_admin: makeAdmin,
@@ -136,6 +164,18 @@ export async function setProfileAdmin(
       ADMIN_ERRORS[error.message] ??
       "No pudimos cambiar el permiso. Probá de nuevo.";
     redirect(`/admin/usuarios/${userId}?error=${encodeURIComponent(message)}`);
+  }
+
+  if (account && !account.is_admin) {
+    after(() =>
+      emailProfiles([account], {
+        subject: "Ahora sos admin de PaddleAmerica",
+        paragraphs: [
+          "Tenés acceso al panel: torneos, jugadores, usuarios y puntos.",
+        ],
+        button: { label: "Abrir el panel", path: "/admin" },
+      }),
+    );
   }
 
   revalidatePath("/admin/usuarios");

@@ -62,29 +62,41 @@ O pegá en el **SQL Editor** del dashboard, en orden, todos los archivos de `sup
 
 5. Reiniciá `npm run dev`.
 
-## Emails (confirmación y recuperar contraseña)
+## Emails
 
-El servicio de email que trae Supabase solo manda mails a los miembros de tu organización, y pocos por hora. Antes de publicar el sitio hay que configurar un SMTP propio:
+Hay dos tipos de email y los dos necesitan **un dominio propio verificado en Resend**:
 
-1. En [Resend](https://resend.com) agregá tu dominio y cargá los registros DNS que te da en tu proveedor de DNS (Hostinger → DNS Zone). Resend usa el subdominio `send.`, así que no pisa el mail del dominio.
+- **Los de Supabase Auth** (confirmar la cuenta, recuperar la contraseña): salen por el SMTP que configures en Supabase. El servicio que trae Supabase solo manda a los miembros de tu organización y pocos por hora.
+- **Los avisos del sitio** (te invitaron a jugar, tu pareja aceptó o canceló, inscripción confirmada, categoría asignada, ahora sos admin): los manda la app con la API de Resend. Sin las variables, esos avisos quedan solo en la campanita.
+
+**Checklist para cuando compres el dominio:**
+
+1. En [Resend](https://resend.com) agregá el dominio y cargá los registros DNS que te da en tu proveedor (Hostinger → DNS Zone). Usa el subdominio `send.`, así que no pisa el mail del dominio. Esperá a que diga _Verified_.
 2. Creá una API key con permiso _Sending access_, limitada a ese dominio.
-3. En Supabase → **Authentication → Emails → SMTP Settings**: host `smtp.resend.com`, puerto `465`, usuario `resend`, contraseña la API key; remitente `no-responder@tudominio` y nombre `PaddleAmerica`.
-4. En **Authentication → Emails → Templates** pegá las plantillas en castellano:
+3. En Vercel → Settings → Environment Variables (Production), y después **Redeploy**:
+   - `RESEND_API_KEY` = la API key.
+   - `EMAIL_FROM` = `PaddleAmerica <avisos@tudominio>`.
+   - `SUPABASE_SECRET_KEY` = Supabase → Project Settings → API Keys → _Secret keys_. Solo servidor, **nunca** con `NEXT_PUBLIC_`: la usa `src/lib/supabase/admin.ts` para leer el email de la pareja cuando un jugador la invita.
+   - `NEXT_PUBLIC_SITE_URL` = `https://tudominio` (tipo **Config**, no Secret).
+4. Supabase → **Authentication → Emails → SMTP Settings**: host `smtp.resend.com`, puerto `465`, usuario `resend`, contraseña la API key, remitente `no-responder@tudominio`, nombre `PaddleAmerica`. En **Authentication → Rate Limits** subí los emails por hora.
+5. **Authentication → Emails → Templates**:
    - _Confirm signup_ → asunto "Confirmá tu cuenta en PaddleAmerica", cuerpo `supabase/templates/confirmation.html`.
    - _Reset password_ → asunto "Elegí una contraseña nueva", cuerpo `supabase/templates/recovery.html`.
 
-   Los links van a `/auth/confirm` con `token_hash`, así funcionan aunque el mail se abra en otro dispositivo. Requieren que la URL de redirección esté permitida (`https://tudominio/**` en _Redirect URLs_).
-
-5. Encendé **Authentication → Sign In / Providers → Email → Confirm email**.
-6. En producción: _Site URL_ con tu dominio y `NEXT_PUBLIC_SITE_URL` con la misma URL.
+   Los links van a `/auth/confirm` con `token_hash`, así funcionan aunque el mail se abra en otro dispositivo. Si Supabase no acepta la URL de redirección, arman el link con la _Site URL_.
+6. **Authentication → URL Configuration**: _Site URL_ `https://tudominio` (sin barra final) y en _Redirect URLs_ `https://tudominio/**`, `https://paddleamerica.vercel.app/**` y `http://localhost:3000/**`.
+7. En Vercel → Domains, agregá el dominio.
+8. Probá con dos cuentas de prueba: recuperar contraseña (tiene que llegar el mail y el link tiene que funcionar), invitar, aceptar y confirmar desde el panel.
+9. Recién ahí encendé **Authentication → Sign In / Providers → Email → Confirm email** y probá crear una cuenta. Después borrá las cuentas de prueba desde el panel.
 
 ## Inscripciones
 
-- Los torneos con cupo muestran cuántas parejas hay anotadas (por ejemplo 18/24) en las tarjetas y en la página del torneo.
-- Cualquier usuario con cuenta se anota con su pareja en los torneos con `status = inscripciones`. Queda **pendiente**.
-- El admin la confirma o rechaza en **Panel → Torneos → Inscripciones**. El jugador recibe un aviso en **Mi cuenta** (campanita en el header) y un email si Resend está configurado.
-- El usuario puede darse de baja mientras las inscripciones sigan abiertas y la inscripción no esté rechazada (la baja borra la fila, así puede volver a anotarse).
-- Las reglas están en las políticas RLS de las migraciones: nadie ve inscripciones ajenas, nadie se anota en torneos cerrados y solo los admins cambian estados.
+- Cada inscripción es de a dos. El jugador busca a su pareja por `@usuario` o por nombre y la invita. Si la pareja no tiene cuenta, puede mandarle por WhatsApp el link para registrarse.
+- La pareja recibe un aviso y **acepta o rechaza**. Después de invitar, el botón _Avisale por WhatsApp_ le manda el link. Recién al aceptar ocupan lugar en el cupo.
+- El sitio no deja anotarse a quien no cumple la **categoría** (rango o suma) o la **rama** del torneo: en uno masculino o femenino juegan los dos de esa rama; en uno mixto, uno de cada.
+- El admin ve los perfiles de los dos y confirma o rechaza en **Panel → Para confirmar** o dentro de cada torneo. Les llega un aviso a los dos (y un email si están configurados).
+- Cualquiera de los dos puede cancelar mientras las inscripciones sigan abiertas; al otro le llega un aviso.
+- Todo pasa por funciones de la base (`register_pair`, `respond_invitation`, `cancel_registration`) que validan categoría, rama, cupo y repetidos. Nadie ve inscripciones ajenas y solo los admins cambian estados.
 
 ## Panel de administración
 
@@ -108,7 +120,7 @@ npx supabase db query --linked "update public.profiles set is_admin = true where
 
 Las imágenes se guardan en el bucket público `media` de Supabase Storage (solo los admins pueden subir).
 
-**Emails de avisos (opcional):** con `RESEND_API_KEY` y `EMAIL_FROM` en las variables de entorno, al confirmar o rechazar una inscripción también se manda un email. Sin dominio verificado, Resend solo envía desde `onboarding@resend.dev` al email de tu cuenta de Resend.
+**Emails de avisos:** ver la sección _Emails_. Sin configurar, los avisos quedan solo en la campanita de cada cuenta.
 
 ## Scripts
 
@@ -155,5 +167,5 @@ supabase/
 
 - **Rendimiento:** las lecturas públicas usan el cliente con cookies, así que todas las páginas se generan en cada request. Conviene leerlas con un cliente sin cookies y cachearlas.
 - Separar **Jugadores** (buscador) de **Ranking** (tabla + resultados).
-- Vincular la cuenta con el jugador del ranking e historial de torneos por jugador.
+- Historial de torneos por jugador.
 - Deploy en Vercel (completá `NEXT_PUBLIC_SITE_URL` con el dominio final).
