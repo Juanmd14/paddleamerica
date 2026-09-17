@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import {
+  countAccountsWithoutCategory,
   getAllTournaments,
   getMyNotifications,
   getMyProfile,
@@ -32,6 +33,8 @@ export type Inbox = {
   missingCategory: boolean;
   /** Solo admins: inscripciones con la pareja aceptada que falta confirmar. */
   adminPending: number;
+  /** Solo admins: cuentas que esperan categoría para poder anotarse. */
+  adminWithoutCategory: number;
   notifications: {
     id: number;
     title: string;
@@ -48,14 +51,21 @@ export async function loadInbox(): Promise<Inbox | null> {
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const [registrations, profile, notifications, news, tournaments] =
-    await Promise.all([
-      getMyRegistrations(),
-      getMyProfile(),
-      getMyNotifications(8),
-      getNews({ limit: 3 }),
-      user.isAdmin ? getAllTournaments() : Promise.resolve([]),
-    ]);
+  const [
+    registrations,
+    profile,
+    notifications,
+    news,
+    tournaments,
+    adminWithoutCategory,
+  ] = await Promise.all([
+    getMyRegistrations(),
+    getMyProfile(),
+    getMyNotifications(8),
+    getNews({ limit: 3 }),
+    user.isAdmin ? getAllTournaments() : Promise.resolve([]),
+    user.isAdmin ? countAccountsWithoutCategory() : Promise.resolve(0),
+  ]);
 
   const open = registrations.filter(
     (registration) => registration.tournament.status === "inscripciones",
@@ -101,6 +111,7 @@ export async function loadInbox(): Promise<Inbox | null> {
         : [];
     }),
     missingCategory: !profile?.category,
+    adminWithoutCategory,
     adminPending: tournaments.reduce(
       (total, tournament) => total + tournament.pending,
       0,

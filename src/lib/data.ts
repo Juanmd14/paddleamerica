@@ -915,26 +915,43 @@ export async function getLastPointsImport(): Promise<RankingImport | null> {
   return data;
 }
 
+/** Cuentas que esperan que un admin les asigne la categoría. */
+export async function countAccountsWithoutCategory(): Promise<number> {
+  if (isDemoMode) return 0;
+
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .is("category", null);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export type AdminDashboard = {
   pendingRegistrations: number;
+  accountsWithoutCategory: number;
   upcoming: TournamentWithCounts[];
   counts: { tournaments: number; news: number; players: number };
   lastImport: RankingImport | null;
 };
 
 export async function getAdminDashboard(): Promise<AdminDashboard> {
-  const [tournaments, news, players, lastImport] = await Promise.all([
-    getAllTournaments(),
-    getAllNews(),
-    getRanking({ includeInactive: true }),
-    getLastPointsImport(),
-  ]);
+  const [tournaments, news, players, lastImport, accountsWithoutCategory] =
+    await Promise.all([
+      getAllTournaments(),
+      getAllNews(),
+      getRanking({ includeInactive: true }),
+      getLastPointsImport(),
+      countAccountsWithoutCategory(),
+    ]);
 
   return {
     pendingRegistrations: tournaments.reduce(
       (total, tournament) => total + tournament.pending,
       0,
     ),
+    accountsWithoutCategory,
     upcoming: tournaments
       .filter((tournament) => tournament.status !== "finalizado")
       .toSorted((a, b) => a.starts_on.localeCompare(b.starts_on))

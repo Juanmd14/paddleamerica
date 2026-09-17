@@ -85,6 +85,7 @@ export function NotificationsButton({ count }: { count: number }) {
     (inbox?.invitations.length ?? 0) +
     (inbox?.waiting.length ?? 0) +
     (inbox?.adminPending ? 1 : 0) +
+    (inbox?.adminWithoutCategory ? 1 : 0) +
     (inbox?.missingCategory ? 1 : 0);
 
   return (
@@ -184,6 +185,18 @@ export function NotificationsButton({ count }: { count: number }) {
                         />
                       </li>
                     ))}
+                    {inbox.adminWithoutCategory > 0 && (
+                      <InboxLink
+                        href="/admin/usuarios?categoria=sin"
+                        onClick={close}
+                        icon={
+                          <UserRound className="size-5" aria-hidden="true" />
+                        }
+                        title={`${inbox.adminWithoutCategory} ${inbox.adminWithoutCategory === 1 ? "cuenta espera" : "cuentas esperan"} su categoría`}
+                        text="Asignala para que puedan anotarse en los torneos."
+                        highlight
+                      />
+                    )}
                     {inbox.adminPending > 0 && (
                       <InboxLink
                         href="/admin/inscripciones"
