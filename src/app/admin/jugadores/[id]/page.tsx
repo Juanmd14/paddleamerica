@@ -12,7 +12,7 @@ import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { PlayerForm } from "@/components/admin/player-form";
 import { PointsAdjuster } from "@/components/admin/points-adjuster";
 import { Alert } from "@/components/ui/alert";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
@@ -72,7 +72,7 @@ export default async function EditPlayerPage({
         />
         {account ? (
           <>
-            <Avatar
+            <ZoomableAvatar
               name={account.full_name || account.username}
               src={account.avatar_url}
               size="sm"

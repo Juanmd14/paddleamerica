@@ -27,6 +27,7 @@ import {
 import { EmptyState } from "@/components/empty-state";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
@@ -135,7 +136,7 @@ export default async function AdminUserPage({
 
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
-          <Avatar
+          <ZoomableAvatar
             name={name}
             src={profile.avatar_url}
             size="xl"

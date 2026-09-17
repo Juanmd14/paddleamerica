@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShareButton } from "@/components/share-button";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
@@ -73,7 +73,7 @@ export default async function PlayerPage({
             Volver al ranking
           </Link>
           <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
-            <Avatar
+            <ZoomableAvatar
               name={name}
               src={player.photo_url ?? accountAvatar}
               size="xl"

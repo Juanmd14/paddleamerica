@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { categoryName } from "@/lib/categories";
 import { genderLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
@@ -36,9 +37,15 @@ function PersonRow({
       (person.gender ? genderLabel(person.gender) : "sin rama"),
   ].filter(Boolean);
 
+  // Dentro de un link la foto no se puede agrandar (sería un botón dentro de un link).
+  const avatar = href ? (
+    <Avatar name={name} src={person?.avatar_url} size="sm" />
+  ) : (
+    <ZoomableAvatar name={name} src={person?.avatar_url} size="sm" />
+  );
   const content = (
     <>
-      <Avatar name={name} src={person?.avatar_url} size="sm" />
+      {avatar}
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">
           {name}

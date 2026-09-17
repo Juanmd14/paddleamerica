@@ -32,7 +32,7 @@ import { RankingSpotCard } from "@/components/ranking-spot-card";
 import { SubmitButton } from "@/components/submit-button";
 import { SupabaseNotice } from "@/components/supabase-notice";
 import { Alert } from "@/components/ui/alert";
-import { Avatar } from "@/components/ui/avatar";
+import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -153,7 +153,7 @@ export default async function AccountPage({
       <section className="bg-noche-950 text-white">
         <Container className="py-8 sm:py-12">
           <div className="flex items-center gap-4 sm:gap-6">
-            <Avatar
+            <ZoomableAvatar
               name={name}
               src={user.avatarUrl}
               size="lg"
