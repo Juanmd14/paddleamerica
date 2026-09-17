@@ -49,6 +49,11 @@ export function slugify(text: string) {
     .slice(0, 80);
 }
 
+/** Link de WhatsApp para compartir un texto: el usuario elige a quién mandarlo. */
+export function whatsappShareUrl(text: string) {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
 /**
  * Link de WhatsApp para un teléfono argentino cargado a mano
  * ("2392 123456", "02392-123456", "+54 9 2392 123456").

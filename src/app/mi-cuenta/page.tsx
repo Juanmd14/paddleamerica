@@ -13,6 +13,7 @@ import {
   MapPin,
   Trophy,
   UserRound,
+  MessageCircle,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -33,7 +34,7 @@ import { SupabaseNotice } from "@/components/supabase-notice";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { getCurrentUser } from "@/lib/auth";
@@ -45,6 +46,7 @@ import {
   getMyRankingSpot,
 } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
+import { invitationWhatsappUrl } from "@/lib/invitations";
 import {
   registrationStatus,
   tournamentStatus,
@@ -882,9 +884,25 @@ function RegistrationCard({
       </div>
 
       {pendingText && (
-        <p className="mx-4 mb-4 rounded-lg bg-oro-50 px-3 py-2 text-sm font-medium text-oro-800 sm:mx-5">
-          {pendingText}
-        </p>
+        <div className="mx-4 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-oro-50 px-3 py-2 sm:mx-5">
+          <p className="text-sm font-medium text-oro-800">{pendingText}</p>
+          {registration.status === "invitacion" && isOwner && (
+            <a
+              href={invitationWhatsappUrl(partnerName, tournament)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonStyles({
+                variant: "outline",
+                size: "sm",
+                className:
+                  "border-success/40 bg-surface text-success hover:bg-success-soft",
+              })}
+            >
+              <MessageCircle className="size-4" aria-hidden="true" />
+              Avisale por WhatsApp
+            </a>
+          )}
+        </div>
       )}
 
       <div className="border-t border-border bg-muted/40 px-4 py-3 sm:px-5">

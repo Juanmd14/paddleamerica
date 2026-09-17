@@ -17,12 +17,15 @@ import { cn } from "@/lib/utils";
 type RegistrationFormProps = {
   slug: string;
   defaultPhone?: string | null;
+  /** WhatsApp para invitar a crear cuenta a una pareja que no está en el sitio. */
+  signupShareUrl?: string;
 };
 
 /** Anotarse invitando a la pareja: se busca por @usuario o nombre entre las cuentas del sitio. */
 export function RegistrationForm({
   slug,
   defaultPhone,
+  signupShareUrl,
 }: RegistrationFormProps) {
   const [state, formAction] = useActionState<RegistrationFormState, FormData>(
     registerForTournament.bind(null, slug),
@@ -192,14 +195,24 @@ export function RegistrationForm({
               searchedTerm === term &&
               results.length === 0 ? (
                 <>
-                  No encontramos a nadie. Tu pareja tiene que tener cuenta:
-                  pasale{" "}
-                  <a
-                    href="/login?modo=registro"
-                    className="font-semibold text-accent hover:text-accent-hover"
-                  >
-                    el link para registrarse
-                  </a>
+                  No encontramos a nadie. Tu pareja tiene que tener cuenta:{" "}
+                  {signupShareUrl ? (
+                    <a
+                      href={signupShareUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-success hover:underline"
+                    >
+                      invitala por WhatsApp a crearse una
+                    </a>
+                  ) : (
+                    <a
+                      href="/login?modo=registro"
+                      className="font-semibold text-accent hover:text-accent-hover"
+                    >
+                      pasale el link para registrarse
+                    </a>
+                  )}
                   .
                 </>
               ) : (

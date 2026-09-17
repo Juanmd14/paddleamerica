@@ -10,6 +10,7 @@ import {
   Medal,
   Trophy,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -29,7 +30,7 @@ import { FlyerPlaceholder } from "@/components/tournament-card";
 import { TournamentMap } from "@/components/tournament-map";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth";
@@ -48,6 +49,7 @@ import {
   type MyTournamentEntry,
 } from "@/lib/data";
 import { formatDateRange, formatDayMonthTime } from "@/lib/format";
+import { invitationWhatsappUrl, signupWhatsappUrl } from "@/lib/invitations";
 import {
   featuredLabel,
   genderLabel,
@@ -493,6 +495,7 @@ function OpenRegistration({
         {rules}
         <RegistrationForm
           slug={tournament.slug}
+          signupShareUrl={signupWhatsappUrl(tournament)}
           defaultPhone={profile?.phone}
         />
       </div>
@@ -556,6 +559,21 @@ function MyRegistration({
         <step.icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
         <p className="font-medium">{step.text}</p>
       </div>
+      {registration.status === "invitacion" && isOwner && (
+        <a
+          href={invitationWhatsappUrl(partnerName, tournament)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonStyles({
+            variant: "outline",
+            className:
+              "w-full border-success/40 text-success hover:bg-success-soft",
+          })}
+        >
+          <MessageCircle className="size-4" aria-hidden="true" />
+          Avisale por WhatsApp
+        </a>
+      )}
       <PairPlayers
         player={registration.player}
         partner={registration.partner}

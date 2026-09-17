@@ -2,6 +2,7 @@
 
 import { Share2 } from "lucide-react";
 import { Button, type ButtonVariant } from "@/components/ui/button";
+import { whatsappShareUrl } from "@/lib/utils";
 
 type ShareButtonProps = {
   title: string;
@@ -29,9 +30,8 @@ export function ShareButton({
       return;
     }
 
-    const message = encodeURIComponent(`${title} ${url}`);
     window.open(
-      `https://wa.me/?text=${message}`,
+      whatsappShareUrl(`${title} ${url}`),
       "_blank",
       "noopener,noreferrer",
     );
