@@ -74,7 +74,7 @@ export default async function ChangePasswordPage({
 
       <p className="mt-6 text-center text-sm">
         <Link
-          href="/mi-cuenta"
+          href="/mi-cuenta?seccion=datos"
           className="font-semibold text-accent hover:text-accent-hover"
         >
           Volver a mi cuenta

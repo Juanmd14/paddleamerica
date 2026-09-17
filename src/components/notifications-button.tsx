@@ -211,7 +211,7 @@ export function NotificationsButton({ count }: { count: number }) {
                     ))}
                     {inbox.missingCategory && (
                       <InboxLink
-                        href="/mi-cuenta#mis-datos"
+                        href="/mi-cuenta?seccion=datos"
                         onClick={close}
                         icon={
                           <UserRound className="size-5" aria-hidden="true" />
@@ -311,7 +311,7 @@ export function NotificationsButton({ count }: { count: number }) {
           </div>
           <div className="border-t border-border px-5 py-3">
             <Link
-              href="/mi-cuenta"
+              href="/mi-cuenta?seccion=avisos"
               onClick={close}
               className="flex items-center justify-center gap-1 text-sm font-semibold text-accent hover:text-accent-hover"
             >

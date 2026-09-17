@@ -144,6 +144,9 @@ export async function updatePassword(formData: FormData) {
   }
 
   redirect(
-    withParams("/mi-cuenta", { message: "Actualizamos tu contraseña." }),
+    withParams("/mi-cuenta", {
+      seccion: "datos",
+      message: "Actualizamos tu contraseña.",
+    }),
   );
 }

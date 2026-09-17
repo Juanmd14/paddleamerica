@@ -7,9 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export type ProfileFormState = {
   ok?: boolean;
   message?: string;
-  errors?: Partial<
-    Record<"full_name" | "phone" | "username", string>
-  >;
+  errors?: Partial<Record<"full_name" | "phone" | "username", string>>;
 };
 
 // Igual que profiles_username_format en la base.
