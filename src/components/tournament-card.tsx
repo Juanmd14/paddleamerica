@@ -1,5 +1,7 @@
 import { CalendarDays, ChevronRight, MapPin, Star, Trophy } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import courtImage from "@/assets/cancha-aerea.webp";
 import { Cover } from "@/components/cover";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import {
@@ -170,13 +172,28 @@ export function TournamentResultCard({
         className,
       )}
     >
-      <div className="bg-noche-950 px-5 pt-5 pb-4 text-white">
+      {/*
+        De fondo, el flyer del torneo (o la cancha si no tiene). El degradé lo
+        oscurece abajo, donde van los nombres, para que siempre se lean.
+      */}
+      <div className="relative isolate flex min-h-40 flex-col justify-end overflow-hidden bg-noche-950 px-5 pt-10 pb-4 text-white">
+        <Image
+          src={tournament.cover_url || courtImage}
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+          className="-z-10 object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-linear-to-t from-noche-950 via-noche-950/80 to-noche-950/35"
+        />
         <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-oro-400 uppercase">
           <Trophy className="size-4 shrink-0" aria-hidden="true" />
           {champions?.length === 1 ? "Campeón" : "Campeones"}
         </p>
         {champions?.length ? (
-          <p className="mt-2 font-display text-3xl leading-none font-bold uppercase">
+          <p className="mt-2 font-display text-3xl leading-none font-bold uppercase drop-shadow-sm">
             {champions.map((name, index) => (
               <span key={index}>
                 {index > 0 && (
@@ -192,7 +209,7 @@ export function TournamentResultCard({
             ))}
           </p>
         ) : (
-          <p className="mt-2 text-noche-300">Resultado a confirmar</p>
+          <p className="mt-2 text-noche-200">Resultado a confirmar</p>
         )}
       </div>
 
