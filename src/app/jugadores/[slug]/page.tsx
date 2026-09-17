@@ -13,6 +13,7 @@ import {
   effectiveness,
   genderLabel,
   playerName,
+  rankingTitle,
   sideLabel,
 } from "@/lib/labels";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ export default async function PlayerPage({
       <section className="bg-noche-950 text-white">
         <Container className="py-12 sm:py-16">
           <Link
-            href={`/jugadores?rama=${player.gender}`}
+            href={`/jugadores?${new URLSearchParams({ rama: player.gender, categoria: player.category })}`}
             className="inline-flex items-center gap-2 text-sm font-medium text-noche-300 transition-colors hover:text-white"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
@@ -88,7 +89,7 @@ export default async function PlayerPage({
               {position ? (
                 <>
                   <p className="text-xs font-semibold tracking-[0.2em] text-noche-400 uppercase">
-                    Ranking {genderLabel(player.gender).toLowerCase()}
+                    Ranking {rankingTitle(player.category, player.gender)}
                   </p>
                   <p className="font-display text-7xl leading-none font-bold text-oro-400 tabular-nums">
                     #{position}
@@ -103,7 +104,7 @@ export default async function PlayerPage({
                 title={`${name} · Ranking regional`}
                 text={
                   position
-                    ? `${name}: #${position} del ranking ${genderLabel(player.gender).toLowerCase()}`
+                    ? `${name}: #${position} del ranking ${rankingTitle(player.category, player.gender)}`
                     : `${name} en el ranking regional`
                 }
                 variant="inverse"

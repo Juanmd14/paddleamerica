@@ -12,11 +12,11 @@ import courtImage from "@/assets/cancha-aerea.webp";
 import { CourtLines } from "@/components/court-lines";
 import { EmptyState } from "@/components/empty-state";
 import { NewsCard } from "@/components/news-card";
-import { RankingList } from "@/components/ranking-list";
 import { SectionHeading } from "@/components/section-heading";
 import { SpotsBar } from "@/components/spots-bar";
 import { TournamentCard } from "@/components/tournament-card";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
+import { Avatar } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
@@ -24,7 +24,6 @@ import {
   getHomeStats,
   getNews,
   getRanking,
-  getRankingTrends,
   getSiteSettings,
   getTournamentSpots,
   getTournaments,
@@ -33,14 +32,17 @@ import {
 } from "@/lib/data";
 import { currentYear, formatDateRange, formatNumber } from "@/lib/format";
 import {
+  branchLabel,
+  CATEGORIES,
   featuredLabel,
   genderLabel,
+  playerName,
   type SpotsInfo,
   spotsInfo,
 } from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import type { Tournament } from "@/types/models";
+import type { Player, Tournament } from "@/types/models";
 
 export default async function Home() {
   const [upcoming, news, men, women, stats, settings, spots] =
@@ -57,14 +59,10 @@ export default async function Home() {
   const tournaments = upcoming.slice(0, 4);
   const featuredTournament = pickFeaturedTournament(upcoming);
   const [leadNews, ...moreNews] = news;
-  // Las tendencias se calculan con la rama completa; se muestran los 5 primeros.
-  const [menTrends, womenTrends] = await Promise.all([
-    getRankingTrends(men),
-    getRankingTrends(women),
-  ]);
+  // El ranking es por categoría: se muestra el primero de cada una.
   const rankings = [
-    { gender: "masculino", players: men.slice(0, 5), trends: menTrends },
-    { gender: "femenino", players: women.slice(0, 5), trends: womenTrends },
+    { gender: "masculino", leaders: categoryLeaders(men) },
+    { gender: "femenino", leaders: categoryLeaders(women) },
   ];
 
   return (
@@ -164,26 +162,66 @@ export default async function Home() {
           </section>
 
           <aside>
-            <SectionHeading eyebrow="Top 5" title="Ranking" href="/jugadores" />
+            <SectionHeading
+              eyebrow="Ranking"
+              title="Líderes por categoría"
+              href="/jugadores"
+            />
             <div className="mt-8 space-y-6">
               {rankings.map((ranking) => (
                 <Card key={ranking.gender} className="overflow-hidden">
                   <div className="flex items-center justify-between border-b border-border px-4 py-3">
                     <h3 className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                      {genderLabel(ranking.gender)}
+                      {branchLabel(ranking.gender)}
                     </h3>
                     <Link
                       href={`/jugadores?rama=${ranking.gender}`}
                       className="text-xs font-semibold text-accent transition-colors hover:text-accent-hover"
                     >
-                      Ver completo
+                      Ver ranking
                     </Link>
                   </div>
-                  <RankingList
-                    players={ranking.players}
-                    trends={ranking.trends}
-                    compact
-                  />
+                  {ranking.leaders.length > 0 ? (
+                    <ul className="divide-y divide-border">
+                      {ranking.leaders.map((player) => (
+                        <li key={player.id}>
+                          <Link
+                            href={`/jugadores?${new URLSearchParams({ rama: ranking.gender, categoria: player.category })}`}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted"
+                          >
+                            <span className="w-10 shrink-0 font-display text-lg font-bold text-oro-600 uppercase">
+                              {player.category}
+                            </span>
+                            <Avatar
+                              name={playerName(player)}
+                              src={player.photo_url}
+                              size="sm"
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-semibold">
+                                {playerName(player)}
+                              </span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {player.club ?? "Líder de la categoría"}
+                              </span>
+                            </span>
+                            <span className="text-right">
+                              <span className="block font-display text-lg leading-none font-bold tabular-nums">
+                                {formatNumber(player.ranking_points)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                pts
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                      Todavía no hay jugadores en el ranking.
+                    </p>
+                  )}
                 </Card>
               ))}
             </div>
@@ -372,5 +410,20 @@ function JoinBanner() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** El primero de cada categoría (la lista ya viene ordenada por puntos), de 1ra a 8va. */
+function categoryLeaders(players: Player[]) {
+  const leaders = new Map<string, Player>();
+  for (const player of players) {
+    if (!leaders.has(player.category)) leaders.set(player.category, player);
+  }
+  const order = (category: string) => {
+    const index = (CATEGORIES as readonly string[]).indexOf(category);
+    return index === -1 ? -1 : index;
+  };
+  return [...leaders.values()].toSorted(
+    (a, b) => order(b.category) - order(a.category),
   );
 }

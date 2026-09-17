@@ -2,6 +2,8 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
+  Circle,
+  CircleCheck,
   History,
   KeyRound,
   LayoutDashboard,
@@ -337,6 +339,11 @@ export default async function AccountPage({
 
         <div className="min-w-0 space-y-4">
           {message && <Alert tone="success">{message}</Alert>}
+          <FirstSteps
+            hasPhone={Boolean(profile?.phone)}
+            category={profile?.category ?? null}
+            hasRegistrations={registrations.length > 0}
+          />
 
           <SectionPanel
             icon={current.icon}
@@ -430,6 +437,100 @@ export default async function AccountPage({
         </div>
       </Container>
     </>
+  );
+}
+
+/**
+ * Checklist para cuentas nuevas: qué falta para poder jugar. Desaparece sola
+ * cuando está todo (teléfono, categoría y una primera inscripción).
+ */
+function FirstSteps({
+  hasPhone,
+  category,
+  hasRegistrations,
+}: {
+  hasPhone: boolean;
+  category: number | null;
+  hasRegistrations: boolean;
+}) {
+  if (hasPhone && category && hasRegistrations) return null;
+
+  const steps = [
+    {
+      done: hasPhone,
+      title: "Cargá tu teléfono",
+      text: "Así el organizador te puede escribir por tu inscripción.",
+      action: { href: sectionHref("datos"), label: "Cargar" },
+    },
+    {
+      done: Boolean(category),
+      title: category
+        ? `Tu categoría es ${categoryName(category)}`
+        : "Esperá tu categoría",
+      text: category
+        ? "Define en qué torneos te podés anotar."
+        : "La asigna el organizador. Te avisamos acá cuando esté.",
+      action: null,
+    },
+    {
+      done: hasRegistrations,
+      title: "Anotate en un torneo",
+      text: "Elegí uno con inscripciones abiertas e invitá a tu pareja por su @usuario.",
+      action: { href: "/torneos", label: "Ver torneos" },
+    },
+  ];
+  const doneCount = steps.filter((step) => step.done).length;
+
+  return (
+    <Card className="overflow-hidden border-pista-200">
+      <div className="flex items-center justify-between gap-3 bg-pista-50 px-4 py-3 sm:px-6">
+        <h2 className="font-semibold text-pista-800">Primeros pasos</h2>
+        <span className="text-sm text-pista-800 tabular-nums">
+          {doneCount} de {steps.length}
+        </span>
+      </div>
+      <ol className="divide-y divide-border">
+        {steps.map((step) => (
+          <li
+            key={step.title}
+            className="flex items-center gap-3 px-4 py-3 sm:px-6"
+          >
+            {step.done ? (
+              <CircleCheck
+                className="size-5 shrink-0 text-success"
+                aria-label="Hecho"
+              />
+            ) : (
+              <Circle
+                className="size-5 shrink-0 text-border-strong"
+                aria-label="Pendiente"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p
+                className={cn(
+                  "font-semibold",
+                  step.done && "text-muted-foreground",
+                )}
+              >
+                {step.title}
+              </p>
+              <p className="text-sm text-muted-foreground">{step.text}</p>
+            </div>
+            {!step.done && step.action && (
+              <ButtonLink
+                href={step.action.href}
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+              >
+                {step.action.label}
+              </ButtonLink>
+            )}
+          </li>
+        ))}
+      </ol>
+    </Card>
   );
 }
 

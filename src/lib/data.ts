@@ -198,7 +198,10 @@ export const getPlayer = cache(async (slug: string): Promise<Player | null> => {
   return data;
 });
 
-/** Posición del jugador en el ranking de su rama (1 = primero). Null si ya no compite. */
+/**
+ * Posición del jugador en el ranking de su rama y categoría (1 = primero),
+ * igual que en /jugadores. Null si ya no compite.
+ */
 export async function getRankingPosition(
   player: Player,
 ): Promise<number | null> {
@@ -208,6 +211,7 @@ export async function getRankingPosition(
       (other) =>
         other.active &&
         other.gender === player.gender &&
+        other.category === player.category &&
         other.ranking_points > player.ranking_points,
     );
     return ahead.length + 1;
@@ -219,6 +223,7 @@ export async function getRankingPosition(
     .select("id", { count: "exact", head: true })
     .eq("active", true)
     .eq("gender", player.gender)
+    .eq("category", player.category)
     .gt("ranking_points", player.ranking_points);
   if (error) throw error;
   return (count ?? 0) + 1;

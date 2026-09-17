@@ -20,11 +20,14 @@ export function safeRedirectPath(
   value: unknown,
   fallback = "/mi-cuenta",
 ): string {
-  return typeof value === "string" &&
-    value.startsWith("/") &&
-    !value.startsWith("//")
-    ? value
-    : fallback;
+  if (typeof value !== "string") return fallback;
+  // "//otro.com" y "/\otro.com" los navegadores los toman como otro dominio.
+  const external =
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\") ||
+    [...value].some((char) => char.charCodeAt(0) < 32);
+  return external ? fallback : value;
 }
 
 /** Separa un texto en párrafos (líneas en blanco). */
