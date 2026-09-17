@@ -7,7 +7,7 @@ import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import {
   formatDateRange,
   formatFlyerDate,
-  formatShortDate,
+  formatShortDateTime,
 } from "@/lib/format";
 import { featuredLabel, genderLabel, spotsInfo } from "@/lib/labels";
 import { cn } from "@/lib/utils";
@@ -35,8 +35,8 @@ export function TournamentCard({
         : spots.left === 1
           ? "Queda 1 lugar"
           : `Quedan ${spots.left} lugares`
-      : tournament.status === "proximo" && tournament.registration_opens_on
-        ? `Abre el ${formatShortDate(tournament.registration_opens_on)}`
+      : tournament.status === "proximo" && tournament.registration_opens_at
+        ? `Abre el ${formatShortDateTime(tournament.registration_opens_at)}`
         : null;
   const featured = featuredLabel(tournament);
 

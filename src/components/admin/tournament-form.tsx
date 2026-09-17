@@ -20,7 +20,11 @@ import {
   categoryRulesHelp,
   categoryRulesLabel,
 } from "@/lib/categories";
-import { formatShortDate } from "@/lib/format";
+import {
+  formatDayMonthTime,
+  fromDateTimeLocal,
+  toDateTimeLocal,
+} from "@/lib/format";
 import {
   featuredOptions,
   genderLabel,
@@ -93,7 +97,8 @@ type Draft = {
   gender: string;
   status: string;
   capacity: string;
-  registration_opens_on: string;
+  /** Valor del input datetime-local, en hora argentina. */
+  registration_opens_at: string;
   champions: string;
   cover_url: string;
 };
@@ -160,9 +165,7 @@ function previewTournament(
     champions: draft.champions.trim() || null,
     cover_url: draft.cover_url || null,
     capacity: parseCapacity(draft.capacity),
-    registration_opens_on: isValidDate(draft.registration_opens_on)
-      ? draft.registration_opens_on
-      : null,
+    registration_opens_at: fromDateTimeLocal(draft.registration_opens_at),
   };
 }
 
@@ -213,17 +216,26 @@ function statusNotes(draft: Draft): { text: string; warning?: boolean }[] {
           ? { text: `Campeones: ${champions}.` }
           : { text: "Todavía no cargaste los campeones.", warning: true },
       ];
-    default:
+    default: {
+      const opensAt = fromDateTimeLocal(draft.registration_opens_at);
       return [
         {
           text: "Sale en Torneos como “Próximamente”. Todavía no se puede anotar nadie.",
         },
-        {
-          text: isValidDate(draft.registration_opens_on)
-            ? `La tarjeta avisa “Abre el ${formatShortDate(draft.registration_opens_on)}”, pero ese día no se abren solas: cambiá el Estado a “Inscripciones abiertas”.`
-            : "Para abrir las inscripciones, cambiá el Estado a “Inscripciones abiertas” y guardá.",
-        },
+        opensAt
+          ? new Date(opensAt).getTime() > Date.now()
+            ? {
+                text: `Las inscripciones se abren solas el ${formatDayMonthTime(opensAt)} (hora argentina): a esa hora el Estado pasa a “Inscripciones abiertas”.`,
+              }
+            : {
+                text: "Esa fecha ya pasó: al guardar, las inscripciones se abren en menos de un minuto.",
+                warning: true,
+              }
+          : {
+              text: "Si completás cuándo abren las inscripciones, se abren solas a esa hora. Si no, cambiá el Estado a mano.",
+            },
       ];
+    }
   }
 }
 
@@ -259,7 +271,9 @@ export function TournamentForm({
     gender: tournament?.gender ?? "masculino",
     status: tournament?.status ?? "proximo",
     capacity: tournament?.capacity?.toString() ?? "",
-    registration_opens_on: tournament?.registration_opens_on ?? "",
+    registration_opens_at: tournament?.registration_opens_at
+      ? toDateTimeLocal(tournament.registration_opens_at)
+      : "",
     champions: tournament?.champions ?? "",
     cover_url: tournament?.cover_url ?? "",
   }));
@@ -635,23 +649,23 @@ export function TournamentForm({
             />
           </Field>
           <Field
-            name="registration_opens_on"
+            name="registration_opens_at"
             label="Abren las inscripciones"
             optional
-            error={errors.registration_opens_on}
+            error={errors.registration_opens_at}
             hint={
               draft.status === "proximo"
-                ? "La tarjeta avisa “Abre el …”. Ese día tenés que cambiar el Estado a mano."
-                : "Solo se muestra mientras el Estado sea “Próximamente”."
+                ? "Día y hora (argentina). A esa hora se abren solas, sin que tengas que tocar nada."
+                : "Solo se usa mientras el Estado sea “Próximamente”."
             }
           >
             <Input
               {...fieldProps(
-                "registration_opens_on",
-                errors.registration_opens_on,
+                "registration_opens_at",
+                errors.registration_opens_at,
               )}
-              {...bind("registration_opens_on")}
-              type="date"
+              {...bind("registration_opens_at")}
+              type="datetime-local"
             />
           </Field>
         </Card>

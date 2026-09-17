@@ -59,15 +59,15 @@ values
 
 -- Ubicación, cupos y apertura de inscripciones
 update public.tournaments t
-set address = v.address, capacity = v.capacity, registration_opens_on = v.opens
+set address = v.address, capacity = v.capacity, registration_opens_at = v.opens
 from (values
-  ('abierto-de-primavera-2026', 'América, Rivadavia, Buenos Aires', 24, null::date),
-  ('copa-ciudad-de-trenque-lauquen-2026', 'Trenque Lauquen, Buenos Aires', 16, null::date),
-  ('torneo-mixto-nocturno-2026', 'Pehuajó, Buenos Aires', 20, date '2026-10-20'),
-  ('master-de-fin-de-ano-2026', 'América, Rivadavia, Buenos Aires', null, null::date),
-  ('clasico-del-oeste-2026', 'Carlos Tejedor, Buenos Aires', null, null::date),
-  ('invierno-padel-tour-2026', 'General Villegas, Buenos Aires', null, null::date),
-  ('copa-aniversario-padel-oeste-2026', 'Salliqueló, Buenos Aires', null, null::date)
+  ('abierto-de-primavera-2026', 'América, Rivadavia, Buenos Aires', 24, null::timestamptz),
+  ('copa-ciudad-de-trenque-lauquen-2026', 'Trenque Lauquen, Buenos Aires', 16, null::timestamptz),
+  ('torneo-mixto-nocturno-2026', 'Pehuajó, Buenos Aires', 20, timestamptz '2026-10-20 12:00-03'),
+  ('master-de-fin-de-ano-2026', 'América, Rivadavia, Buenos Aires', null, null::timestamptz),
+  ('clasico-del-oeste-2026', 'Carlos Tejedor, Buenos Aires', null, null::timestamptz),
+  ('invierno-padel-tour-2026', 'General Villegas, Buenos Aires', null, null::timestamptz),
+  ('copa-aniversario-padel-oeste-2026', 'Salliqueló, Buenos Aires', null, null::timestamptz)
 ) as v(slug, address, capacity, opens)
 where t.slug = v.slug;
 

@@ -359,7 +359,7 @@ export type Database = {
           maps_url: string | null
           name: string
           prize: string | null
-          registration_opens_on: string | null
+          registration_opens_at: string | null
           slug: string
           sponsor_name: string | null
           starts_on: string
@@ -385,7 +385,7 @@ export type Database = {
           maps_url?: string | null
           name: string
           prize?: string | null
-          registration_opens_on?: string | null
+          registration_opens_at?: string | null
           slug: string
           sponsor_name?: string | null
           starts_on: string
@@ -411,7 +411,7 @@ export type Database = {
           maps_url?: string | null
           name?: string
           prize?: string | null
-          registration_opens_on?: string | null
+          registration_opens_at?: string | null
           slug?: string
           sponsor_name?: string | null
           starts_on?: string
@@ -462,6 +462,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      open_scheduled_registrations: { Args: never; Returns: number }
       pair_category_error: {
         Args: {
           p_partner: number

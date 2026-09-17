@@ -46,7 +46,7 @@ import {
   getTournamentSpots,
   type MyTournamentEntry,
 } from "@/lib/data";
-import { formatDateRange, formatShortDate } from "@/lib/format";
+import { formatDateRange, formatDayMonthTime } from "@/lib/format";
 import {
   featuredLabel,
   genderLabel,
@@ -332,8 +332,8 @@ function RegistrationCard({
               className="mt-0.5 size-5 shrink-0 text-accent"
               aria-hidden="true"
             />
-            {tournament.registration_opens_on
-              ? `Las inscripciones abren el ${formatShortDate(tournament.registration_opens_on)}. Volvé ese día para anotarte.`
+            {tournament.registration_opens_at
+              ? `Las inscripciones se abren el ${formatDayMonthTime(tournament.registration_opens_at)}. A esa hora vas a poder anotarte acá.`
               : "Las inscripciones todavía no abrieron. Seguinos para enterarte cuándo arrancan."}
           </p>
         ) : tournament.champions ? (

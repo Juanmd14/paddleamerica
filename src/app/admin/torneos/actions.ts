@@ -13,6 +13,7 @@ import {
   wholeNumber,
 } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
+import { fromDateTimeLocal } from "@/lib/format";
 import {
   type CategoryRules,
   categoryRulesLabel,
@@ -111,7 +112,9 @@ function readTournament(formData: FormData) {
     capacity: text(formData, "capacity")
       ? wholeNumber(formData, "capacity")
       : null,
-    registration_opens_on: optionalText(formData, "registration_opens_on"),
+    registration_opens_at: fromDateTimeLocal(
+      text(formData, "registration_opens_at"),
+    ),
   };
 
   const errors: Record<string, string> = {};
@@ -166,10 +169,10 @@ function readTournament(formData: FormData) {
     errors.capacity = "El cupo tiene que ser un número mayor a 0.";
   }
   if (
-    values.registration_opens_on &&
-    !isValidDate(values.registration_opens_on)
+    text(formData, "registration_opens_at") &&
+    !values.registration_opens_at
   ) {
-    errors.registration_opens_on = "Elegí una fecha válida.";
+    errors.registration_opens_at = "Elegí fecha y hora.";
   }
 
   return { values, errors };

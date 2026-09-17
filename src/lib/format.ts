@@ -140,3 +140,22 @@ const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
 export function formatShortDate(value: string) {
   return shortDateFormatter.format(parseDate(value));
 }
+
+const timeFormatter = new Intl.DateTimeFormat("es-AR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: APP_TIME_ZONE,
+});
+
+/** "14/9 a las 12:00" (hora argentina). */
+export function formatShortDateTime(value: string) {
+  const date = new Date(value);
+  return `${shortDateFormatter.format(date)} a las ${timeFormatter.format(date)}`;
+}
+
+/** "14 de septiembre a las 12:00" (hora argentina). */
+export function formatDayMonthTime(value: string) {
+  const date = new Date(value);
+  return `${dayMonthFormatter.format(date)} a las ${timeFormatter.format(date)}`;
+}

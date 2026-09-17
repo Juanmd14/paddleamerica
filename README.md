@@ -93,7 +93,7 @@ En `/admin`, solo para cuentas marcadas como admin:
 - **Torneos:** crear, editar y borrar (con flyer). Un torneo con inscripciones no se puede borrar: pasalo a _Finalizado_. Desde cada torneo: inscripciones, confirmar o rechazar, WhatsApp con un toque y CSV para Excel.
   - **Ubicación:** dirección y link de Google Maps (en Maps: _Compartir → Copiar vínculo_). La página del torneo muestra el mapa y el botón _Cómo llegar_.
   - **Cupo:** en parejas. Cuentan las pendientes y las confirmadas; al llenarse, el sitio muestra _Cupo completo_ y la base no deja anotarse (trigger `check_tournament_capacity`). Rechazar una inscripción o subir el cupo libera lugares.
-  - **Abren las inscripciones:** fecha que se muestra como “Abre el …” mientras el torneo está en _Próximamente_.
+  - **Abren las inscripciones:** día y hora (argentina). Mientras el torneo está en _Próximamente_, la tarjeta muestra “Abre el 14/9 a las 12:00” y a esa hora las inscripciones se abren solas: una tarea de Supabase (`pg_cron`, job `abrir-inscripciones`) revisa cada minuto y pasa el torneo a _Inscripciones abiertas_.
 - **Noticias:** borrador, publicada o programada (fecha futura), con portada.
 - **Jugadores:** alta, edición y foto. Si alguien deja de jugar, tildá _Ya no compite_: sale del ranking y del inicio pero conserva puntos e historial (se puede reactivar).
 - **Usuarios:** la categoría de cada cuenta (1ra a 8va). La asigna solo el admin, no el jugador, y define en qué torneos se puede anotar. Al asignarla, al jugador le llega un aviso. Desde ahí también se borra una cuenta que ya no se usa (se borran sus inscripciones y avisos; no se puede si es admin o tiene inscripciones en torneos sin terminar).
