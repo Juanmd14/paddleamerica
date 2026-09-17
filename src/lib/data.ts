@@ -110,6 +110,45 @@ export async function getRankingTrends(
   return rankingTrends(players, await getRecentPointChanges());
 }
 
+/**
+ * Cuándo cambió el ranking por última vez: el último movimiento de puntos o,
+ * si nunca hubo, el último jugador cargado. Null si no hay jugadores.
+ */
+export const getRankingUpdatedAt = cache(async (): Promise<string | null> => {
+  if (isDemoMode) {
+    return (
+      demoPlayers
+        .map((player) => player.created_at)
+        .toSorted()
+        .at(-1) ?? null
+    );
+  }
+
+  const supabase = await createClient();
+  const [changes, players] = await Promise.all([
+    supabase
+      .from("player_point_changes")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("players")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (changes.error) throw changes.error;
+  if (players.error) throw players.error;
+  return (
+    [changes.data?.created_at, players.data?.created_at]
+      .filter((value): value is string => Boolean(value))
+      .toSorted()
+      .at(-1) ?? null
+  );
+});
+
 /** Historial de puntos de un jugador, lo más nuevo primero. */
 export async function getPlayerPointChanges(
   playerId: number,
