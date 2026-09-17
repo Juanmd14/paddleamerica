@@ -860,7 +860,9 @@ async function withAdminProfiles<T extends Registration>(
   ];
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, full_name, email, phone, username, avatar_url, category")
+    .select(
+      "id, full_name, email, phone, username, avatar_url, category, gender",
+    )
     .in("id", ids);
   if (profilesError) throw profilesError;
 
@@ -881,7 +883,7 @@ async function withAdminProfiles<T extends Registration>(
 
 /** Todas las cuentas, para asignar categorías. Primero las que no tienen. */
 export async function getAllProfiles(): Promise<
-  (AdminProfile & Pick<Profile, "is_admin" | "gender">)[]
+  (AdminProfile & Pick<Profile, "is_admin">)[]
 > {
   if (isDemoMode) return [];
 

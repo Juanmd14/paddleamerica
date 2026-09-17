@@ -160,6 +160,7 @@ export default async function TournamentRegistrationsPage({
                         player={registration.profile}
                         partner={registration.partnerProfile}
                         partnerName={registration.partner_name}
+                        showGender
                         className="sm:grid-cols-1"
                       />
                       <p className="mt-2 text-xs text-muted-foreground">

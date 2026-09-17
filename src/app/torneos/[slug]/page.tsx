@@ -39,6 +39,7 @@ import {
   categoryRulesLabel,
   playerCategoryError,
 } from "@/lib/categories";
+import { genderRulesHelp, playerGenderError } from "@/lib/gender-rules";
 import {
   getMyProfile,
   getMyTournamentEntry,
@@ -443,25 +444,45 @@ function OpenRegistration({
   }
 
   const myCategory = profile?.category ?? null;
-  const ownError = playerCategoryError(tournament, myCategory);
-  const rules = categoryRulesLabel(tournament) && (
+  const myGender = profile?.gender ?? null;
+  const genderError = playerGenderError(tournament.gender, myGender);
+  const ownErrors = [
+    genderError,
+    playerCategoryError(tournament, myCategory),
+  ].filter((error) => error !== null);
+  const rules = (
     <p className="flex items-start gap-2 rounded-lg bg-pista-50 px-3 py-2.5 text-sm text-pista-800">
       <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <span>
-        {categoryRulesHelp(tournament)}
+        {genderRulesHelp(tournament.gender)}
+        {categoryRulesLabel(tournament) && ` ${categoryRulesHelp(tournament)}`}
         {myCategory && ` Vos sos ${categoryName(myCategory)}.`}
       </span>
     </p>
   );
 
-  if (ownError) {
+  if (ownErrors.length > 0) {
     return (
       <div className="space-y-4">
         {rules}
-        <div className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger">
-          <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-          <p className="font-medium">{ownError}</p>
-        </div>
+        {ownErrors.map((error) => (
+          <div
+            key={error}
+            className="flex items-start gap-3 rounded-lg bg-danger-soft p-4 text-danger"
+          >
+            <CircleX className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p className="font-medium">{error}</p>
+          </div>
+        ))}
+        {!myGender && (
+          <ButtonLink
+            href="/mi-cuenta?seccion=datos#rama"
+            variant="outline"
+            className="w-full"
+          >
+            Elegir mi rama
+          </ButtonLink>
+        )}
       </div>
     );
   }
@@ -539,6 +560,7 @@ function MyRegistration({
         player={registration.player}
         partner={registration.partner}
         partnerName={registration.partner_name}
+        showGender={tournament.gender === "mixto"}
         meId={userId}
       />
       <dl className="grid gap-4 text-sm sm:grid-cols-2">

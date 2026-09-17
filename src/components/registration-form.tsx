@@ -158,6 +158,7 @@ export function RegistrationForm({
                           {option.category
                             ? ` · ${option.category}`
                             : " · sin categoría"}
+                          {option.gender && ` · ${option.gender}`}
                         </span>
                         {option.blocked && (
                           <span className="mt-0.5 block text-xs font-medium text-danger">

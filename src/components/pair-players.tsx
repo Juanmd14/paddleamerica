@@ -2,12 +2,13 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { categoryName } from "@/lib/categories";
+import { genderLabel } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { PublicProfile } from "@/types/models";
 
 type Person = Pick<
   PublicProfile,
-  "id" | "username" | "full_name" | "avatar_url" | "category"
+  "id" | "username" | "full_name" | "avatar_url" | "category" | "gender"
 >;
 
 function PersonRow({
@@ -15,10 +16,12 @@ function PersonRow({
   fallbackName,
   label,
   href,
+  showGender = false,
 }: {
   person: Person | null;
   fallbackName: string;
   label?: string;
+  showGender?: boolean;
   /** Si viene, la fila lleva a la ficha de la persona. */
   href?: string;
 }) {
@@ -28,6 +31,9 @@ function PersonRow({
     person?.category
       ? categoryName(person.category)
       : person && "sin categoría",
+    showGender &&
+      person &&
+      (person.gender ? genderLabel(person.gender) : "sin rama"),
   ].filter(Boolean);
 
   const content = (
@@ -80,6 +86,7 @@ export function PairPlayers({
   partnerName,
   meId,
   adminLinks = false,
+  showGender = false,
   className,
 }: {
   player: Person | null;
@@ -90,6 +97,8 @@ export function PairPlayers({
   meId?: string;
   /** En el panel: cada jugador lleva a su ficha de usuario. */
   adminLinks?: boolean;
+  /** Muestra la rama de cada uno (torneos mixtos y panel). */
+  showGender?: boolean;
   className?: string;
 }) {
   const isMe = (person: Person | null) =>
@@ -104,12 +113,14 @@ export function PairPlayers({
         fallbackName="Jugador"
         label={isMe(player) ? "vos" : undefined}
         href={hrefOf(player)}
+        showGender={showGender}
       />
       <PersonRow
         person={partner}
         fallbackName={partnerName}
         label={isMe(partner) ? "vos" : undefined}
         href={hrefOf(partner)}
+        showGender={showGender}
       />
     </ul>
   );

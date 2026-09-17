@@ -452,6 +452,7 @@ export type Database = {
           avatar_url: string
           category: number
           full_name: string
+          gender: string
           id: string
           username: string
         }[]
@@ -470,6 +471,14 @@ export type Database = {
         Args: {
           p_partner: number
           p_player: number
+          p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
+        }
+        Returns: string
+      }
+      pair_gender_error: {
+        Args: {
+          p_partner: string
+          p_player: string
           p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
         }
         Returns: string
@@ -497,6 +506,7 @@ export type Database = {
           avatar_url: string
           category: number
           full_name: string
+          gender: string
           id: string
           username: string
         }[]

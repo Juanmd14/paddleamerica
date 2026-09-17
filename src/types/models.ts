@@ -8,7 +8,7 @@ export type Registration = Tables<"tournament_registrations">;
 /** Lo que cualquier usuario logueado puede ver de otro (nunca email ni teléfono). */
 export type PublicProfile = Pick<
   Profile,
-  "id" | "username" | "full_name" | "avatar_url" | "category"
+  "id" | "username" | "full_name" | "avatar_url" | "category" | "gender"
 >;
 /** Inscripción con los dos jugadores: quien se anotó y la pareja invitada. */
 export type RegistrationWithPeople = Registration & {

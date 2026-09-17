@@ -8,6 +8,8 @@ import {
   pairCategoryError,
 } from "@/lib/categories";
 import { getMyProfile, getTournament } from "@/lib/data";
+import { genderErrorMessage, pairGenderError } from "@/lib/gender-rules";
+import { genderLabel } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,9 +28,17 @@ function field(formData: FormData, name: string) {
 /** Mensaje para cada error que devuelven register_pair, respond_invitation y cancel_registration. */
 function registrationErrorMessage(
   code: string,
-  context: { rules?: string | null; partner?: string } = {},
+  context: {
+    rules?: string | null;
+    partner?: string;
+    tournamentGender?: string;
+  } = {},
 ) {
   const partner = context.partner || "Tu pareja";
+  const genderMessage = context.tournamentGender
+    ? genderErrorMessage(code, context.tournamentGender, partner)
+    : null;
+  if (genderMessage) return genderMessage;
   const rules = context.rules ? ` (es de ${context.rules})` : "";
   const messages: Record<string, string> = {
     sin_sesion: "Tu sesión expiró. Ingresá de nuevo.",
@@ -39,7 +49,8 @@ function registrationErrorMessage(
     pareja_sos_vos: "Tenés que invitar a otra persona.",
     telefono_invalido: "Poné un teléfono válido, con característica.",
     notas_largas: "Las observaciones pueden tener hasta 500 caracteres.",
-    falta_categoria: "Todavía no tenés categoría. La asigna el organizador: hasta entonces no podés anotarte.",
+    falta_categoria:
+      "Todavía no tenés categoría. La asigna el organizador: hasta entonces no podés anotarte.",
     pareja_sin_categoria: `${partner} todavía no tiene categoría asignada por el organizador.`,
     categoria_fuera_de_rango: `Tu categoría no entra en este torneo${rules}.`,
     pareja_fuera_de_rango: `La categoría de ${partner} no entra en este torneo${rules}.`,
@@ -117,6 +128,7 @@ export async function registerForTournament(
     const message = registrationErrorMessage(error.message, {
       rules: categoryRulesLabel(tournament),
       partner: `@${values.partner_username}`,
+      tournamentGender: tournament.gender,
     });
     return error.message === "pareja_no_existe"
       ? { errors: { partner_username: message }, values }
@@ -139,6 +151,8 @@ export type PartnerOption = {
   name: string;
   avatarUrl: string | null;
   category: string | null;
+  /** Rama ("Masculino"/"Femenino") o null si no la eligió. */
+  gender: string | null;
   /** Por qué no puede jugar con vos este torneo (null si puede). */
   blocked: string | null;
 };
@@ -176,14 +190,25 @@ export async function searchPartners(
       candidate.category,
       name,
     );
+    // La rama se controla solo si la propia ya está: si falta, lo avisa el formulario.
+    const genderBlocked = profile?.gender
+      ? pairGenderError(
+          tournament.gender,
+          profile.gender,
+          candidate.gender,
+          name,
+        )
+      : null;
     return {
       username: candidate.username,
       name,
       avatarUrl: safeAvatarUrl(candidate.avatar_url),
       category: candidate.category ? categoryName(candidate.category) : null,
+      gender: candidate.gender ? genderLabel(candidate.gender) : null,
       // Si el problema es la propia categoría, lo muestra el formulario, no cada persona.
       blocked:
-        blocked && candidate.category && profile?.category ? blocked : null,
+        (blocked && candidate.category && profile?.category ? blocked : null) ??
+        genderBlocked,
     };
   });
 }
@@ -209,6 +234,7 @@ export async function respondInvitation(
       message: registrationErrorMessage(error.message, {
         rules: tournament ? categoryRulesLabel(tournament) : null,
         partner: "Quien te invitó",
+        tournamentGender: tournament?.gender,
       }),
     };
   }

@@ -122,6 +122,7 @@ export default async function PendingRegistrationsPage() {
                           player={registration.profile}
                           partner={registration.partnerProfile}
                           partnerName={registration.partner_name}
+                          showGender
                         />
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                           <span>
