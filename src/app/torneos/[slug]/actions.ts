@@ -123,6 +123,13 @@ export async function registerForTournament(
       : { message, values };
   }
 
+  // Si todavía no tenía teléfono en su cuenta, queda guardado el de la inscripción.
+  await supabase
+    .from("profiles")
+    .update({ phone: values.contact_phone })
+    .eq("id", user.id)
+    .is("phone", null);
+
   revalidateRegistration(slug);
   return {};
 }
