@@ -165,6 +165,19 @@ export default async function TournamentPage({
               {[tournament.venue, tournament.city].filter(Boolean).join(", ")}
             </span>
           </p>
+          {tournament.status === "finalizado" && tournament.champions && (
+            <div className="mt-8 inline-flex max-w-full items-center gap-4 rounded-card bg-oro-400 px-5 py-4 text-noche-950 shadow-lg shadow-oro-400/20 sm:px-6">
+              <Trophy className="size-9 shrink-0" aria-hidden="true" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-[0.2em] uppercase">
+                  {tournament.champions.includes("/") ? "Campeones" : "Campeón"}
+                </p>
+                <p className="font-display text-3xl leading-none font-bold uppercase sm:text-4xl">
+                  {tournament.champions}
+                </p>
+              </div>
+            </div>
+          )}
         </Container>
       </section>
 

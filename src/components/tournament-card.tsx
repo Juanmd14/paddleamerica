@@ -147,47 +147,91 @@ export function FlyerPlaceholder({ tournament }: { tournament: Tournament }) {
   );
 }
 
-/** Fila de la lista de Resultados (torneos finalizados). Se acomoda al ancho de la lista, no de la pantalla. */
-export function TournamentResultRow({
+/**
+ * Tarjeta de un torneo finalizado. Lo primero que se lee es quién ganó;
+ * abajo, qué torneo fue y cuándo.
+ */
+export function TournamentResultCard({
   tournament,
+  className,
 }: {
   tournament: Tournament;
+  className?: string;
 }) {
+  const champions = tournament.champions
+    ?.split("/")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
   return (
-    <li className="@container">
-      <Link
-        href={`/torneos/${tournament.slug}`}
-        className="group flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted @xl:px-6"
-      >
-        <div className="grid min-w-0 flex-1 gap-1 @xl:grid-cols-[1.4fr_1fr_1fr] @xl:items-center @xl:gap-6">
-          <div className="min-w-0">
-            <p className="font-display text-xl leading-tight font-bold uppercase transition-colors group-hover:text-accent">
-              {tournament.name}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {formatDateRange(tournament.starts_on, tournament.ends_on)}
-            </p>
-          </div>
-          <p className="text-sm text-foreground-soft">
-            {tournament.city} · {tournament.category} ·{" "}
-            {genderLabel(tournament.gender)}
+    <article
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-card bg-surface ring-1 ring-border transition-shadow hover:shadow-xl hover:shadow-noche-900/10",
+        className,
+      )}
+    >
+      <div className="bg-noche-950 px-5 pt-5 pb-4 text-white">
+        <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-oro-400 uppercase">
+          <Trophy className="size-4 shrink-0" aria-hidden="true" />
+          {champions?.length === 1 ? "Campeón" : "Campeones"}
+        </p>
+        {champions?.length ? (
+          <p className="mt-2 font-display text-3xl leading-none font-bold uppercase">
+            {champions.map((name, index) => (
+              <span key={index}>
+                {index > 0 && (
+                  <>
+                    <span className="text-oro-400" aria-hidden="true">
+                      {" / "}
+                    </span>
+                    <span className="sr-only"> y </span>
+                  </>
+                )}
+                {name}
+              </span>
+            ))}
           </p>
-          {tournament.champions && (
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <Trophy
-                className="size-4 shrink-0 text-oro-500"
-                aria-hidden="true"
-              />
-              <span className="sr-only">Campeones:</span>
-              {tournament.champions}
-            </p>
-          )}
-        </div>
-        <ChevronRight
-          className="size-5 shrink-0 text-noche-300 transition-transform group-hover:translate-x-0.5"
-          aria-hidden="true"
-        />
-      </Link>
-    </li>
+        ) : (
+          <p className="mt-2 text-noche-300">Resultado a confirmar</p>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-5">
+        <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
+          {tournament.category} · {genderLabel(tournament.gender)}
+        </p>
+        <h3 className="mt-1.5 font-display text-2xl leading-none font-bold uppercase transition-colors group-hover:text-accent">
+          <Link
+            href={`/torneos/${tournament.slug}`}
+            className="after:absolute after:inset-0"
+          >
+            {tournament.name}
+          </Link>
+        </h3>
+        <ul className="mt-3 space-y-1.5 text-sm text-foreground-soft">
+          <li className="flex items-center gap-2">
+            <CalendarDays
+              className="size-4 shrink-0 text-noche-400"
+              aria-hidden="true"
+            />
+            {formatDateRange(tournament.starts_on, tournament.ends_on)}
+          </li>
+          <li className="flex items-center gap-2">
+            <MapPin
+              className="size-4 shrink-0 text-noche-400"
+              aria-hidden="true"
+            />
+            {[tournament.venue, tournament.city].filter(Boolean).join(", ")}
+          </li>
+        </ul>
+        <p className="mt-auto flex items-center gap-1 pt-4 text-sm font-semibold text-accent">
+          Ver cómo salió
+          <ChevronRight
+            className="size-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </p>
+      </div>
+    </article>
   );
 }

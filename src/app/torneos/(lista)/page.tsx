@@ -5,9 +5,8 @@ import { PageHeader } from "@/components/page-header";
 import { SectionHeading } from "@/components/section-heading";
 import {
   TournamentCard,
-  TournamentResultRow,
+  TournamentResultCard,
 } from "@/components/tournament-card";
-import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { getTournamentSpots, getTournaments } from "@/lib/data";
 
@@ -57,18 +56,16 @@ export default async function TournamentsPage() {
         </section>
 
         <section>
-          <SectionHeading title="Resultados" />
+          <SectionHeading eyebrow="Reviví cómo salieron" title="Finalizados" />
           {finished.length > 0 ? (
-            <Card className="mt-8 overflow-hidden">
-              <ul className="divide-y divide-border">
-                {finished.map((tournament) => (
-                  <TournamentResultRow
-                    key={tournament.id}
-                    tournament={tournament}
-                  />
-                ))}
-              </ul>
-            </Card>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {finished.map((tournament) => (
+                <TournamentResultCard
+                  key={tournament.id}
+                  tournament={tournament}
+                />
+              ))}
+            </div>
           ) : (
             <div className="mt-8">
               <EmptyState

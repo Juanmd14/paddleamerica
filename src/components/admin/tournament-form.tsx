@@ -8,7 +8,7 @@ import { useAdminForm } from "@/components/admin/use-admin-form";
 import { SubmitButton } from "@/components/submit-button";
 import {
   TournamentCard,
-  TournamentResultRow,
+  TournamentResultCard,
 } from "@/components/tournament-card";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -70,7 +70,7 @@ const STATUS_HELP: Record<string, string> = {
   inscripciones:
     "Aparece el botón “Inscribirme” para que se anoten las parejas.",
   en_juego: "Se está jugando: ya no se puede anotar nadie.",
-  finalizado: "Pasa a la lista de Resultados, con los campeones.",
+  finalizado: "Pasa a Finalizados, con los campeones bien a la vista.",
 };
 
 const listFormat = new Intl.ListFormat("es", { type: "conjunction" });
@@ -208,7 +208,7 @@ function statusNotes(draft: Draft): { text: string; warning?: boolean }[] {
       ];
     case "finalizado":
       return [
-        { text: "Sale en Torneos, en la lista de Resultados." },
+        { text: "Sale en Torneos, en Finalizados." },
         champions
           ? { text: `Campeones: ${champions}.` }
           : { text: "Todavía no cargaste los campeones.", warning: true },
@@ -814,7 +814,7 @@ export function TournamentForm({
           </h2>
           <p className="text-sm text-muted-foreground">
             {draft.status === "finalizado"
-              ? "Así se ve en Torneos, en la lista de Resultados."
+              ? "Así se ve en Torneos, en Finalizados."
               : "Así se ve la tarjeta en Torneos."}{" "}
             Cambia mientras completás.
           </p>
@@ -824,9 +824,9 @@ export function TournamentForm({
                 Poné la fecha de inicio para ver cómo queda.
               </p>
             ) : draft.status === "finalizado" ? (
-              <ul inert className="rounded-lg border border-border">
-                <TournamentResultRow tournament={preview} />
-              </ul>
+              <div inert className="mx-auto max-w-sm">
+                <TournamentResultCard tournament={preview} />
+              </div>
             ) : (
               <div inert className="mx-auto max-w-[13rem]">
                 <TournamentCard tournament={preview} taken={taken} />
