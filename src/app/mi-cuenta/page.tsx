@@ -208,7 +208,7 @@ export default async function AccountPage({
                 value={formatNumber(player.ranking_points)}
                 label={
                   position
-                    ? `Puntos · #${position} en el ranking`
+                    ? `Puntos · #${position} en ${player.category}`
                     : "Puntos en el ranking"
                 }
               />
