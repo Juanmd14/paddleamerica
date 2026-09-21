@@ -4,8 +4,24 @@ import { categoryName } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { registrationStatus } from "@/lib/labels";
 
+/** Lo que Excel toma como el comienzo de una fórmula. */
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/**
+ * Empiezan como una fórmula pero no pueden ejecutar nada, porque no tienen letras
+ * ni paréntesis de función: los teléfonos ("+54 9 2355 …") y los @usuario que arma
+ * el sitio. Quedan como están, sin apóstrofo adelante.
+ */
+const INERT = /^(?:[+-]?[\d\s().-]+|@[a-z0-9_.]+)$/;
+
+/**
+ * Una celda del CSV. El nombre, el teléfono y las observaciones los escribe el
+ * jugador, y algo como =HYPERLINK(…) se ejecutaría en la compu del admin al abrir
+ * el archivo en Excel. Con un apóstrofo adelante, Excel lo muestra como texto.
+ */
 function csvCell(value: string | null | undefined) {
-  const text = value ?? "";
+  let text = value ?? "";
+  if (FORMULA_START.test(text) && !INERT.test(text)) text = `'${text}`;
   return /[";\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
