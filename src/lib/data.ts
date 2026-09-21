@@ -8,6 +8,7 @@ import {
 } from "@/lib/demo-data";
 import { currentPeriod } from "@/lib/format";
 import {
+  comparePlayers,
   DEFAULT_STATS,
   STAT_KEYS,
   type StatKey,
@@ -66,7 +67,7 @@ export async function getRanking({
       .filter((player) => includeInactive || player.active)
       .filter((player) => !gender || player.gender === gender)
       .filter((player) => !category || player.category === category)
-      .toSorted((a, b) => b.ranking_points - a.ranking_points)
+      .toSorted(comparePlayers)
       .slice(0, limit);
   }
 
@@ -74,7 +75,11 @@ export async function getRanking({
   let query = supabase
     .from("players")
     .select("*")
-    .order("ranking_points", { ascending: false });
+    // Apellido y nombre desempatan: recién cargado el padrón están todos en 0
+    // y sin esto Postgres devuelve un orden distinto en cada visita.
+    .order("ranking_points", { ascending: false })
+    .order("last_name")
+    .order("first_name");
   if (!includeInactive) query = query.eq("active", true);
   if (gender) query = query.eq("gender", gender);
   if (category) query = query.eq("category", category);

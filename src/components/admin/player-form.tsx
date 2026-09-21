@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/lib/admin-form";
+import { categoryOptions } from "@/lib/categories";
 import { playerGenderOptions, sideOptions } from "@/lib/labels";
 import { cn, slugify } from "@/lib/utils";
 import type { Player } from "@/types/models";
@@ -27,6 +28,12 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
   const [slug, setSlug] = useState(player?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(player));
   const currentSlug = slugTouched ? slug : slugify(`${firstName} ${lastName}`);
+
+  const [category, setCategory] = useState(player?.category ?? "");
+  /** Cambió de categoría: hay que decidir qué pasa con los puntos que traía. */
+  const movedCategory = Boolean(
+    player && category && category !== player.category,
+  );
 
   const numberField = (
     name: "ranking_points" | "matches_played" | "matches_won" | "titles",
@@ -98,17 +105,22 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
               ))}
             </Select>
           </Field>
-          <Field
-            name="category"
-            label="Categoría"
-            error={errors.category}
-            hint="Ej. 1ra, 2da, 3ra"
-          >
-            <Input
+          <Field name="category" label="Categoría" error={errors.category}>
+            <Select
               {...fieldProps("category", errors.category)}
-              defaultValue={player?.category}
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
               required
-            />
+            >
+              <option value="" disabled>
+                Elegí una
+              </option>
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.label}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field name="side" label="Lado" optional error={errors.side}>
             <Select
@@ -158,6 +170,24 @@ export function PlayerForm({ action, player, submitLabel }: PlayerFormProps) {
       </div>
 
       <div className="space-y-6">
+        {movedCategory && player && (
+          <Card className="space-y-2 border-accent p-5 sm:p-6">
+            <label className="flex items-center gap-3 text-sm font-medium">
+              <input
+                type="checkbox"
+                name="reset_points"
+                defaultChecked
+                className="size-5 accent-noche-950"
+              />
+              Reiniciar los puntos
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Pasa de {player.category} a {category}. Con esto arranca de cero
+              en la categoría nueva y queda el motivo en su historial. Si lo
+              destildás, se lleva los {player.ranking_points} puntos que tiene.
+            </p>
+          </Card>
+        )}
         <Card className="space-y-2 p-5 sm:p-6">
           <label className="flex items-center gap-3 text-sm font-medium">
             <input

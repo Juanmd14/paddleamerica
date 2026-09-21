@@ -3,21 +3,27 @@
  * (leer el archivo y detectar columnas) como el servidor (validar y relacionar jugadores).
  */
 
-export type ImportMode = "reemplazar" | "sumar";
+/**
+ * "sumar" y "reemplazar" cargan puntos; "padron" carga la lista de jugadores
+ * (nombre, rama, categoría, club) y los puntos son opcionales.
+ */
+export type ImportMode = "reemplazar" | "sumar" | "padron";
 
 /**
  * Título de la columna de puntos en cada planilla modelo. Al subirla, de ahí
- * se deduce si los puntos se suman (torneo) o reemplazan (totales).
+ * se deduce si los puntos se suman (torneo), reemplazan (totales) o si la
+ * planilla es el padrón.
  */
 export const TEMPLATE_POINTS_HEADER = {
   sumar: "Puntos del torneo",
   reemplazar: "Puntos totales",
+  padron: "Puntos iniciales",
 } satisfies Record<ImportMode, string>;
 
 /** Si el encabezado es el de una planilla modelo, qué tipo de carga es. */
 export function suggestMode(header: string[]): ImportMode | null {
   const titles = header.map(normalizeText);
-  for (const mode of ["sumar", "reemplazar"] as const) {
+  for (const mode of ["sumar", "reemplazar", "padron"] as const) {
     if (titles.includes(normalizeText(TEMPLATE_POINTS_HEADER[mode]))) {
       return mode;
     }

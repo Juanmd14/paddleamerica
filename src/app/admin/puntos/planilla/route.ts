@@ -1,10 +1,22 @@
 import writeXlsxFile from "write-excel-file/node";
 import { getCurrentUser } from "@/lib/auth";
 import { getRanking } from "@/lib/data";
-import { branchLabel, CATEGORIES } from "@/lib/labels";
+import { branchLabel, CATEGORIES, comparePlayers } from "@/lib/labels";
 import { type ImportMode, TEMPLATE_POINTS_HEADER } from "@/lib/points-import";
 
 const GENDER_ORDER = ["masculino", "femenino"];
+
+const TYPES: Record<string, ImportMode> = {
+  torneo: "sumar",
+  totales: "reemplazar",
+  padron: "padron",
+};
+
+const SHEET_NAME: Record<ImportMode, string> = {
+  sumar: "Torneo",
+  reemplazar: "Totales",
+  padron: "Padrón",
+};
 
 /**
  * Planilla .xlsx con los jugadores, lista para completar y volver a subir.
@@ -12,6 +24,9 @@ const GENDER_ORDER = ["masculino", "femenino"];
  * ?tipo=torneo   puntos vacíos para anotar lo que ganó cada uno en un torneo
  *                (se suman). Solo jugadores que compiten.
  * ?tipo=totales  con los totales actuales, para corregirlos (se reemplazan).
+ * ?tipo=padron   la lista de jugadores para dar de alta o corregirles la
+ *                categoría. Con la base vacía sale solo el encabezado: esa es
+ *                la planilla en blanco de la carga inicial.
  * ?rama=         masculino, femenino o vacío para las dos juntas.
  */
 export async function GET(request: Request) {
@@ -21,16 +36,15 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const rama = params.get("rama");
   const gender = rama === "masculino" || rama === "femenino" ? rama : undefined;
-  const mode: ImportMode =
-    params.get("tipo") === "torneo" ? "sumar" : "reemplazar";
+  const mode: ImportMode = TYPES[params.get("tipo") ?? ""] ?? "reemplazar";
 
   const players = (
-    await getRanking({ gender, includeInactive: mode === "reemplazar" })
+    await getRanking({ gender, includeInactive: mode !== "sumar" })
   ).toSorted(
     (a, b) =>
       GENDER_ORDER.indexOf(a.gender) - GENDER_ORDER.indexOf(b.gender) ||
       categoryIndex(a.category) - categoryIndex(b.category) ||
-      b.ranking_points - a.ranking_points,
+      comparePlayers(a, b),
   );
 
   const headers = [
@@ -62,18 +76,19 @@ export async function GET(request: Request) {
     player.club ?? "",
     player.city ?? "",
     // En la de torneo, vacío = no jugó (esa fila se ignora al subirla).
-    ...(mode === "sumar"
-      ? [null, null, null, null]
-      : [
+    // En la de padrón también va vacío: ahí lo que se carga es la categoría.
+    ...(mode === "reemplazar"
+      ? [
           player.ranking_points,
           player.matches_played,
           player.matches_won,
           player.titles,
-        ]),
+        ]
+      : [null, null, null, null]),
   ]);
 
   const buffer = await writeXlsxFile([header, ...rows], {
-    sheet: mode === "sumar" ? "Torneo" : "Totales",
+    sheet: SHEET_NAME[mode],
     stickyRowsCount: 1,
     columns: [
       { width: 24 },
@@ -92,7 +107,7 @@ export async function GET(request: Request) {
 
   const fileName = [
     "planilla",
-    mode === "sumar" ? "torneo" : "totales",
+    mode === "sumar" ? "torneo" : mode === "padron" ? "padron" : "totales",
     gender && branchLabel(gender).toLowerCase(),
   ]
     .filter(Boolean)

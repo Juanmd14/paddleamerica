@@ -12,6 +12,7 @@ import {
   wholeNumber,
 } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeCategory } from "@/lib/categories";
 import { playerGenderOptions, sideOptions } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
@@ -25,7 +26,8 @@ function readPlayer(formData: FormData) {
     last_name: lastName,
     slug: text(formData, "slug") || slugify(`${firstName} ${lastName}`),
     gender: text(formData, "gender"),
-    category: text(formData, "category"),
+    // Siempre "6ta", nunca "6TA": el ranking filtra por texto exacto.
+    category: normalizeCategory(text(formData, "category")) ?? "",
     side: optionalText(formData, "side"),
     club: optionalText(formData, "club"),
     city: optionalText(formData, "city"),
@@ -50,8 +52,8 @@ function readPlayer(formData: FormData) {
   if (!playerGenderOptions.some((option) => option.value === values.gender)) {
     errors.gender = "Elegí la rama.";
   }
-  if (values.category.length < 1 || values.category.length > 30) {
-    errors.category = "Poné la categoría (ej. 1ra).";
+  if (!values.category) {
+    errors.category = "Poné una categoría de 1ra a 8va (ej. 6ta).";
   }
   if (
     values.side &&
@@ -132,7 +134,7 @@ export async function updatePlayer(
   const supabase = await createClient();
   const { data: previous } = await supabase
     .from("players")
-    .select("slug")
+    .select("slug, category, ranking_points")
     .eq("id", id)
     .maybeSingle();
   const { error } = await supabase.from("players").update(values).eq("id", id);
@@ -148,6 +150,29 @@ export async function updatePlayer(
     return error.code === "23505"
       ? { errors: { slug: "Ya hay un jugador con ese slug." } }
       : { message: saveErrorMessage(error) };
+  }
+
+  // Ascenso: en la categoría nueva arranca de cero, y el motivo queda en el
+  // historial. Va por adjust_player_points, que es lo que escribe el motivo.
+  const changedCategory =
+    !!previous && previous.category !== values.category && values.category;
+  if (
+    formData.has("reset_points") &&
+    changedCategory &&
+    previous.ranking_points > 0
+  ) {
+    const { error: resetError } = await supabase.rpc("adjust_player_points", {
+      p_player_id: id,
+      p_delta: -previous.ranking_points,
+      p_reason: `Cambio de categoría: ${previous.category} → ${values.category}`,
+    });
+    if (resetError) {
+      console.error("[reiniciar puntos]", resetError);
+      return {
+        message:
+          "Guardamos la categoría nueva, pero no pudimos poner los puntos en cero. Hacelo con “Corregir puntos”.",
+      };
+    }
   }
 
   revalidatePlayerPages(values.slug, previous?.slug ?? values.slug);

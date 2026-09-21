@@ -40,8 +40,19 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Avisos de una fila ya relacionada con un jugador: cosas que el archivo no cambia. */
-function rowWarnings(row: PreviewRow, player: PlayerOption | undefined) {
+function rowWarnings(
+  row: PreviewRow,
+  player: PlayerOption | undefined,
+  mode: ImportMode,
+) {
   if (!player) return [];
+  // En el padrón la rama y la categoría del archivo sí se aplican: no son
+  // un aviso, son el cambio. Se muestran con rowChanges.
+  if (mode === "padron") {
+    return player.active
+      ? []
+      : ["Ya no compite: se corrige la ficha, pero sigue fuera del ranking."];
+  }
   const warnings: string[] = [];
   if (row.gender && row.gender !== player.gender) {
     warnings.push(
@@ -62,6 +73,28 @@ function rowWarnings(row: PreviewRow, player: PlayerOption | undefined) {
     );
   }
   return warnings;
+}
+
+/** En el padrón, qué le corrige el archivo a un jugador que ya existe. */
+function rowChanges(row: PreviewRow, player: PlayerOption | undefined) {
+  if (!player) return [];
+  const changes: string[] = [];
+  if (
+    row.category &&
+    normalizeText(row.category) !== normalizeText(player.category)
+  ) {
+    changes.push(`${player.category} → ${row.category}`);
+  }
+  if (row.gender && row.gender !== player.gender) {
+    changes.push(`${branchLabel(player.gender)} → ${branchLabel(row.gender)}`);
+  }
+  if (row.club && row.club !== player.club) {
+    changes.push(`Club: ${row.club}`);
+  }
+  if (row.city && row.city !== player.city) {
+    changes.push(`Ciudad: ${row.city}`);
+  }
+  return changes;
 }
 
 type Decision =
@@ -158,7 +191,8 @@ export function PointsImporter({
 
   function handlePreview() {
     if (!sheet || !mapping) return;
-    if (mapping.points === null) {
+    // El padrón es la lista de jugadores: los puntos son opcionales.
+    if (mapping.points === null && mode !== "padron") {
       setError("Elegí qué columna tiene los puntos.");
       return;
     }
@@ -267,19 +301,32 @@ export function PointsImporter({
         }
         chosen.add(decision.playerId);
       }
+      // La rama y la categoría de abajo solo completan a los jugadores nuevos:
+      // a uno que ya existe nunca se le pisa la ficha con un valor elegido acá.
+      const isNew = decision.action === "create";
       rows.push({
         line: row.line,
         playerId: decision.action === "player" ? decision.playerId : null,
         firstName: row.firstName,
         lastName: row.lastName,
-        gender: row.gender ?? defaultGender,
-        category: row.category || defaultCategory,
+        gender: isNew ? (row.gender ?? defaultGender) : (row.gender ?? ""),
+        category: isNew ? row.category || defaultCategory : row.category,
         club: row.club,
         city: row.city,
         points: row.points,
         matchesPlayed: row.matchesPlayed,
         matchesWon: row.matchesWon,
         titles: row.titles,
+        ...(mode === "padron" && !isNew
+          ? {
+              profile: {
+                category: row.category,
+                gender: row.gender ?? "",
+                club: row.club,
+                city: row.city,
+              },
+            }
+          : {}),
       });
     }
 
@@ -299,7 +346,14 @@ export function PointsImporter({
           const player =
             row.playerId !== null ? playersById.get(row.playerId) : undefined;
           const before = player?.points ?? 0;
-          const after = mode === "sumar" ? before + row.points : row.points;
+          // En el padrón la fila puede no traer puntos: ahí no se tocan.
+          const after =
+            row.points === null
+              ? before
+              : mode === "sumar"
+                ? before + row.points
+                : row.points;
+          const category = row.profile?.category || row.category;
           return {
             line: row.line,
             name: player?.name ?? `${row.firstName} ${row.lastName}`.trim(),
@@ -307,10 +361,14 @@ export function PointsImporter({
             before,
             change: after - before,
             after,
+            category: category || player?.category || "",
+            categoryBefore: player?.category ?? "",
           };
         })
-        .toSorted(
-          (a, b) => b.change - a.change || a.name.localeCompare(b.name, "es"),
+        .toSorted((a, b) =>
+          mode === "padron"
+            ? a.name.localeCompare(b.name, "es")
+            : b.change - a.change || a.name.localeCompare(b.name, "es"),
         ),
     [confirmRows, playersById, mode],
   );
@@ -396,7 +454,7 @@ export function PointsImporter({
                 Lo elegimos por el título de la columna de puntos.
               </p>
             )}
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <div className="mt-2 grid gap-3 sm:grid-cols-3">
               {(
                 [
                   {
@@ -408,6 +466,11 @@ export function PointsImporter({
                     value: "reemplazar",
                     title: "Los totales",
                     text: "Pisan los puntos de cada jugador con los del archivo. Sirve para corregir el ranking entero.",
+                  },
+                  {
+                    value: "padron",
+                    title: "Ninguno: es el padrón",
+                    text: "La lista de jugadores con su categoría. Los da de alta y, a los que ya están, les corrige categoría, rama, club y ciudad.",
                   },
                 ] as const
               ).map((option) => (
@@ -442,9 +505,9 @@ export function PointsImporter({
               ))}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              En los dos casos, los jugadores que no están en el archivo (o que
-              tienen los puntos vacíos) no se tocan. PJ, PG y títulos se suman o
-              reemplazan igual que los puntos, si vienen.
+              {mode === "padron"
+                ? "Los jugadores que no están en el archivo no se tocan, y una celda vacía tampoco borra nada: el padrón agrega y corrige. Si trae puntos, se cargan como el total de cada uno."
+                : "En los dos casos, los jugadores que no están en el archivo (o que tienen los puntos vacíos) no se tocan. PJ, PG y títulos se suman o reemplazan igual que los puntos, si vienen."}
             </p>
           </fieldset>
 
@@ -463,7 +526,9 @@ export function PointsImporter({
               placeholder={
                 mode === "sumar"
                   ? "Ej. Abierto de Primavera"
-                  : "Ej. Corrección ranking septiembre"
+                  : mode === "padron"
+                    ? "Ej. Padrón inicial del circuito"
+                    : "Ej. Corrección ranking septiembre"
               }
               className="sm:max-w-md"
             />
@@ -642,7 +707,7 @@ export function PointsImporter({
                     : undefined;
                 const current = player?.points ?? 0;
                 const next =
-                  decision.action === "skip"
+                  decision.action === "skip" || row.points === null
                     ? null
                     : mode === "sumar" && player
                       ? current + row.points
@@ -650,7 +715,11 @@ export function PointsImporter({
                 const candidates = row.candidates
                   .map((id) => playersById.get(id))
                   .filter((candidate) => !!candidate);
-                const warnings = rowWarnings(row, player);
+                const warnings = rowWarnings(row, player, mode);
+                const fichaChanges =
+                  mode === "padron" && decision.action === "player"
+                    ? rowChanges(row, player)
+                    : [];
 
                 return (
                   <tr
@@ -749,6 +818,11 @@ export function PointsImporter({
                             Coincide
                           </p>
                         )}
+                      {fichaChanges.length > 0 && (
+                        <p className="mt-1 max-w-72 text-xs font-medium text-accent">
+                          {fichaChanges.join(" · ")}
+                        </p>
+                      )}
                       {warnings.map((warning) => (
                         <p
                           key={warning}
@@ -820,8 +894,14 @@ export function PointsImporter({
         onClose={() => {
           if (!isPending) setConfirmRows(null);
         }}
-        title="¿Está bien la carga?"
-        description={`${changes.length} ${changes.length === 1 ? "jugador" : "jugadores"} · ${totalChange >= 0 ? "+" : "−"}${formatNumber(Math.abs(totalChange))} puntos en total${label.trim() ? ` · ${label.trim()}` : ""}`}
+        title={
+          mode === "padron" ? "¿Está bien el padrón?" : "¿Está bien la carga?"
+        }
+        description={`${changes.length} ${changes.length === 1 ? "jugador" : "jugadores"} · ${
+          mode === "padron"
+            ? `${changes.filter((item) => item.isNew).length} nuevos`
+            : `${totalChange >= 0 ? "+" : "−"}${formatNumber(Math.abs(totalChange))} puntos en total`
+        }${label.trim() ? ` · ${label.trim()}` : ""}`}
         footer={
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
@@ -861,23 +941,41 @@ export function PointsImporter({
                   {item.isNew && <Badge tone="accent">Nuevo</Badge>}
                 </p>
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  {formatNumber(item.before)} → {formatNumber(item.after)} pts
+                  {mode === "padron" && item.change === 0
+                    ? `${formatNumber(item.after)} pts`
+                    : `${formatNumber(item.before)} → ${formatNumber(item.after)} pts`}
                 </p>
               </div>
-              <span
-                className={cn(
-                  "shrink-0 font-display text-2xl leading-none font-bold tabular-nums",
-                  item.change > 0
-                    ? "text-success"
-                    : item.change < 0
-                      ? "text-danger"
-                      : "text-muted-foreground",
-                )}
-              >
-                {item.change > 0 ? "+" : item.change < 0 ? "−" : "±"}
-                {formatNumber(Math.abs(item.change))}
-                <span className="ml-0.5 text-sm">p</span>
-              </span>
+              {mode === "padron" && item.change === 0 ? (
+                <span className="shrink-0 font-display text-xl leading-none font-bold">
+                  {item.categoryBefore &&
+                  item.categoryBefore !== item.category ? (
+                    <>
+                      <span className="text-muted-foreground">
+                        {item.categoryBefore} →{" "}
+                      </span>
+                      {item.category}
+                    </>
+                  ) : (
+                    item.category
+                  )}
+                </span>
+              ) : (
+                <span
+                  className={cn(
+                    "shrink-0 font-display text-2xl leading-none font-bold tabular-nums",
+                    item.change > 0
+                      ? "text-success"
+                      : item.change < 0
+                        ? "text-danger"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {item.change > 0 ? "+" : item.change < 0 ? "−" : "±"}
+                  {formatNumber(Math.abs(item.change))}
+                  <span className="ml-0.5 text-sm">p</span>
+                </span>
+              )}
             </li>
           ))}
         </ul>

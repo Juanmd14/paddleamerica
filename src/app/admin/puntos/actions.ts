@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { normalizeCategory } from "@/lib/categories";
 import { getRanking } from "@/lib/data";
 import { playerName } from "@/lib/labels";
 import {
@@ -24,6 +25,8 @@ export type PlayerOption = {
   name: string;
   gender: string;
   category: string;
+  club: string;
+  city: string;
   points: number;
   active: boolean;
 };
@@ -37,7 +40,8 @@ export type PreviewRow = {
   category: string;
   club: string;
   city: string;
-  points: number;
+  /** Null: el archivo no trae puntos para esta fila (solo en padrón). */
+  points: number | null;
   matchesPlayed: number | null;
   matchesWon: number | null;
   titles: number | null;
@@ -54,7 +58,7 @@ export type PreviewResult =
   { rows: PreviewRow[]; players: PlayerOption[] } | { message: string };
 
 function isMode(mode: string): mode is ImportMode {
-  return mode === "reemplazar" || mode === "sumar";
+  return mode === "reemplazar" || mode === "sumar" || mode === "padron";
 }
 
 /** Valida las filas y las relaciona con los jugadores: por código y, si no hay, por nombre (+ rama). */
@@ -93,13 +97,18 @@ export async function previewPointsImport(
     const titles = parseWholeNumber(row.titles);
     const gender = parseGender(row.gender);
 
+    // La categoría se guarda siempre como la escribe el circuito ("6ta"):
+    // players.category es texto libre y el ranking filtra con un igual exacto.
+    const rawCategory = (row.category ?? "").trim();
+    const category = normalizeCategory(rawCategory);
+
     const base: PreviewRow = {
       line: row.line,
       name,
       firstName,
       lastName,
       gender,
-      category: row.category ?? "",
+      category: category ?? "",
       club: row.club ?? "",
       city: row.city ?? "",
       points: Number.isFinite(points) ? (points ?? 0) : 0,
@@ -111,8 +120,18 @@ export async function previewPointsImport(
       candidates: [],
     };
 
-    if (points === null) return { ...base, noPoints: true };
+    // En el padrón lo que se carga es la ficha: sin puntos la fila vale igual.
+    if (points === null) {
+      if (mode !== "padron") return { ...base, noPoints: true };
+      base.points = null;
+    }
     if (!name) return { ...base, error: "Falta el nombre o el código." };
+    if (rawCategory && !category) {
+      return {
+        ...base,
+        error: `"${rawCategory}" no es una categoría: poné de 1ra a 8va.`,
+      };
+    }
     if (Number.isNaN(points)) {
       return { ...base, error: "Los puntos tienen que ser un número entero." };
     }
@@ -123,7 +142,7 @@ export async function previewPointsImport(
       };
     }
     if (
-      mode === "reemplazar" &&
+      mode !== "sumar" &&
       matchesPlayed !== null &&
       matchesWon !== null &&
       matchesWon > matchesPlayed
@@ -176,6 +195,8 @@ export async function previewPointsImport(
       name: playerName(player),
       gender: player.gender,
       category: player.category,
+      club: player.club ?? "",
+      city: player.city ?? "",
       points: player.ranking_points,
       active: player.active,
     })),
@@ -192,10 +213,21 @@ export type ApplyRow = {
   category: string;
   club: string;
   city: string;
-  points: number;
+  /** Null: el archivo no trae puntos, los del jugador quedan como están. */
+  points: number | null;
   matchesPlayed: number | null;
   matchesWon: number | null;
   titles: number | null;
+  /**
+   * Solo en padrón y solo para jugadores que ya existen: lo que el archivo le
+   * corrige de la ficha. Lo que viene vacío no se toca.
+   */
+  profile?: {
+    category: string;
+    gender: string;
+    club: string;
+    city: string;
+  };
 };
 
 export type ApplyResult =
@@ -249,21 +281,38 @@ export async function applyPointsImport(input: {
         return fail("el jugador ya no existe.");
       if (usedIds.has(row.playerId)) return fail("jugador repetido.");
       usedIds.add(row.playerId);
-      payload.push({ player_id: row.playerId, ...stats });
+      // Solo el padrón corrige la ficha, y solo con lo que el archivo trae.
+      const profile =
+        mode === "padron" && row.profile
+          ? {
+              category: normalizeCategory(row.profile.category) ?? "",
+              gender: row.profile.gender.trim(),
+              club: row.profile.club.trim(),
+              city: row.profile.city.trim(),
+            }
+          : null;
+      if (profile && row.profile?.category.trim() && !profile.category) {
+        return fail("la categoría tiene que ser de 1ra a 8va.");
+      }
+      payload.push({
+        player_id: row.playerId,
+        ...stats,
+        ...(profile ? { profile } : {}),
+      });
       continue;
     }
 
     const firstName = row.firstName.trim();
     const lastName = row.lastName.trim();
-    const category = row.category.trim();
+    const category = normalizeCategory(row.category);
     if (firstName.length < 2 || lastName.length < 2) {
       return fail("para crear el jugador hace falta nombre y apellido.");
     }
     if (row.gender !== "masculino" && row.gender !== "femenino") {
       return fail("elegí la rama del jugador nuevo.");
     }
-    if (!category || category.length > 30) {
-      return fail("elegí la categoría del jugador nuevo.");
+    if (!category) {
+      return fail("elegí una categoría de 1ra a 8va para el jugador nuevo.");
     }
 
     const baseSlug = slugify(`${firstName} ${lastName}`);
@@ -301,7 +350,9 @@ export async function applyPointsImport(input: {
         ? "Con esta carga algún jugador quedaría con más partidos ganados que jugados. Revisá PJ y PG."
         : error.code === "23505"
           ? "Se repite el código de un jugador nuevo. Probá de nuevo."
-          : "No pudimos aplicar la carga. No se modificó ningún jugador.";
+          : error.message.includes("categoria_del_jugador_invalida")
+            ? "Alguno de los jugadores tiene una cuenta vinculada y la categoría del archivo no es de 1ra a 8va."
+            : "No pudimos aplicar la carga. No se modificó ningún jugador.";
     return { ok: false, message };
   }
 

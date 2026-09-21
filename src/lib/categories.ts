@@ -93,6 +93,18 @@ export function pairCategoryError(
   return null;
 }
 
+/**
+ * Deja la categoría escrita como la escribe el circuito: "6TA", " 6ta ", "6°"
+ * y "6" son todas "6ta". Null si no es de 1ra a 8va.
+ *
+ * `players.category` es texto libre y el ranking público filtra con un igual
+ * exacto, así que sin esto un "6TA" abre una categoría fantasma y vacía.
+ */
+export function normalizeCategory(label: string | null | undefined) {
+  const value = categoryFromLabel(label);
+  return value === null ? null : categoryName(value);
+}
+
 /** "6ta" → 6, " 1RA " → 1. Null si no es de 1ra a 8va (igual que category_from_label en SQL). */
 export function categoryFromLabel(label: string | null | undefined) {
   const match = (label ?? "")

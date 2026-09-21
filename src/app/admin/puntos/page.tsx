@@ -20,6 +20,11 @@ export const metadata: Metadata = { title: "Carga de puntos" };
 
 const templates = [
   {
+    tipo: "padron",
+    title: "Para cargar el padrón",
+    text: "La lista de jugadores con su categoría, sin puntos todavía. Da de alta a los que no están y corrige la ficha de los que sí.",
+  },
+  {
     tipo: "torneo",
     title: "Para cargar un torneo",
     text: "Puntos vacíos: anotá los que ganó cada uno y dejá vacíos los que no jugaron. Se suman.",
@@ -54,7 +59,7 @@ export default async function PointsImportPage({
     <div className="space-y-8">
       <AdminPageHeader
         title="Carga de puntos"
-        description="Después de cada torneo, subí los resultados en Excel y el ranking se actualiza solo. Antes de guardar ves exactamente qué cambia."
+        description="Armá el padrón de jugadores en una planilla y, después de cada torneo, subí los resultados en Excel: el ranking se actualiza solo. Antes de guardar ves exactamente qué cambia."
       />
       {params.deshecha && (
         <Alert tone="success">
@@ -152,11 +157,11 @@ export default async function PointsImportPage({
 const guideSteps = [
   {
     title: "Bajá la planilla modelo",
-    text: "“Para cargar un torneo” si vas a sumar los puntos de una fecha; “Con los totales actuales” si querés corregir el ranking.",
+    text: "“Para cargar el padrón” si todavía estás armando la lista de jugadores; “Para cargar un torneo” si vas a sumar los puntos de una fecha; “Con los totales actuales” si querés corregir el ranking.",
   },
   {
-    title: "Completá la columna verde",
-    text: "Los puntos que ganó cada uno. PJ, PG y títulos son opcionales. Dejá vacíos a los que no jugaron: esas filas no se tocan. No cambies el Código.",
+    title: "Completá la planilla",
+    text: "En la del padrón, Nombre, Apellido, Rama y Categoría de cada jugador; los puntos podés dejarlos vacíos. En las otras dos, la columna verde con los puntos, y vacío el que no jugó. No cambies el Código.",
   },
   {
     title: "Jugadores nuevos al final",
@@ -231,8 +236,9 @@ function PointsGuide({ open }: { open: boolean }) {
                 </li>
                 <li>
                   La rama, la categoría, el club o la ciudad de alguien que ya
-                  existe: eso se edita en Jugadores. Si la rama o la categoría
-                  del archivo no coinciden, te avisamos.
+                  existe: eso se edita en Jugadores, o con la planilla del
+                  padrón. En las cargas de puntos, si la rama o la categoría del
+                  archivo no coinciden, te avisamos.
                 </li>
                 <li>
                   Si alguien “ya no compite”, los puntos se cargan igual pero

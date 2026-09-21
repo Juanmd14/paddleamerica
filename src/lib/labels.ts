@@ -57,6 +57,21 @@ export function playerName(player: Pick<Player, "first_name" | "last_name">) {
   return `${player.first_name} ${player.last_name}`;
 }
 
+/**
+ * El orden del ranking: más puntos primero y, a igual puntaje, por apellido.
+ * El desempate importa apenas se carga el padrón, cuando están todos en cero.
+ */
+export function comparePlayers(
+  a: Pick<Player, "first_name" | "last_name" | "ranking_points">,
+  b: Pick<Player, "first_name" | "last_name" | "ranking_points">,
+) {
+  return (
+    b.ranking_points - a.ranking_points ||
+    a.last_name.localeCompare(b.last_name, "es") ||
+    a.first_name.localeCompare(b.first_name, "es")
+  );
+}
+
 const REGISTRATION_STATUS: Record<string, { label: string; tone: BadgeTone }> =
   {
     invitacion: { label: "Esperando a la pareja", tone: "accent" },
