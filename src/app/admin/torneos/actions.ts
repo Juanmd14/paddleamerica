@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   type FormState,
+  isGoogleMapsUrl,
   isStorageUrl,
   isValidDate,
   optionalText,
@@ -27,21 +28,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import type { TablesInsert } from "@/types/database.types";
-
-/** Links que da Google Maps al compartir un lugar. */
-function isGoogleMapsUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      (url.hostname === "maps.app.goo.gl" ||
-        url.hostname === "goo.gl" ||
-        /(^|\.)google\.[a-z.]+$/.test(url.hostname))
-    );
-  } catch {
-    return false;
-  }
-}
 
 /** Categoría del formulario: rango (desde/hasta), suma o texto libre. */
 function readCategory(formData: FormData): {
@@ -95,6 +81,7 @@ function readTournament(formData: FormData) {
     description: optionalText(formData, "description"),
     city: text(formData, "city"),
     venue: optionalText(formData, "venue"),
+    club_id: wholeNumber(formData, "club_id") || null,
     starts_on: startsOn,
     ends_on: text(formData, "ends_on") || startsOn,
     category: category.label,
@@ -184,11 +171,13 @@ function revalidateTournamentPages(...slugs: string[]) {
     "/torneos",
     "/admin",
     "/admin/torneos",
+    "/clubes",
     "/sitemap.xml",
   ]) {
     revalidatePath(path);
   }
   for (const slug of new Set(slugs)) revalidatePath(`/torneos/${slug}`);
+  revalidatePath("/clubes/[slug]", "page");
 }
 
 export async function createTournament(

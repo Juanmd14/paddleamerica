@@ -17,6 +17,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cancelRegistration } from "@/app/torneos/[slug]/actions";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { ConfirmedPairs } from "@/components/confirmed-pairs";
 import { Cover } from "@/components/cover";
 import { InvitationResponse } from "@/components/invitation-response";
 import { PairPlayers } from "@/components/pair-players";
@@ -42,6 +43,8 @@ import {
 } from "@/lib/categories";
 import { genderRulesHelp, playerGenderError } from "@/lib/gender-rules";
 import {
+  getClubById,
+  getConfirmedPairs,
   getMyProfile,
   getMyTournamentEntry,
   getTournament,
@@ -85,9 +88,16 @@ export default async function TournamentPage({
   const tournament = await getTournament(slug);
   if (!tournament) notFound();
 
-  const [spotsMap, user] = await Promise.all([
+  // Las parejas confirmadas se muestran mientras se anotan y mientras se juega.
+  const showPairs =
+    tournament.status === "inscripciones" || tournament.status === "en_juego";
+  const [spotsMap, user, pairs, club] = await Promise.all([
     getTournamentSpots(),
     getCurrentUser(),
+    showPairs ? getConfirmedPairs(tournament.id) : Promise.resolve([]),
+    tournament.club_id
+      ? getClubById(tournament.club_id)
+      : Promise.resolve(null),
   ]);
   const [entry, profile] = user
     ? await Promise.all([getMyTournamentEntry(tournament.id), getMyProfile()])
@@ -102,11 +112,17 @@ export default async function TournamentPage({
     entry.invitations.length === 0 &&
     !spots?.full;
 
-  const details: { icon: LucideIcon; label: string; value: string }[] = [
+  const details: {
+    icon: LucideIcon;
+    label: string;
+    value: string;
+    href?: string;
+  }[] = [
     { icon: CalendarDays, label: "Fechas", value: dates },
     {
       icon: MapPin,
       label: "Sede",
+      href: club ? `/clubes/${club.slug}` : undefined,
       value: [tournament.venue, tournament.city].filter(Boolean).join(", "),
     },
     {
@@ -227,20 +243,59 @@ export default async function TournamentPage({
             </section>
           )}
 
+          {showPairs && (
+            <section>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 className="font-display text-3xl font-bold uppercase">
+                  Parejas confirmadas
+                </h2>
+                {pairs.length > 0 && (
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {pairs.length === 1
+                      ? "1 pareja"
+                      : `${pairs.length} parejas`}
+                    {tournament.capacity ? ` de ${tournament.capacity}` : ""}
+                  </p>
+                )}
+              </div>
+              <div className="mt-4">
+                {pairs.length > 0 ? (
+                  <ConfirmedPairs pairs={pairs} />
+                ) : (
+                  <p className="rounded-card border border-dashed border-border px-5 py-6 text-center text-foreground-soft">
+                    Todavía no hay parejas confirmadas.{" "}
+                    {isOpen && "¡Anotate y sé la primera!"}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="font-display text-3xl font-bold uppercase">
               Información
             </h2>
             <Card className="mt-4 p-5 sm:p-6">
               <dl className="grid gap-5 sm:grid-cols-2">
-                {details.map(({ icon: Icon, label, value }) => (
+                {details.map(({ icon: Icon, label, value, href }) => (
                   <div key={label} className="flex gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-pista-50 text-accent">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
                     <div>
                       <dt className="text-sm text-muted-foreground">{label}</dt>
-                      <dd className="font-semibold">{value}</dd>
+                      <dd className="font-semibold">
+                        {href ? (
+                          <Link
+                            href={href}
+                            className="text-accent underline-offset-4 hover:text-accent-hover hover:underline"
+                          >
+                            {value}
+                          </Link>
+                        ) : (
+                          value
+                        )}
+                      </dd>
                     </div>
                   </div>
                 ))}
@@ -254,7 +309,12 @@ export default async function TournamentPage({
             </h2>
             <div className="mt-4">
               <TournamentMap
-                tournament={tournament}
+                // Sin dirección propia, usa la del club.
+                tournament={{
+                  ...tournament,
+                  address: tournament.address || club?.address || null,
+                  maps_url: tournament.maps_url || club?.maps_url || null,
+                }}
                 shareText={`${tournament.name} · ${dates} en ${tournament.city}`}
               />
             </div>

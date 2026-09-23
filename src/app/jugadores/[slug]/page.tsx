@@ -1,7 +1,8 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays, History, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { ShareButton } from "@/components/share-button";
 import { ZoomableAvatar } from "@/components/zoomable-avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +11,10 @@ import { Container } from "@/components/ui/container";
 import {
   getPlayer,
   getPlayerAccountAvatar,
+  getPlayerTournaments,
   getRankingPosition,
 } from "@/lib/data";
-import { formatNumber } from "@/lib/format";
+import { formatDateRange, formatNumber } from "@/lib/format";
 import {
   effectiveness,
   genderLabel,
@@ -42,12 +44,13 @@ export default async function PlayerPage({
   const player = await getPlayer(slug);
   if (!player) notFound();
 
-  const [position, accountAvatar] = await Promise.all([
+  const [position, accountAvatar, played] = await Promise.all([
     getRankingPosition(player),
     // Sin foto cargada en el ranking, usa la de su cuenta (si está vinculada).
     player.photo_url
       ? Promise.resolve(null)
       : getPlayerAccountAvatar(player.id),
+    getPlayerTournaments(player.id),
   ]);
   const name = playerName(player);
   const winRate = effectiveness(player);
@@ -70,7 +73,7 @@ export default async function PlayerPage({
             className="inline-flex items-center gap-2 text-sm font-medium text-noche-300 transition-colors hover:text-white"
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
-            Volver al ranking
+            Volver a las categorías
           </Link>
           <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
             <ZoomableAvatar
@@ -169,6 +172,77 @@ export default async function PlayerPage({
             </p>
           </section>
         )}
+
+        <section className="mt-14">
+          <h2 className="font-display text-3xl font-bold uppercase">
+            Torneos jugados
+          </h2>
+          {played.length > 0 ? (
+            <Card className="mt-4 overflow-hidden">
+              <ul className="divide-y divide-border">
+                {played.map(({ tournament, partnerName, partnerSlug }) => (
+                  <li
+                    key={tournament.id}
+                    className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/torneos/${tournament.slug}`}
+                        className="font-display text-2xl leading-none font-bold uppercase transition-colors hover:text-accent"
+                      >
+                        {tournament.name}
+                      </Link>
+                      <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarDays className="size-4" aria-hidden="true" />
+                          {formatDateRange(
+                            tournament.starts_on,
+                            tournament.ends_on,
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="size-4" aria-hidden="true" />
+                          {[tournament.venue, tournament.city]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2 text-sm">
+                      <Badge tone="neutral">{tournament.category}</Badge>
+                      {tournament.status === "en_juego" && (
+                        <Badge tone="accent">En juego</Badge>
+                      )}
+                      <span className="text-foreground-soft">
+                        con{" "}
+                        {partnerSlug ? (
+                          <Link
+                            href={`/jugadores/${partnerSlug}`}
+                            className="font-semibold text-foreground hover:text-accent"
+                          >
+                            {partnerName}
+                          </Link>
+                        ) : (
+                          <span className="font-semibold text-foreground">
+                            {partnerName}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : (
+            <div className="mt-4">
+              <EmptyState
+                icon={History}
+                title="Todavía no hay torneos cargados"
+                description={`Acá van a aparecer los torneos del circuito que juegue ${player.first_name}.`}
+              />
+            </div>
+          )}
+        </section>
       </Container>
     </>
   );

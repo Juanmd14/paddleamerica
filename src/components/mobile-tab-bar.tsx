@@ -1,10 +1,11 @@
-import { House, ListOrdered, Newspaper, Trophy } from "lucide-react";
+import { Building2, House, ListOrdered, Newspaper, Trophy } from "lucide-react";
 import { NavLink } from "@/components/nav-link";
 
 const tabs = [
   { href: "/", label: "Inicio", icon: House },
   { href: "/torneos", label: "Torneos", icon: Trophy },
-  { href: "/jugadores", label: "Ranking", icon: ListOrdered },
+  { href: "/jugadores", label: "Categorías", icon: ListOrdered },
+  { href: "/clubes", label: "Clubes", icon: Building2 },
   { href: "/noticias", label: "Noticias", icon: Newspaper },
 ];
 
@@ -15,7 +16,7 @@ export function MobileTabBar() {
       aria-label="Secciones"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {tabs.map(({ href, label, icon: Icon }) => (
           <li key={href}>
             <NavLink

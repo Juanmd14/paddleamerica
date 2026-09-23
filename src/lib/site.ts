@@ -27,7 +27,7 @@ export const siteConfig = {
   tagline: "América · Rivadavia",
   region: "América y la zona",
   description:
-    "Torneos, ranking y noticias del pádel de América, Rivadavia y la zona. Anotate en el próximo torneo y seguí a los mejores jugadores.",
+    "Torneos, categorías, clubes y noticias del pádel de América, Rivadavia y la zona. Anotate en el próximo torneo y seguí a los mejores jugadores.",
   url: resolveSiteUrl(),
   /**
    * Datos de contacto del circuito. Solo se muestran los que completes.
@@ -43,6 +43,7 @@ export const siteConfig = {
 
 export const mainNav = [
   { href: "/torneos", label: "Torneos" },
-  { href: "/jugadores", label: "Ranking" },
+  { href: "/jugadores", label: "Categorías" },
+  { href: "/clubes", label: "Clubes" },
   { href: "/noticias", label: "Noticias" },
 ];

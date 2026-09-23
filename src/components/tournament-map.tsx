@@ -29,7 +29,10 @@ export function TournamentMap({
   tournament,
   shareText,
 }: {
-  tournament: Tournament;
+  tournament: Pick<
+    Tournament,
+    "name" | "address" | "venue" | "city" | "maps_url"
+  >;
   shareText: string;
 }) {
   const place = tournamentPlace(tournament);

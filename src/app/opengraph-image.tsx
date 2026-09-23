@@ -7,7 +7,7 @@ export const contentType = "image/png";
 
 export default function Image() {
   return ogImage({
-    eyebrow: "Torneos · Ranking · Noticias",
+    eyebrow: "Torneos · Categorías · Clubes · Noticias",
     title: "Todo el pádel de la zona",
     subtitle: siteConfig.tagline,
   });

@@ -11,7 +11,7 @@ import { TournamentForm } from "@/components/admin/tournament-form";
 import { Alert } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/auth";
-import { getTournamentById, getTournamentSpots } from "@/lib/data";
+import { getClubs, getTournamentById, getTournamentSpots } from "@/lib/data";
 import { firstParam } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Editar torneo" };
@@ -29,9 +29,10 @@ export default async function EditTournamentPage({
     : null;
   if (!tournament) notFound();
 
-  const [query, spots] = await Promise.all([
+  const [query, spots, clubs] = await Promise.all([
     searchParams,
     getTournamentSpots(),
+    getClubs(),
   ]);
   const error = firstParam(query.error);
   const saved = firstParam(query.guardado);
@@ -69,6 +70,7 @@ export default async function EditTournamentPage({
         action={updateTournament.bind(null, tournament.id)}
         tournament={tournament}
         taken={spots.get(tournament.id)}
+        clubs={clubs}
         submitLabel="Guardar cambios"
       />
 

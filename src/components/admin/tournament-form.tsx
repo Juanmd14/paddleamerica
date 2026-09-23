@@ -32,13 +32,15 @@ import {
   tournamentStatusOptions,
 } from "@/lib/labels";
 import { cn, slugify } from "@/lib/utils";
-import type { Tournament } from "@/types/models";
+import type { Club, Tournament } from "@/types/models";
 
 type TournamentFormProps = {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   tournament?: Tournament;
   /** Parejas ya anotadas, para que la vista previa muestre los lugares libres reales. */
   taken?: number;
+  /** Clubes cargados, para elegir la sede. */
+  clubs: Club[];
   submitLabel: string;
 };
 
@@ -86,6 +88,8 @@ type Draft = {
   ends_on: string;
   city: string;
   venue: string;
+  /** Id del club elegido, o vacío. */
+  club_id: string;
   /** Texto de la categoría (solo en modo libre). */
   category: string;
   category_mode: CategoryMode;
@@ -148,6 +152,7 @@ function previewTournament(
     description: null,
     city: draft.city.trim() || "Ciudad",
     venue: draft.venue.trim() || null,
+    club_id: Number(draft.club_id) || null,
     address: null,
     maps_url: null,
     starts_on: draft.starts_on,
@@ -243,6 +248,7 @@ export function TournamentForm({
   action,
   tournament,
   taken,
+  clubs,
   submitLabel,
 }: TournamentFormProps) {
   const { state, errors, pending, onSubmit } = useAdminForm(action);
@@ -254,6 +260,7 @@ export function TournamentForm({
     ends_on: tournament?.ends_on ?? "",
     city: tournament?.city ?? "",
     venue: tournament?.venue ?? "",
+    club_id: tournament?.club_id?.toString() ?? "",
     category:
       tournament && !tournament.category_min && !tournament.category_sum
         ? tournament.category
@@ -387,6 +394,42 @@ export function TournamentForm({
               type="date"
               min={draft.starts_on || undefined}
             />
+          </Field>
+          <Field
+            name="club_id"
+            label="Club"
+            optional
+            className="sm:col-span-2"
+            hint={
+              clubs.length > 0
+                ? "El torneo aparece en la página del club. Completa la sede y la ciudad."
+                : "Todavía no hay clubes. Cargalos en Panel → Clubes."
+            }
+          >
+            <Select
+              {...fieldProps("club_id")}
+              value={draft.club_id}
+              onChange={(event) => {
+                const club = clubs.find(
+                  (option) => String(option.id) === event.target.value,
+                );
+                setDraft((current) => ({
+                  ...current,
+                  club_id: event.target.value,
+                  ...(club ? { venue: club.name, city: club.city } : {}),
+                }));
+                if (club) {
+                  setMapQuery(placeOf(club.address, club.name, club.city));
+                }
+              }}
+            >
+              <option value="">Sin club (sede libre)</option>
+              {clubs.map((club) => (
+                <option key={club.id} value={club.id}>
+                  {club.name} · {club.city}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field name="city" label="Ciudad" error={errors.city}>
             <Input

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      clubs: {
+        Row: {
+          address: string | null
+          city: string
+          courts: number | null
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: number
+          instagram: string | null
+          maps_url: string | null
+          name: string
+          phone: string | null
+          slug: string
+        }
+        Insert: {
+          address?: string | null
+          city: string
+          courts?: number | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          instagram?: string | null
+          maps_url?: string | null
+          name: string
+          phone?: string | null
+          slug: string
+        }
+        Update: {
+          address?: string | null
+          city?: string
+          courts?: number | null
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: never
+          instagram?: string | null
+          maps_url?: string | null
+          name?: string
+          phone?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           author: string | null
@@ -363,6 +408,7 @@ export type Database = {
           category_sum: number | null
           champions: string | null
           city: string
+          club_id: number | null
           cover_url: string | null
           created_at: string
           description: string | null
@@ -389,6 +435,7 @@ export type Database = {
           category_sum?: number | null
           champions?: string | null
           city: string
+          club_id?: number | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -415,6 +462,7 @@ export type Database = {
           category_sum?: number | null
           champions?: string | null
           city?: string
+          club_id?: number | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -504,6 +552,14 @@ export type Database = {
         }
         Returns: string
       }
+      player_tournaments: {
+        Args: { p_player_id: number }
+        Returns: {
+          partner_name: string
+          partner_slug: string
+          tournament_id: number
+        }[]
+      }
       profile_display_name: {
         Args: { p_profile: Database["public"]["Tables"]["profiles"]["Row"] }
         Returns: string
@@ -548,6 +604,18 @@ export type Database = {
       set_profile_gender: {
         Args: { p_gender?: string; p_user_id: string }
         Returns: undefined
+      }
+      tournament_confirmed_pairs: {
+        Args: { p_tournament_id: number }
+        Returns: {
+          partner_avatar_url: string
+          partner_name: string
+          partner_slug: string
+          player_avatar_url: string
+          player_name: string
+          player_slug: string
+          registration_id: number
+        }[]
       }
       tournament_spots: {
         Args: never

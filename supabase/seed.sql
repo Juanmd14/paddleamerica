@@ -90,6 +90,20 @@ from (values
 ) as v(slug, featured, sponsor, min, max, sum)
 where t.slug = v.slug;
 
+-- Clubes y la sede de cada torneo
+insert into public.clubs (slug, name, city, address, description, courts)
+values
+  ('complejo-el-remate', 'Complejo El Remate', 'América', 'América, Rivadavia, Buenos Aires',
+   'El complejo más grande de América: canchas de blindex techadas, vestuarios y buffet. Sede del Abierto de Primavera y del Masters de fin de año.', 4),
+  ('padel-norte', 'Pádel Norte', 'Trenque Lauquen', null,
+   'Tres canchas de césped sintético en la zona norte de Trenque Lauquen.', 3),
+  ('bandeja-club', 'Bandeja Club', 'Pehuajó', null, null, 2);
+
+update public.tournaments t
+set club_id = c.id
+from public.clubs c
+where c.name = t.venue;
+
 insert into public.news
   (slug, title, excerpt, body, tag, author, published_at)
 values

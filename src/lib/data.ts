@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { getCurrentUser, safeAvatarUrl } from "@/lib/auth";
 import {
+  demoClubs,
+  demoConfirmedPairs,
   demoNews,
   demoPlayers,
   demoSpots,
@@ -24,8 +26,11 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import type {
   AdminProfile,
+  Club,
+  ConfirmedPair,
   NewsArticle,
   Notification,
+  PlayedTournament,
   Player,
   PlayerPointChange,
   Profile,
@@ -353,6 +358,165 @@ export const getTournament = cache(
     return data;
   },
 );
+
+/** Las parejas confirmadas de un torneo, en el orden en que se anotaron. */
+export async function getConfirmedPairs(
+  tournamentId: number,
+): Promise<ConfirmedPair[]> {
+  if (isDemoMode) return demoConfirmedPairs[tournamentId] ?? [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("tournament_confirmed_pairs", {
+    p_tournament_id: tournamentId,
+  });
+  if (error) throw error;
+  return data.map((row) => ({
+    id: row.registration_id,
+    player: {
+      name: row.player_name,
+      avatarUrl: safeAvatarUrl(row.player_avatar_url),
+      slug: row.player_slug,
+    },
+    partner: {
+      name: row.partner_name,
+      avatarUrl: safeAvatarUrl(row.partner_avatar_url),
+      slug: row.partner_slug,
+    },
+  }));
+}
+
+/**
+ * Los torneos que jugó un jugador del ranking (en juego o finalizados), del
+ * más reciente al más viejo. Salen de las inscripciones confirmadas de su
+ * cuenta vinculada: sin cuenta vinculada no hay historial.
+ */
+export async function getPlayerTournaments(
+  playerId: number,
+): Promise<PlayedTournament[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase.rpc("player_tournaments", {
+    p_player_id: playerId,
+  });
+  if (error) throw error;
+  if (rows.length === 0) return [];
+
+  const { data: tournaments, error: tournamentsError } = await supabase
+    .from("tournaments")
+    .select("*")
+    .in(
+      "id",
+      rows.map((row) => row.tournament_id),
+    )
+    .order("starts_on", { ascending: false });
+  if (tournamentsError) throw tournamentsError;
+
+  return tournaments.flatMap((tournament) => {
+    const row = rows.find((item) => item.tournament_id === tournament.id);
+    return row
+      ? [
+          {
+            tournament,
+            partnerName: row.partner_name,
+            partnerSlug: row.partner_slug,
+          },
+        ]
+      : [];
+  });
+}
+
+// ---------------------------------------------------------------------
+// Clubes
+// ---------------------------------------------------------------------
+
+/** Todos los clubes, por ciudad y nombre. */
+export async function getClubs(): Promise<Club[]> {
+  if (isDemoMode) {
+    return demoClubs.toSorted(
+      (a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name),
+    );
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .order("city")
+    .order("name");
+  if (error) throw error;
+  return data;
+}
+
+export const getClub = cache(async (slug: string): Promise<Club | null> => {
+  if (isDemoMode) return demoClubs.find((club) => club.slug === slug) ?? null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+});
+
+export async function getClubById(id: number): Promise<Club | null> {
+  if (isDemoMode) return demoClubs.find((club) => club.id === id) ?? null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** Los torneos de un club: los que vienen (abiertos primero) y los ya jugados. */
+export async function getClubTournaments(clubId: number): Promise<{
+  upcoming: Tournament[];
+  finished: Tournament[];
+}> {
+  let tournaments: Tournament[];
+  if (isDemoMode) {
+    tournaments = demoTournaments.filter(
+      (tournament) => tournament.club_id === clubId,
+    );
+  } else {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("tournaments")
+      .select("*")
+      .eq("club_id", clubId);
+    if (error) throw error;
+    tournaments = data;
+  }
+
+  return {
+    upcoming: sortUpcoming(
+      tournaments.filter((tournament) => tournament.status !== "finalizado"),
+    ),
+    finished: tournaments
+      .filter((tournament) => tournament.status === "finalizado")
+      .toSorted((a, b) => b.starts_on.localeCompare(a.starts_on)),
+  };
+}
+
+/** El próximo torneo de cada club (el primero de sus próximos), por id de club. */
+export async function getNextTournamentByClub(): Promise<
+  Map<number, Tournament>
+> {
+  const upcoming = await getTournaments();
+  const next = new Map<number, Tournament>();
+  for (const tournament of upcoming) {
+    if (tournament.club_id && !next.has(tournament.club_id)) {
+      next.set(tournament.club_id, tournament);
+    }
+  }
+  return next;
+}
 
 // ---------------------------------------------------------------------
 // Noticias

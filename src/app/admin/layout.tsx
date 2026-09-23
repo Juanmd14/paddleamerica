@@ -14,6 +14,7 @@ const sections = [
   { href: "/admin/torneos", label: "Torneos" },
   { href: "/admin/inscripciones", label: "Para confirmar" },
   { href: "/admin/noticias", label: "Noticias" },
+  { href: "/admin/clubes", label: "Clubes" },
   { href: "/admin/jugadores", label: "Jugadores" },
   { href: "/admin/usuarios", label: "Usuarios" },
   { href: "/admin/puntos", label: "Carga de puntos" },

@@ -27,3 +27,16 @@ export type RegistrationWithProfile = Registration & {
 export type Notification = Tables<"notifications">;
 export type RankingImport = Tables<"ranking_imports">;
 export type PlayerPointChange = Tables<"player_point_changes">;
+export type Club = Tables<"clubs">;
+/** Una pareja confirmada, tal como se ve en la página del torneo. */
+export type ConfirmedPair = {
+  id: number;
+  player: { name: string; avatarUrl: string | null; slug: string | null };
+  partner: { name: string; avatarUrl: string | null; slug: string | null };
+};
+/** Un torneo que jugó un jugador del ranking, con quién lo jugó. */
+export type PlayedTournament = {
+  tournament: Tournament;
+  partnerName: string;
+  partnerSlug: string | null;
+};

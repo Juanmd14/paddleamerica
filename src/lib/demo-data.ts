@@ -1,6 +1,12 @@
 // Datos de ejemplo: se usan cuando Supabase no está configurado.
 // Son los mismos que carga supabase/seed.sql.
-import type { NewsArticle, Player, Tournament } from "@/types/models";
+import type {
+  Club,
+  ConfirmedPair,
+  NewsArticle,
+  Player,
+  Tournament,
+} from "@/types/models";
 
 const created_at = "2026-09-01T12:00:00Z";
 
@@ -434,6 +440,7 @@ export const demoTournaments: Tournament[] = [
       "El torneo que abre la temporada de primavera en América. Tres días de pádel en las canchas del Complejo El Remate, con cuadros de 1ra y 2da masculino y puntos para el ranking regional.\n\nLas parejas se arman libremente. Cupo limitado a 24 parejas por categoría.",
     city: "América",
     venue: "Complejo El Remate",
+    club_id: 1,
     starts_on: "2026-10-09",
     ends_on: "2026-10-11",
     category: "6ta y 7ma",
@@ -461,6 +468,7 @@ export const demoTournaments: Tournament[] = [
       "Torneo femenino de 3ra a 5ta categoría con fase de grupos y playoffs. Ideal para jugadoras que quieren sumar sus primeros puntos en el ranking.\n\nIncluye cena de camaradería el sábado a la noche.",
     city: "Trenque Lauquen",
     venue: "Pádel Norte",
+    club_id: 2,
     starts_on: "2026-10-23",
     ends_on: "2026-10-25",
     category: "6ta a 8va",
@@ -488,6 +496,7 @@ export const demoTournaments: Tournament[] = [
       "Partidos de 20 a 2 h en la nueva cancha panorámica de Bandeja Club. Parejas mixtas, categoría suma 13.\n\nLas inscripciones abren el 20 de octubre.",
     city: "Pehuajó",
     venue: "Bandeja Club",
+    club_id: 3,
     starts_on: "2026-11-13",
     ends_on: "2026-11-14",
     category: "Suma 13",
@@ -515,6 +524,7 @@ export const demoTournaments: Tournament[] = [
       "Los 8 mejores jugadores del ranking masculino se enfrentan en el cierre de la temporada. Formato round robin y final el domingo.\n\nEntrada libre y gratuita para el público.",
     city: "América",
     venue: "Complejo El Remate",
+    club_id: 1,
     starts_on: "2026-12-11",
     ends_on: "2026-12-13",
     category: "Top 8 del ranking",
@@ -542,6 +552,7 @@ export const demoTournaments: Tournament[] = [
       "El clásico de mitad de año, con parejas de toda la región en Carlos Tejedor.",
     city: "Carlos Tejedor",
     venue: "Polideportivo Municipal",
+    club_id: null,
     starts_on: "2026-06-12",
     ends_on: "2026-06-14",
     category: "6ta",
@@ -569,6 +580,7 @@ export const demoTournaments: Tournament[] = [
       "Fecha única del tour de invierno, con 20 parejas de 1ra categoría de toda la zona.",
     city: "General Villegas",
     venue: "La Blindex",
+    club_id: null,
     starts_on: "2026-07-17",
     ends_on: "2026-07-19",
     category: "6ta",
@@ -596,6 +608,7 @@ export const demoTournaments: Tournament[] = [
       "Torneo femenino por el aniversario de Pádel Oeste, con cuadros de 2da y 3ra.",
     city: "Salliqueló",
     venue: "Pádel Oeste",
+    club_id: null,
     starts_on: "2026-08-14",
     ends_on: "2026-08-16",
     category: "7ma y 8va",
@@ -694,3 +707,74 @@ export const demoNews: NewsArticle[] = [
     created_at,
   },
 ];
+
+export const demoClubs: Club[] = [
+  {
+    id: 1,
+    slug: "complejo-el-remate",
+    name: "Complejo El Remate",
+    city: "América",
+    address: "América, Rivadavia, Buenos Aires",
+    maps_url: null,
+    description:
+      "El complejo más grande de América: canchas de blindex techadas, vestuarios y buffet. Sede del Abierto de Primavera y del Masters de fin de año.",
+    courts: 4,
+    phone: null,
+    instagram: null,
+    cover_url: null,
+    created_at,
+  },
+  {
+    id: 2,
+    slug: "padel-norte",
+    name: "Pádel Norte",
+    city: "Trenque Lauquen",
+    address: null,
+    maps_url: null,
+    description:
+      "Tres canchas de césped sintético en la zona norte de Trenque Lauquen.",
+    courts: 3,
+    phone: null,
+    instagram: null,
+    cover_url: null,
+    created_at,
+  },
+  {
+    id: 3,
+    slug: "bandeja-club",
+    name: "Bandeja Club",
+    city: "Pehuajó",
+    address: null,
+    maps_url: null,
+    description: null,
+    courts: 2,
+    phone: null,
+    instagram: null,
+    cover_url: null,
+    created_at,
+  },
+];
+
+/** Parejas confirmadas de ejemplo, por torneo. */
+export const demoConfirmedPairs: Record<number, ConfirmedPair[]> = {
+  1: [
+    {
+      id: 1,
+      player: { name: "Martín Gómez", avatarUrl: null, slug: "martin-gomez" },
+      partner: {
+        name: "Nicolás Ibarra",
+        avatarUrl: null,
+        slug: "nicolas-ibarra",
+      },
+    },
+    {
+      id: 2,
+      player: { name: "Tomás Aguirre", avatarUrl: null, slug: "tomas-aguirre" },
+      partner: {
+        name: "Lucas Ferreyra",
+        avatarUrl: null,
+        slug: "lucas-ferreyra",
+      },
+    },
+  ],
+};

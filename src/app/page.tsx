@@ -78,8 +78,9 @@ export default async function Home() {
               Todo el pádel <span className="text-oro-400">de la zona</span>
             </h1>
             <p className="mt-6 max-w-lg text-lg leading-8 text-noche-300">
-              Torneos, ranking y noticias de {siteConfig.region}. Seguí a los
-              mejores jugadores y anotate en el próximo torneo desde tu cuenta.
+              Torneos, categorías, clubes y noticias de {siteConfig.region}.
+              Seguí a los mejores jugadores y anotate en el próximo torneo desde
+              tu cuenta.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <ButtonLink href="/torneos" size="lg">
@@ -87,7 +88,7 @@ export default async function Home() {
                 <ArrowRight className="size-4" aria-hidden="true" />
               </ButtonLink>
               <ButtonLink href="/jugadores" size="lg" variant="inverse">
-                Ranking
+                Categorías
               </ButtonLink>
             </div>
           </div>
@@ -163,7 +164,7 @@ export default async function Home() {
 
           <aside>
             <SectionHeading
-              eyebrow="Ranking"
+              eyebrow="Categorías"
               title="Líderes por categoría"
               href="/jugadores"
             />
@@ -178,7 +179,7 @@ export default async function Home() {
                       href={`/jugadores?rama=${ranking.gender}`}
                       className="text-xs font-semibold text-accent transition-colors hover:text-accent-hover"
                     >
-                      Ver ranking
+                      Ver categorías
                     </Link>
                   </div>
                   {ranking.leaders.length > 0 ? (

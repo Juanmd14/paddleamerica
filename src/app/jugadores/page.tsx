@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CourtPodium } from "@/components/court-podium";
+import { EN_EL_PODIO, Podium } from "@/components/podium";
 import { RankingTable } from "@/components/ranking-table";
 import {
   getCategoryCounts,
@@ -18,13 +18,10 @@ import {
 import { cn, firstParam } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Ranking",
+  title: "Categorías",
 };
 
 const GENDERS = ["masculino", "femenino"] as const;
-
-/** Cuántos entran en la cancha del hero. El resto va a la tabla. */
-const EN_LA_CANCHA = 4;
 
 export default async function PlayersPage({
   searchParams,
@@ -45,8 +42,8 @@ export default async function PlayersPage({
   // Sobre la categoría entera, para que los puestos subidos sean los reales.
   const trends = await getRankingTrends(players);
 
-  const podio = players.slice(0, EN_LA_CANCHA);
-  const resto = players.slice(EN_LA_CANCHA);
+  const podio = players.slice(0, EN_EL_PODIO);
+  const resto = players.slice(EN_EL_PODIO);
 
   const href = (next: { rama?: string; categoria?: string }) =>
     `/jugadores?rama=${next.rama ?? gender}&categoria=${next.categoria ?? category}`;
@@ -54,15 +51,15 @@ export default async function PlayersPage({
   return (
     <div className="bg-vidrio-noche pb-20 text-vidrio-texto">
       <div className="mx-auto w-full max-w-5xl">
-        <h1 className="sr-only">Ranking del circuito</h1>
+        <h1 className="sr-only">Categorías del circuito</h1>
 
         <section
-          aria-label="Filtros del ranking"
+          aria-label="Filtros de las categorías"
           className="border-b border-vidrio-linea px-4 pt-8 pb-7 sm:px-6"
         >
           <div className="flex items-baseline justify-between gap-4">
             <p className="font-dato text-[10px] font-bold tracking-[0.18em] text-vidrio-pelota uppercase">
-              Ranking regional
+              Categorías del circuito
             </p>
             <p className="font-dato text-[10px] font-bold tracking-[0.14em] text-vidrio-tenue uppercase">
               Temporada {currentYear()}
@@ -146,7 +143,7 @@ export default async function PlayersPage({
           </div>
         </section>
 
-        <CourtPodium
+        <Podium
           players={podio}
           title={rankingTitle(category, gender)}
           eyebrow={actualizado ? `Actualizado al ${actualizado}` : undefined}
@@ -163,7 +160,7 @@ export default async function PlayersPage({
         {resto.length > 0 ? (
           <RankingTable
             players={resto}
-            startAt={EN_LA_CANCHA + 1}
+            startAt={EN_EL_PODIO + 1}
             trends={trends}
             className="border-t border-vidrio-linea"
           />

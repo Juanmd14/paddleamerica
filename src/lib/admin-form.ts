@@ -43,3 +43,18 @@ export function saveErrorMessage(error: { code?: string; message?: string }) {
   if (error.code === "42501") return "No tenés permiso para hacer esto.";
   return "No pudimos guardar los cambios. Probá de nuevo.";
 }
+
+/** Links que da Google Maps al compartir un lugar. */
+export function isGoogleMapsUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname === "maps.app.goo.gl" ||
+        url.hostname === "goo.gl" ||
+        /(^|\.)google\.[a-z.]+$/.test(url.hostname))
+    );
+  } catch {
+    return false;
+  }
+}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
-import { CourtPodium } from "@/components/court-podium";
+import { Podium } from "@/components/podium";
 import { Net, type NetSize, netSizes } from "@/components/net";
 import { NewsCard } from "@/components/news-card";
 import { RankingTable } from "@/components/ranking-table";
@@ -126,10 +126,10 @@ export default async function DesignSystemPage() {
             ))}
           </div>
 
-          <CourtPodium
-            players={topPlayers.slice(0, 4)}
+          <Podium
+            players={topPlayers.slice(0, 3)}
             title="8va caballeros"
-            eyebrow="Ranking · act. 10 sep"
+            eyebrow="Actualizado al 10 de septiembre"
             className="border border-border"
           />
 
@@ -137,7 +137,7 @@ export default async function DesignSystemPage() {
             <h3 className="mb-3 text-sm font-semibold">
               Tabla del ranking · la red corta cada 10 puestos
             </h3>
-            <RankingTable players={topPlayers} startAt={5} />
+            <RankingTable players={topPlayers} startAt={4} />
           </div>
 
           <div>

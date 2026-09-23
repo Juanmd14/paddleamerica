@@ -19,7 +19,7 @@ type ImageUploadProps = {
   /** Nombre del input oculto que recibe la URL pública. */
   name: string;
   label: string;
-  folder: "flyers" | "noticias" | "jugadores" | "sitio";
+  folder: "flyers" | "noticias" | "jugadores" | "sitio" | "clubes";
   ratio: keyof typeof ratios;
   defaultValue?: string | null;
   hint?: string;

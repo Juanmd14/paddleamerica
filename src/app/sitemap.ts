@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
-import { getNews, getRanking, getTournaments } from "@/lib/data";
+import { getClubs, getNews, getRanking, getTournaments } from "@/lib/data";
 import { siteConfig } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [upcoming, finished, players, news] = await Promise.all([
+  const [upcoming, finished, players, news, clubs] = await Promise.all([
     getTournaments(),
     getTournaments({ finished: true }),
     getRanking(),
     getNews(),
+    getClubs(),
   ]);
 
   const url = (path: string) => `${siteConfig.url}${path}`;
@@ -17,10 +18,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url("/torneos"), changeFrequency: "daily", priority: 0.9 },
     { url: url("/jugadores"), changeFrequency: "weekly", priority: 0.8 },
     { url: url("/noticias"), changeFrequency: "daily", priority: 0.8 },
+    { url: url("/clubes"), changeFrequency: "weekly", priority: 0.7 },
     ...[...upcoming, ...finished].map((tournament) => ({
       url: url(`/torneos/${tournament.slug}`),
       lastModified: tournament.created_at,
       priority: tournament.status === "finalizado" ? 0.5 : 0.8,
+    })),
+    ...clubs.map((club) => ({
+      url: url(`/clubes/${club.slug}`),
+      priority: 0.6,
     })),
     ...players.map((player) => ({
       url: url(`/jugadores/${player.slug}`),
