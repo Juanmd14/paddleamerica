@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Field, fieldProps } from "@/components/admin/admin-ui";
 import { ImageUpload } from "@/components/admin/image-upload";
+import { NewsPhotosField } from "@/components/admin/news-photos-field";
 import { useAdminForm } from "@/components/admin/use-admin-form";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/lib/admin-form";
+import { newsPhotos } from "@/lib/news-photos";
 import { siteConfig } from "@/lib/site";
 import { slugify } from "@/lib/utils";
 import type { NewsArticle } from "@/types/models";
@@ -94,6 +96,13 @@ export function NewsForm({
               required
             />
           </Field>
+        </Card>
+
+        <Card className="p-5 sm:p-6">
+          <NewsPhotosField photos={newsPhotos(article?.photos)} />
+          {errors.photos && (
+            <p className="mt-3 text-sm text-danger">{errors.photos}</p>
+          )}
         </Card>
       </div>
 

@@ -8,6 +8,7 @@ import {
   text,
   wholeNumber,
 } from "@/lib/admin-form";
+import { MAX_AGE, MIN_AGE } from "@/lib/age-rules";
 import {
   type CategoryRules,
   categoryRulesLabel,
@@ -68,10 +69,22 @@ function readCategory(formData: FormData): {
     : { label, rules: none };
 }
 
+/** Límite de edad: vacío = sin límite. Un +30 es solo el mínimo; un -20, solo el máximo. */
+function readAge(formData: FormData, field: "age_min" | "age_max") {
+  const value = text(formData, field);
+  if (!value) return { value: null };
+  const age = Number(value);
+  return Number.isInteger(age) && age >= MIN_AGE && age <= MAX_AGE
+    ? { value: age }
+    : { value: null, error: `Poné una edad de ${MIN_AGE} a ${MAX_AGE}, o dejalo vacío.` };
+}
+
 export function readTournament(formData: FormData) {
   const name = text(formData, "name");
   const startsOn = text(formData, "starts_on");
   const category = readCategory(formData);
+  const ageMin = readAge(formData, "age_min");
+  const ageMax = readAge(formData, "age_max");
   const featured = text(formData, "featured");
   const values: TablesInsert<"tournaments"> = {
     name,
@@ -84,6 +97,8 @@ export function readTournament(formData: FormData) {
     ends_on: text(formData, "ends_on") || startsOn,
     category: category.label,
     ...category.rules,
+    age_min: ageMin.value,
+    age_max: ageMax.value,
     featured: featured || null,
     sponsor_name:
       featured === "sponsor" ? optionalText(formData, "sponsor_name") : null,
@@ -118,6 +133,15 @@ export function readTournament(formData: FormData) {
     errors.ends_on = "Termina antes de empezar.";
   }
   if (category.error) errors.category = category.error;
+  if (ageMin.error || ageMax.error) {
+    errors.age = ageMin.error ?? ageMax.error ?? "";
+  } else if (
+    ageMin.value !== null &&
+    ageMax.value !== null &&
+    ageMax.value < ageMin.value
+  ) {
+    errors.age = "La edad máxima no puede ser menor que la mínima.";
+  }
   if (
     featured &&
     !featuredOptions.some((option) => option.value === featured)

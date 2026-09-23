@@ -4,6 +4,7 @@ import Link from "next/link";
 import courtImage from "@/assets/cancha-aerea.webp";
 import { Cover } from "@/components/cover";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
+import { ageLabelSuffix } from "@/lib/age-rules";
 import {
   formatDateRange,
   formatFlyerDate,
@@ -88,6 +89,7 @@ export function TournamentCard({
       <div className="mt-4 flex flex-1 flex-col">
         <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
           {tournament.category} · {genderLabel(tournament.gender)}
+          {ageLabelSuffix(tournament)}
         </p>
         <h3 className="mt-1.5 font-display text-2xl leading-none font-bold uppercase transition-colors group-hover:text-accent">
           <Link
@@ -216,6 +218,7 @@ export function TournamentResultCard({
       <div className="flex flex-1 flex-col p-5">
         <p className="text-xs font-semibold tracking-[0.15em] text-muted-foreground uppercase">
           {tournament.category} · {genderLabel(tournament.gender)}
+          {ageLabelSuffix(tournament)}
         </p>
         <h3 className="mt-1.5 font-display text-2xl leading-none font-bold uppercase transition-colors group-hover:text-accent">
           <Link

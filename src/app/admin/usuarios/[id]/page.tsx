@@ -17,6 +17,7 @@ import {
   setProfileAdmin,
 } from "@/app/admin/usuarios/actions";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
+import { ProfileBirthdateForm } from "@/components/admin/profile-birthdate-form";
 import { ProfileCategoryForm } from "@/components/admin/profile-category-form";
 import { ProfileGenderForm } from "@/components/admin/profile-gender-form";
 import {
@@ -279,6 +280,18 @@ export default async function AdminUserPage({
                     userId={profile.id}
                     name={name}
                     gender={profile.gender}
+                  />
+                </div>
+                <p className="mt-5 text-sm text-muted-foreground">
+                  {profile.birthdate
+                    ? "Fecha de nacimiento: la usa solo para los torneos con límite de edad. No se muestra en el sitio."
+                    : "Todavía no cargó su fecha de nacimiento: no se puede anotar en torneos con límite de edad (+30, -20)."}
+                </p>
+                <div className="mt-3">
+                  <ProfileBirthdateForm
+                    userId={profile.id}
+                    name={name}
+                    birthdate={profile.birthdate}
                   />
                 </div>
               </>

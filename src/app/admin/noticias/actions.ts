@@ -12,13 +12,25 @@ import {
 } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
 import { fromDateTimeLocal } from "@/lib/format";
+import { MAX_CAPTION, MAX_NEWS_PHOTOS } from "@/lib/news-photos";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/utils";
 import type { TablesInsert } from "@/types/database.types";
 
+/** Las fotos de la nota, en el orden en que quedaron en el formulario. */
+function readPhotos(formData: FormData) {
+  const urls = formData.getAll("photo_url").map(String);
+  const captions = formData.getAll("photo_caption").map(String);
+  return urls.slice(0, MAX_NEWS_PHOTOS).map((url, index) => ({
+    url,
+    caption: captions[index]?.trim().slice(0, MAX_CAPTION) || null,
+  }));
+}
+
 function readArticle(formData: FormData) {
   const title = text(formData, "title");
   const publishedAt = fromDateTimeLocal(text(formData, "published_at"));
+  const photos = readPhotos(formData);
   const values: TablesInsert<"news"> = {
     title,
     slug: text(formData, "slug") || slugify(title),
@@ -27,6 +39,7 @@ function readArticle(formData: FormData) {
     tag: optionalText(formData, "tag"),
     author: optionalText(formData, "author"),
     cover_url: optionalText(formData, "cover_url"),
+    photos,
     is_published: formData.get("is_published") === "on",
     published_at: publishedAt ?? new Date().toISOString(),
   };
@@ -45,6 +58,9 @@ function readArticle(formData: FormData) {
   if (!publishedAt) errors.published_at = "Elegí fecha y hora de publicación.";
   if (!isStorageUrl(values.cover_url ?? null)) {
     errors.cover_url = "Subí la portada desde acá.";
+  }
+  if (photos.some((photo) => !isStorageUrl(photo.url))) {
+    errors.photos = "Subí las fotos desde acá.";
   }
 
   return { values, errors };

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { isValidBirthdate } from "@/lib/age-rules";
 import { getCurrentUser } from "@/lib/auth";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { siteConfig } from "@/lib/site";
@@ -41,7 +42,18 @@ export async function signUp(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const gender = String(formData.get("gender") ?? "");
+  const birthdate = String(formData.get("birthdate") ?? "").trim();
   const next = safeRedirectPath(formData.get("next"));
+
+  if (birthdate && !isValidBirthdate(birthdate)) {
+    redirect(
+      withParams("/login", {
+        modo: "registro",
+        error: "Revisá tu fecha de nacimiento.",
+        next,
+      }),
+    );
+  }
 
   if (gender !== "masculino" && gender !== "femenino") {
     redirect(
@@ -68,8 +80,8 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      // handle_new_user guarda la rama en el perfil.
-      data: { full_name: fullName, gender },
+      // handle_new_user guarda la rama y la fecha en el perfil.
+      data: { full_name: fullName, gender, birthdate: birthdate || null },
       emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=${encodeURIComponent(next)}`,
     },
   });

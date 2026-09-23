@@ -37,6 +37,7 @@ import {
   featuredLabel,
   genderLabel,
   playerName,
+  playerPhoto,
   type SpotsInfo,
   spotsInfo,
 } from "@/lib/labels";
@@ -195,7 +196,7 @@ export default async function Home() {
                             </span>
                             <Avatar
                               name={playerName(player)}
-                              src={player.photo_url}
+                              src={playerPhoto(player)}
                               size="sm"
                             />
                             <span className="min-w-0 flex-1">

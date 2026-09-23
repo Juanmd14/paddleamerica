@@ -7,7 +7,7 @@ import {
 } from "@/components/ranking-trend";
 import { Avatar } from "@/components/ui/avatar";
 import { formatNumber } from "@/lib/format";
-import { playerName } from "@/lib/labels";
+import { playerName, playerPhoto } from "@/lib/labels";
 import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
@@ -69,7 +69,7 @@ export function RankingTable({
                 </span>
                 <Avatar
                   name={playerName(player)}
-                  src={player.photo_url}
+                  src={playerPhoto(player)}
                   size="sm"
                   className="rounded-none bg-vidrio-panel text-vidrio-pelota"
                 />

@@ -1,6 +1,13 @@
 import type { Tables } from "./database.types";
 
-export type Player = Tables<"players">;
+/**
+ * Fila del padrón. `account_photo_url` no está en la tabla: es la foto de la
+ * cuenta vinculada, que completa data.ts para cuando el padrón no tiene foto
+ * cargada. Para mostrarla usá `playerPhoto()`; el panel edita `photo_url`.
+ */
+export type Player = Tables<"players"> & {
+  account_photo_url?: string | null;
+};
 export type Tournament = Tables<"tournaments">;
 export type NewsArticle = Tables<"news">;
 export type Profile = Tables<"profiles">;

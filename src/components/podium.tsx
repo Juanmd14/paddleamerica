@@ -7,7 +7,7 @@ import {
   TREND_GAIN,
 } from "@/components/ranking-trend";
 import { formatNumber } from "@/lib/format";
-import { playerName, shortPlayerName } from "@/lib/labels";
+import { playerName, playerPhoto, shortPlayerName } from "@/lib/labels";
 import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
@@ -70,6 +70,7 @@ function PodiumPhoto({
   position: number;
 }) {
   const name = playerName(player);
+  const photo = playerPhoto(player);
   const first = position === 1;
 
   return (
@@ -87,9 +88,9 @@ function PodiumPhoto({
           : undefined,
       }}
     >
-      {player.photo_url ? (
+      {photo ? (
         <Image
-          src={player.photo_url}
+          src={photo}
           alt={name}
           fill
           sizes="128px"

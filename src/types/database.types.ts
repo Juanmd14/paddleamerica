@@ -139,6 +139,7 @@ export type Database = {
           excerpt: string | null
           id: number
           is_published: boolean
+          photos: Json
           published_at: string
           slug: string
           tag: string | null
@@ -152,6 +153,7 @@ export type Database = {
           excerpt?: string | null
           id?: never
           is_published?: boolean
+          photos?: Json
           published_at?: string
           slug: string
           tag?: string | null
@@ -165,6 +167,7 @@ export type Database = {
           excerpt?: string | null
           id?: never
           is_published?: boolean
+          photos?: Json
           published_at?: string
           slug?: string
           tag?: string | null
@@ -303,6 +306,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birthdate: string | null
           category: number | null
           created_at: string
           email: string | null
@@ -317,6 +321,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birthdate?: string | null
           category?: number | null
           created_at?: string
           email?: string | null
@@ -331,6 +336,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birthdate?: string | null
           category?: number | null
           created_at?: string
           email?: string | null
@@ -501,6 +507,8 @@ export type Database = {
       tournaments: {
         Row: {
           address: string | null
+          age_max: number | null
+          age_min: number | null
           capacity: number | null
           category: string
           category_max: number | null
@@ -528,6 +536,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          age_max?: number | null
+          age_min?: number | null
           capacity?: number | null
           category: string
           category_max?: number | null
@@ -555,6 +565,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          age_max?: number | null
+          age_min?: number | null
           capacity?: number | null
           category?: string
           category_max?: number | null
@@ -599,6 +611,7 @@ export type Database = {
         Args: { p_delta: number; p_player_id: number; p_reason: string }
         Returns: number
       }
+      age_on: { Args: { p_birthdate: string; p_on: string }; Returns: number }
       apply_points_import: {
         Args: {
           p_file_name: string
@@ -660,6 +673,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_valid_birthdate: { Args: { p_birthdate: string }; Returns: boolean }
+      is_valid_news_photos: { Args: { p_photos: Json }; Returns: boolean }
       join_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       leave_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       link_profile_player: {
@@ -671,6 +686,14 @@ export type Database = {
         Returns: number
       }
       open_scheduled_registrations: { Args: never; Returns: number }
+      pair_age_error: {
+        Args: {
+          p_partner: string
+          p_player: string
+          p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
+        }
+        Returns: string
+      }
       pair_category_error: {
         Args: {
           p_partner: number
@@ -686,6 +709,13 @@ export type Database = {
           p_tournament: Database["public"]["Tables"]["tournaments"]["Row"]
         }
         Returns: string
+      }
+      player_account_photos: {
+        Args: { p_player_ids: number[] }
+        Returns: {
+          avatar_url: string
+          player_id: number
+        }[]
       }
       player_tournaments: {
         Args: { p_player_id: number }
@@ -731,9 +761,14 @@ export type Database = {
         Args: { p_club_id: number; p_owner: boolean; p_user_id: string }
         Returns: undefined
       }
+      set_my_birthdate: { Args: { p_birthdate: string }; Returns: undefined }
       set_my_gender: { Args: { p_gender: string }; Returns: undefined }
       set_profile_admin: {
         Args: { p_is_admin: boolean; p_user_id: string }
+        Returns: undefined
+      }
+      set_profile_birthdate: {
+        Args: { p_birthdate?: string; p_user_id: string }
         Returns: undefined
       }
       set_profile_category: {

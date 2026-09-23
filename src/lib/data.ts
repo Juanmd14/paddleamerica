@@ -94,7 +94,36 @@ export async function getRanking({
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  return withAccountPhotos(data);
+}
+
+/**
+ * Le agrega a cada jugador sin foto en el padrón la de su cuenta vinculada,
+ * en una sola consulta. Así el que subió la foto a su cuenta aparece en el
+ * ranking sin que un admin se la tenga que cargar al padrón.
+ */
+async function withAccountPhotos(players: Player[]): Promise<Player[]> {
+  const missing = players.filter((player) => !player.photo_url);
+  if (missing.length === 0) return players;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("player_account_photos", {
+    p_player_ids: missing.map((player) => player.id),
+  });
+  if (error) {
+    // La foto no vale romper el ranking: seguimos con las iniciales.
+    console.error("[fotos de las cuentas]", error);
+    return players;
+  }
+
+  const photos = new Map(
+    data.map((row) => [row.player_id, safeAvatarUrl(row.avatar_url)]),
+  );
+  return players.map((player) =>
+    player.photo_url
+      ? player
+      : { ...player, account_photo_url: photos.get(player.id) ?? null },
+  );
 }
 
 /** Minúsculas y sin tildes, para comparar nombres ("Gómez" = "gomez"). */
@@ -273,7 +302,9 @@ export const getPlayer = cache(async (slug: string): Promise<Player | null> => {
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  if (!data) return null;
+  const [player] = await withAccountPhotos([data]);
+  return player;
 });
 
 /**
@@ -1243,23 +1274,6 @@ export async function getLinkedAccounts(): Promise<
       { ...profile, avatar_url: safeAvatarUrl(profile.avatar_url) },
     ]),
   );
-}
-
-/** Foto de la cuenta vinculada, para jugadores del ranking sin foto propia. */
-export async function getPlayerAccountAvatar(
-  playerId: number,
-): Promise<string | null> {
-  if (isDemoMode) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_player_account_avatar", {
-    p_player_id: playerId,
-  });
-  if (error) {
-    console.error("[foto del jugador]", error);
-    return null;
-  }
-  return safeAvatarUrl(data);
 }
 
 /** Puesto, puntos y tendencia del jugador vinculado a la cuenta (o null). */

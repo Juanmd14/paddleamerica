@@ -7,6 +7,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { Alert } from "@/components/ui/alert";
 import { FieldError, Input, Label } from "@/components/ui/input";
 import { categoryName } from "@/lib/categories";
+import { formatDate } from "@/lib/format";
 import { genderLabel } from "@/lib/labels";
 
 type ProfileFormProps = {
@@ -16,6 +17,8 @@ type ProfileFormProps = {
   username: string;
   category: number | null;
   gender: string | null;
+  /** "2003-07-21" o null si todavía no la cargó. */
+  birthdate: string | null;
   /** La cuenta está vinculada a un jugador del ranking: categoría y rama salen de ahí. */
   fromRanking?: boolean;
 };
@@ -27,6 +30,7 @@ export function ProfileForm({
   username,
   category,
   gender,
+  birthdate,
   fromRanking = false,
 }: ProfileFormProps) {
   const [state, formAction] = useActionState<ProfileFormState, FormData>(
@@ -132,6 +136,51 @@ export function ProfileForm({
             >
               Elegila para poder anotarte en torneos. Se elige una sola vez:
               después solo la cambia el organizador.
+            </p>
+          )}
+        </div>
+      )}
+      {birthdate ? (
+        <div>
+          <Label htmlFor="profile-birthdate">Tu fecha de nacimiento</Label>
+          <Input
+            id="profile-birthdate"
+            value={formatDate(birthdate)}
+            readOnly
+            disabled
+            aria-describedby="profile-birthdate-hint"
+            className="bg-muted text-muted-foreground"
+          />
+          <p
+            id="profile-birthdate-hint"
+            className="mt-1.5 text-xs text-muted-foreground"
+          >
+            Si está mal, pedíle al organizador que te la corrija.
+          </p>
+        </div>
+      ) : (
+        <div id="nacimiento" className="scroll-mt-32">
+          <Label htmlFor="profile-birthdate">Tu fecha de nacimiento</Label>
+          <Input
+            id="profile-birthdate"
+            name="birthdate"
+            type="date"
+            autoComplete="bday"
+            aria-invalid={!!errors.birthdate}
+            aria-describedby="profile-birthdate-hint"
+          />
+          {errors.birthdate ? (
+            <FieldError id="profile-birthdate-hint">
+              {errors.birthdate}
+            </FieldError>
+          ) : (
+            <p
+              id="profile-birthdate-hint"
+              className="mt-1.5 text-xs font-medium text-oro-800"
+            >
+              Hace falta para los torneos con límite de edad (+30, -20). No se
+              muestra en ningún lado. Se carga una sola vez: después la corrige
+              el organizador.
             </p>
           )}
         </div>

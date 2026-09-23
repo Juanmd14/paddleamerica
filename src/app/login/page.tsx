@@ -98,6 +98,23 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             </p>
           </div>
           <div>
+            <Label htmlFor="signup-birthdate">Fecha de nacimiento</Label>
+            <Input
+              id="signup-birthdate"
+              name="birthdate"
+              type="date"
+              autoComplete="bday"
+              aria-describedby="signup-birthdate-hint"
+            />
+            <p
+              id="signup-birthdate-hint"
+              className="mt-1.5 text-xs text-muted-foreground"
+            >
+              Solo para los torneos con límite de edad (+30, -20). No se
+              muestra en ningún lado.
+            </p>
+          </div>
+          <div>
             <Label htmlFor="signup-email">Email</Label>
             <Input
               id="signup-email"

@@ -12,6 +12,7 @@ import {
 import { getMyProfile, getTournament } from "@/lib/data";
 import { isEmailConfigured } from "@/lib/email";
 import { formatDateRange } from "@/lib/format";
+import { type AgeRules, ageErrorMessage } from "@/lib/age-rules";
 import { genderErrorMessage, pairGenderError } from "@/lib/gender-rules";
 import { genderLabel } from "@/lib/labels";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -36,6 +37,7 @@ function registrationErrorMessage(
     rules?: string | null;
     partner?: string;
     tournamentGender?: string;
+    ageRules?: AgeRules;
   } = {},
 ) {
   const partner = context.partner || "Tu pareja";
@@ -43,6 +45,10 @@ function registrationErrorMessage(
     ? genderErrorMessage(code, context.tournamentGender, partner)
     : null;
   if (genderMessage) return genderMessage;
+  const ageMessage = context.ageRules
+    ? ageErrorMessage(code, context.ageRules, partner)
+    : null;
+  if (ageMessage) return ageMessage;
   const rules = context.rules ? ` (es de ${context.rules})` : "";
   const messages: Record<string, string> = {
     sin_sesion: "Tu sesión expiró. Ingresá de nuevo.",
@@ -137,6 +143,7 @@ export async function registerForTournament(
       rules: categoryRulesLabel(tournament),
       partner: `@${values.partner_username}`,
       tournamentGender: tournament.gender,
+      ageRules: tournament,
     });
     return error.message === "pareja_no_existe"
       ? { errors: { partner_username: message }, values }
@@ -274,6 +281,7 @@ export async function respondInvitation(
         rules: tournament ? categoryRulesLabel(tournament) : null,
         partner: "Quien te invitó",
         tournamentGender: tournament?.gender,
+        ageRules: tournament ?? undefined,
       }),
     };
   }
@@ -372,6 +380,7 @@ export async function joinWaitlist(slug: string): Promise<void> {
       registrationErrorMessage(error.message, {
         rules: categoryRulesLabel(tournament),
         tournamentGender: tournament.gender,
+        ageRules: tournament,
       }),
     );
   }

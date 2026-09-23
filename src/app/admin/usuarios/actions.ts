@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { emailProfiles } from "@/lib/account-emails";
 import { redirect } from "next/navigation";
+import { isValidBirthdate } from "@/lib/age-rules";
 import { type FormState, text } from "@/lib/admin-form";
 import { requireAdmin } from "@/lib/auth";
 import { categoryName, isCategoryNumber } from "@/lib/categories";
@@ -86,6 +87,37 @@ export async function setProfileGender(
           : error.message === "cuenta_vinculada"
             ? "Esta cuenta está vinculada al ranking: cambiá la rama en la ficha del jugador."
             : "No pudimos guardar la rama. Probá de nuevo.",
+    };
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}`);
+  return { ok: true };
+}
+
+/** Corrige (o borra, con "") la fecha de nacimiento de una cuenta. */
+export async function setProfileBirthdate(
+  userId: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const value = text(formData, "birthdate");
+  if (value && !isValidBirthdate(value)) {
+    return { message: "Revisá la fecha: tiene que ser una fecha real." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_profile_birthdate", {
+    p_user_id: userId,
+    p_birthdate: value || undefined,
+  });
+  if (error) {
+    return {
+      message:
+        error.message === "usuario_no_existe"
+          ? "Esta cuenta ya no existe."
+          : "No pudimos guardar la fecha. Probá de nuevo.",
     };
   }
 

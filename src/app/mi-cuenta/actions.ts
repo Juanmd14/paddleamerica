@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isValidBirthdate } from "@/lib/age-rules";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,7 +9,7 @@ export type ProfileFormState = {
   ok?: boolean;
   message?: string;
   errors?: Partial<
-    Record<"full_name" | "phone" | "username" | "gender", string>
+    Record<"full_name" | "phone" | "username" | "gender" | "birthdate", string>
   >;
 };
 
@@ -28,8 +29,9 @@ export async function updateProfile(
     .trim()
     .replace(/^@/, "")
     .toLowerCase();
-  // Solo viene si la cuenta todavía no tiene rama (se elige una vez).
+  // Solo vienen si la cuenta todavía no los tiene (se cargan una vez).
   const gender = String(formData.get("gender") ?? "");
+  const birthdate = String(formData.get("birthdate") ?? "").trim();
 
   const errors: ProfileFormState["errors"] = {};
   if (fullName.length < 3 || fullName.length > 120) {
@@ -45,6 +47,9 @@ export async function updateProfile(
   if (gender && gender !== "masculino" && gender !== "femenino") {
     errors.gender = "Elegí masculino o femenino.";
   }
+  if (birthdate && !isValidBirthdate(birthdate)) {
+    errors.birthdate = "Revisá la fecha: tiene que ser una fecha real y tuya.";
+  }
   if (Object.keys(errors).length > 0) return { errors };
 
   const supabase = await createClient();
@@ -55,6 +60,18 @@ export async function updateProfile(
     if (genderError && genderError.message !== "rama_ya_elegida") {
       return {
         errors: { gender: "No pudimos guardar tu rama. Probá de nuevo." },
+      };
+    }
+  }
+  if (birthdate) {
+    const { error: birthdateError } = await supabase.rpc("set_my_birthdate", {
+      p_birthdate: birthdate,
+    });
+    if (birthdateError && birthdateError.message !== "fecha_ya_cargada") {
+      return {
+        errors: {
+          birthdate: "No pudimos guardar tu fecha de nacimiento. Probá de nuevo.",
+        },
       };
     }
   }

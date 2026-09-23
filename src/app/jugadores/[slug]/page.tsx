@@ -10,7 +10,6 @@ import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import {
   getPlayer,
-  getPlayerAccountAvatar,
   getPlayerTournaments,
   getRankingPosition,
 } from "@/lib/data";
@@ -19,6 +18,7 @@ import {
   effectiveness,
   genderLabel,
   playerName,
+  playerPhoto,
   rankingTitle,
   sideLabel,
 } from "@/lib/labels";
@@ -44,12 +44,8 @@ export default async function PlayerPage({
   const player = await getPlayer(slug);
   if (!player) notFound();
 
-  const [position, accountAvatar, played] = await Promise.all([
+  const [position, played] = await Promise.all([
     getRankingPosition(player),
-    // Sin foto cargada en el ranking, usa la de su cuenta (si está vinculada).
-    player.photo_url
-      ? Promise.resolve(null)
-      : getPlayerAccountAvatar(player.id),
     getPlayerTournaments(player.id),
   ]);
   const name = playerName(player);
@@ -78,7 +74,7 @@ export default async function PlayerPage({
           <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
             <ZoomableAvatar
               name={name}
-              src={player.photo_url ?? accountAvatar}
+              src={playerPhoto(player)}
               size="xl"
               className="ring-4 ring-oro-400"
             />

@@ -3,7 +3,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { ClimbBadge, PointsGain } from "@/components/ranking-trend";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/format";
-import { playerName } from "@/lib/labels";
+import { playerName, playerPhoto } from "@/lib/labels";
 import type { RankingTrend } from "@/lib/ranking-trends";
 import { cn } from "@/lib/utils";
 import type { Player } from "@/types/models";
@@ -45,7 +45,7 @@ export function RankingList({
             </span>
             <Avatar
               name={playerName(player)}
-              src={player.photo_url}
+              src={playerPhoto(player)}
               size={compact ? "sm" : "md"}
             />
             <div className="min-w-0 flex-1">

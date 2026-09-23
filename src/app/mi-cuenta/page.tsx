@@ -155,7 +155,10 @@ export default async function AccountPage({
   const counts: Record<SectionKey, number> = {
     torneos: invitations.length,
     avisos: unread,
-    datos: (profile?.gender ? 0 : 1) + (profile?.category ? 0 : 1),
+    datos:
+      (profile?.gender ? 0 : 1) +
+      (profile?.birthdate ? 0 : 1) +
+      (profile?.category ? 0 : 1),
   };
   const current = SECTIONS.find((item) => item.key === section)!;
 
@@ -359,6 +362,7 @@ export default async function AccountPage({
           <FirstSteps
             hasPhone={Boolean(profile?.phone)}
             gender={profile?.gender ?? null}
+            birthdate={profile?.birthdate ?? null}
             category={profile?.category ?? null}
             hasRegistrations={registrations.length > 0}
           />
@@ -411,6 +415,7 @@ export default async function AccountPage({
                       username={profile?.username ?? user.username ?? ""}
                       category={profile?.category ?? null}
                       gender={profile?.gender ?? null}
+                      birthdate={profile?.birthdate ?? null}
                       fromRanking={Boolean(profile?.player_id)}
                     />
                   </div>
@@ -475,15 +480,19 @@ export default async function AccountPage({
 function FirstSteps({
   hasPhone,
   gender,
+  birthdate,
   category,
   hasRegistrations,
 }: {
   hasPhone: boolean;
   gender: string | null;
+  birthdate: string | null;
   category: number | null;
   hasRegistrations: boolean;
 }) {
-  if (hasPhone && gender && category && hasRegistrations) return null;
+  if (hasPhone && gender && birthdate && category && hasRegistrations) {
+    return null;
+  }
 
   const steps = [
     {
@@ -497,6 +506,18 @@ function FirstSteps({
       action: gender
         ? null
         : { href: `${sectionHref("datos")}#rama`, label: "Elegir" },
+    },
+    {
+      done: Boolean(birthdate),
+      title: birthdate
+        ? "Ya cargaste tu fecha de nacimiento"
+        : "Cargá tu fecha de nacimiento",
+      text: birthdate
+        ? "Define si entrás en los torneos por edad (+30, -20). No se muestra en ningún lado."
+        : "Hace falta solo para los torneos con límite de edad (+30, -20). No se muestra en ningún lado.",
+      action: birthdate
+        ? null
+        : { href: `${sectionHref("datos")}#nacimiento`, label: "Cargar" },
     },
     {
       done: hasPhone,

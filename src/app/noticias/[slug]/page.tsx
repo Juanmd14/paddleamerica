@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Cover } from "@/components/cover";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { getNews, getNewsArticle } from "@/lib/data";
 import { formatDate } from "@/lib/format";
+import { newsPhotos } from "@/lib/news-photos";
 import { paragraphs } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -37,6 +39,7 @@ export default async function NewsArticlePage({
   const article = await getNewsArticle(slug);
   if (!article) notFound();
 
+  const photos = newsPhotos(article.photos);
   const related = (await getNews({ limit: 4 }))
     .filter((other) => other.slug !== article.slug)
     .slice(0, 3);
@@ -85,6 +88,29 @@ export default async function NewsArticlePage({
               <p key={index}>{paragraph}</p>
             ))}
           </div>
+
+          {photos.length > 0 && (
+            <div className="mt-10 grid gap-6 sm:grid-cols-2">
+              {photos.map((photo) => (
+                <figure key={photo.url}>
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-card bg-muted">
+                    <Image
+                      src={photo.url}
+                      alt={photo.caption ?? ""}
+                      fill
+                      sizes="(min-width: 640px) 360px, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  {photo.caption && (
+                    <figcaption className="mt-2 text-sm text-muted-foreground">
+                      {photo.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          )}
 
           <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6">
             <p className="text-sm">

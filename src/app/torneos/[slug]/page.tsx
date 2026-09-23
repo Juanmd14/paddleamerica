@@ -46,6 +46,13 @@ import {
   categoryRulesLabel,
   playerCategoryError,
 } from "@/lib/categories";
+import {
+  ageLabelSuffix,
+  ageRulesHelp,
+  ageRulesLabel,
+  hasAgeRules,
+  playerAgeError,
+} from "@/lib/age-rules";
 import { genderRulesHelp, playerGenderError } from "@/lib/gender-rules";
 import {
   getClubById,
@@ -138,7 +145,7 @@ export default async function TournamentPage({
     {
       icon: Users,
       label: "Categoría",
-      value: `${tournament.category} · ${genderLabel(tournament.gender)}`,
+      value: `${tournament.category} · ${genderLabel(tournament.gender)}${ageLabelSuffix(tournament)}`,
     },
   ];
   if (tournament.capacity) {
@@ -177,6 +184,9 @@ export default async function TournamentPage({
             )}
             <Badge tone="inverse">{genderLabel(tournament.gender)}</Badge>
             <Badge tone="inverse">{tournament.category}</Badge>
+            {ageRulesLabel(tournament) && (
+              <Badge tone="inverse">{ageRulesLabel(tournament)}</Badge>
+            )}
           </div>
           <h1 className="mt-4 max-w-4xl font-display text-5xl leading-none font-bold uppercase sm:text-7xl">
             {tournament.name}
@@ -531,10 +541,12 @@ function OpenRegistration({
 
   const myCategory = profile?.category ?? null;
   const myGender = profile?.gender ?? null;
+  const myBirthdate = profile?.birthdate ?? null;
   const genderError = playerGenderError(tournament.gender, myGender);
   const ownErrors = [
     genderError,
     playerCategoryError(tournament, myCategory),
+    playerAgeError(tournament, tournament.starts_on, myBirthdate),
   ].filter((error) => error !== null);
   const rules = (
     <p className="flex items-start gap-2 rounded-lg bg-pista-50 px-3 py-2.5 text-sm text-pista-800">
@@ -543,6 +555,7 @@ function OpenRegistration({
         {genderRulesHelp(tournament.gender)}
         {categoryRulesLabel(tournament) && ` ${categoryRulesHelp(tournament)}`}
         {myCategory && ` Vos sos ${categoryName(myCategory)}.`}
+        {hasAgeRules(tournament) && ` ${ageRulesHelp(tournament)}`}
       </span>
     </p>
   );
@@ -569,6 +582,15 @@ function OpenRegistration({
             className="w-full"
           >
             Elegir mi rama
+          </ButtonLink>
+        )}
+        {myGender && !myBirthdate && hasAgeRules(tournament) && (
+          <ButtonLink
+            href="/mi-cuenta?seccion=datos#nacimiento"
+            variant="outline"
+            className="w-full"
+          >
+            Cargar mi fecha de nacimiento
           </ButtonLink>
         )}
       </div>

@@ -58,6 +58,16 @@ export function playerName(player: Pick<Player, "first_name" | "last_name">) {
 }
 
 /**
+ * La foto que se muestra: la del padrón y, si no tiene, la de su cuenta.
+ * En el panel no se usa (ahí se edita `photo_url`, la del padrón).
+ */
+export function playerPhoto(
+  player: Pick<Player, "photo_url"> & { account_photo_url?: string | null },
+) {
+  return player.photo_url ?? player.account_photo_url ?? null;
+}
+
+/**
  * El orden del ranking: más puntos primero y, a igual puntaje, por apellido.
  * El desempate importa apenas se carga el padrón, cuando están todos en cero.
  */
