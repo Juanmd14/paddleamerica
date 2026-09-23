@@ -27,6 +27,8 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   AdminProfile,
   Club,
+  ClubPhoto,
+  ClubRegistration,
   ConfirmedPair,
   NewsArticle,
   Notification,
@@ -504,6 +506,20 @@ export async function getClubTournaments(clubId: number): Promise<{
   };
 }
 
+/** Las fotos del álbum de un club, las más nuevas primero. */
+export async function getClubPhotos(clubId: number): Promise<ClubPhoto[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("club_photos")
+    .select("*")
+    .eq("club_id", clubId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 /** El próximo torneo de cada club (el primero de sus próximos), por id de club. */
 export async function getNextTournamentByClub(): Promise<
   Map<number, Tournament>
@@ -865,8 +881,108 @@ export async function getUnreadNotificationsCount(): Promise<number> {
 }
 
 // ---------------------------------------------------------------------
+// Panel del club (las páginas llaman antes a requireClubOwner; la base
+// vuelve a chequear que sea dueño)
+// ---------------------------------------------------------------------
+
+/** Los clubes del usuario logueado. */
+export async function getMyClubs(): Promise<Club[]> {
+  const user = await getCurrentUser();
+  if (!user || user.clubIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("*")
+    .in("id", user.clubIds)
+    .order("name");
+  if (error) throw error;
+  return data;
+}
+
+/** Los torneos de los clubes del usuario, con cantidad de pendientes. */
+export async function getMyClubTournaments(): Promise<
+  (Tournament & { pending: number; registrations: number })[]
+> {
+  const user = await getCurrentUser();
+  if (!user || user.clubIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("*")
+    .in("club_id", user.clubIds)
+    .order("starts_on", { ascending: false });
+  if (error) throw error;
+
+  return Promise.all(
+    data.map(async (tournament) => {
+      const registrations = await getClubRegistrations(tournament.id);
+      return {
+        ...tournament,
+        registrations: registrations.length,
+        pending: registrations.filter((row) => row.status === "pendiente")
+          .length,
+      };
+    }),
+  );
+}
+
+/**
+ * Las inscripciones de un torneo del club, con los perfiles públicos de los
+ * dos jugadores (nombre, usuario, foto, categoría y rama). Sin teléfono,
+ * email ni notas: la función de la base no los devuelve.
+ */
+export async function getClubRegistrations(
+  tournamentId: number,
+): Promise<ClubRegistration[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("club_tournament_registrations", {
+    p_tournament_id: tournamentId,
+  });
+  if (error) throw error;
+
+  const profiles = await getPublicProfiles(
+    data.flatMap((row) => [row.user_id, row.partner_id]),
+  );
+  return data.map((row) => ({
+    ...row,
+    player: profiles.get(row.user_id) ?? null,
+    partner: row.partner_id ? (profiles.get(row.partner_id) ?? null) : null,
+  }));
+}
+
+// ---------------------------------------------------------------------
 // Admin (las páginas llaman antes a requireAdmin; RLS vuelve a chequear)
 // ---------------------------------------------------------------------
+
+/** Los dueños de un club, con su perfil. */
+export async function getClubOwners(clubId: number): Promise<AdminProfile[]> {
+  if (isDemoMode) return [];
+
+  const supabase = await createClient();
+  const { data: owners, error } = await supabase
+    .from("club_owners")
+    .select("user_id")
+    .eq("club_id", clubId);
+  if (error) throw error;
+  if (owners.length === 0) return [];
+
+  const { data, error: profilesError } = await supabase
+    .from("profiles")
+    .select(
+      "id, username, full_name, avatar_url, category, gender, email, phone",
+    )
+    .in(
+      "id",
+      owners.map((owner) => owner.user_id),
+    );
+  if (profilesError) throw profilesError;
+  return data.map((profile) => ({
+    ...profile,
+    avatar_url: safeAvatarUrl(profile.avatar_url),
+  }));
+}
 
 export type TournamentWithCounts = Tournament & {
   registrations: number;

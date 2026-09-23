@@ -4,7 +4,7 @@ import type { Database } from "@/types/database.types";
 import { getSupabaseEnv, isSupabaseConfigured } from "./env";
 
 /** Rutas que requieren estar logueado. */
-const PROTECTED_ROUTES = ["/mi-cuenta", "/admin"];
+const PROTECTED_ROUTES = ["/mi-cuenta", "/mi-club", "/admin"];
 
 /** Refresca la sesión de Supabase y protege rutas privadas. Se usa desde src/proxy.ts. */
 export async function updateSession(request: NextRequest) {

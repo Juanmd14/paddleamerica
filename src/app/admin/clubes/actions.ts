@@ -149,3 +149,60 @@ export async function deleteClub(id: number): Promise<void> {
   revalidateClubPages(club?.slug ?? "");
   redirect("/admin/clubes?borrado=1");
 }
+
+function revalidateClubOwners(clubId: number) {
+  revalidatePath(`/admin/clubes/${clubId}`);
+  revalidatePath("/mi-club");
+}
+
+/** Vincula como dueño del club a la cuenta con ese @usuario. */
+export async function addClubOwner(
+  clubId: number,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const username = text(formData, "username").replace(/^@/, "").toLowerCase();
+  if (!username) {
+    return { errors: { username: "Escribí el @usuario de la cuenta." } };
+  }
+
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, is_admin")
+    .eq("username", username)
+    .maybeSingle();
+  if (!profile) {
+    return { errors: { username: `No hay ninguna cuenta @${username}.` } };
+  }
+
+  const { error } = await supabase.rpc("set_club_owner", {
+    p_club_id: clubId,
+    p_user_id: profile.id,
+    p_owner: true,
+  });
+  if (error) return { message: saveErrorMessage(error) };
+
+  revalidateClubOwners(clubId);
+  return { ok: true };
+}
+
+export async function removeClubOwner(
+  clubId: number,
+  userId: string,
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_club_owner", {
+    p_club_id: clubId,
+    p_user_id: userId,
+    p_owner: false,
+  });
+  if (error) {
+    redirect(
+      `/admin/clubes/${clubId}?error=${encodeURIComponent(saveErrorMessage(error))}`,
+    );
+  }
+  revalidateClubOwners(clubId);
+}

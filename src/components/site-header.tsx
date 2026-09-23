@@ -1,4 +1,4 @@
-import { LayoutDashboard } from "lucide-react";
+import { Building2, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { NavLink } from "@/components/nav-link";
@@ -47,6 +47,16 @@ export async function SiteHeader() {
               >
                 <LayoutDashboard className="size-5" aria-hidden="true" />
                 <span className="hidden lg:inline">Admin</span>
+              </Link>
+            )}
+            {user.clubIds.length > 0 && (
+              <Link
+                href="/mi-club"
+                aria-label="Mi club"
+                className="flex h-10 items-center gap-2 rounded-full px-3 text-sm font-medium text-noche-200 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <Building2 className="size-5" aria-hidden="true" />
+                <span className="hidden lg:inline">Mi club</span>
               </Link>
             )}
             <NotificationsButton count={unread} />

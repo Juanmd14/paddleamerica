@@ -2,6 +2,7 @@ import { ArrowLeft, AtSign, CalendarDays, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClubAlbum } from "@/components/club-album";
 import { courtsLabel } from "@/components/club-card";
 import { Cover } from "@/components/cover";
 import { EmptyState } from "@/components/empty-state";
@@ -14,7 +15,12 @@ import { TournamentMap } from "@/components/tournament-map";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { getClub, getClubTournaments, getTournamentSpots } from "@/lib/data";
+import {
+  getClub,
+  getClubPhotos,
+  getClubTournaments,
+  getTournamentSpots,
+} from "@/lib/data";
 import { paragraphs } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -39,9 +45,10 @@ export default async function ClubPage({
   const club = await getClub(slug);
   if (!club) notFound();
 
-  const [{ upcoming, finished }, spots] = await Promise.all([
+  const [{ upcoming, finished }, spots, photos] = await Promise.all([
     getClubTournaments(club.id),
     getTournamentSpots(),
+    getClubPhotos(club.id),
   ]);
   const instagram = club.instagram?.replace(/^@/, "");
 
@@ -144,6 +151,18 @@ export default async function ClubPage({
             </div>
           )}
         </section>
+
+        {photos.length > 0 ? (
+          <section>
+            <SectionHeading eyebrow="Álbum" title="Fotos del club" />
+            <div className="mt-8">
+              <ClubAlbum
+                photos={photos}
+                tournaments={[...upcoming, ...finished]}
+              />
+            </div>
+          </section>
+        ) : null}
 
         {finished.length > 0 ? (
           <section>

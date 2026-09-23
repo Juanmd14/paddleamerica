@@ -13,6 +13,8 @@ export type CurrentUser = {
   /** Foto de perfil (solo si está subida a nuestro Storage). */
   avatarUrl: string | null;
   isAdmin: boolean;
+  /** Clubes de los que es dueño (vinculados por un admin). */
+  clubIds: number[];
 };
 
 /**
@@ -27,11 +29,14 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const claims = data?.claims;
   if (!claims) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin, username, avatar_url")
-    .eq("id", claims.sub)
-    .maybeSingle();
+  const [{ data: profile }, { data: ownedClubs }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_admin, username, avatar_url")
+      .eq("id", claims.sub)
+      .maybeSingle(),
+    supabase.from("club_owners").select("club_id").eq("user_id", claims.sub),
+  ]);
 
   const email = claims.email ?? "";
   const fullName = claims.user_metadata?.full_name;
@@ -43,6 +48,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     username: profile?.username ?? null,
     avatarUrl: safeAvatarUrl(profile?.avatar_url),
     isAdmin: profile?.is_admin ?? false,
+    clubIds: (ownedClubs ?? []).map((row) => row.club_id),
   };
 });
 
@@ -60,5 +66,24 @@ export async function requireAdmin(next = "/admin"): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
   if (!user.isAdmin) notFound();
+  return user;
+}
+
+/**
+ * Para el panel del club (/mi-club). Sin sesión manda al login; sin ningún
+ * club a cargo responde 404. Con `clubId`, además exige ser dueño de ese club
+ * (un admin no pasa por acá: usa el panel del admin).
+ * Llamala en cada página y cada acción. La base vuelve a chequear con RLS.
+ */
+export async function requireClubOwner(
+  next = "/mi-club",
+  clubId?: number | null,
+): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (user.clubIds.length === 0) notFound();
+  if (clubId !== undefined && (!clubId || !user.clubIds.includes(clubId))) {
+    notFound();
+  }
   return user;
 }

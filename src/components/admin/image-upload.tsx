@@ -19,7 +19,16 @@ type ImageUploadProps = {
   /** Nombre del input oculto que recibe la URL pública. */
   name: string;
   label: string;
-  folder: "flyers" | "noticias" | "jugadores" | "sitio" | "clubes";
+  folder:
+    | "flyers"
+    | "noticias"
+    | "jugadores"
+    | "sitio"
+    | "clubes"
+    | "flyers-club"
+    | "album-club";
+  /** Subcarpeta dentro de la carpeta (el id del dueño de club: Storage solo lo deja subir ahí). */
+  subfolder?: string;
   ratio: keyof typeof ratios;
   defaultValue?: string | null;
   hint?: string;
@@ -32,6 +41,7 @@ export function ImageUpload({
   name,
   label,
   folder,
+  subfolder,
   ratio,
   defaultValue,
   hint,
@@ -62,7 +72,7 @@ export function ImageUpload({
         throw new Error("La imagen pesa más de 5 MB incluso achicada.");
       }
       const extension = blob.type === "image/webp" ? "webp" : "jpg";
-      const path = `${folder}/${crypto.randomUUID()}.${extension}`;
+      const path = `${[folder, subfolder].filter(Boolean).join("/")}/${crypto.randomUUID()}.${extension}`;
 
       const supabase = createClient();
       const { error: uploadError } = await supabase.storage

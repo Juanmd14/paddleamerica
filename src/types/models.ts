@@ -40,3 +40,18 @@ export type PlayedTournament = {
   partnerName: string;
   partnerSlug: string | null;
 };
+/** Una inscripción vista desde el panel del club: sin teléfono, email ni notas. */
+export type ClubRegistration = {
+  id: number;
+  status: string;
+  user_id: string;
+  partner_id: string | null;
+  partner_name: string;
+  player_category: number | null;
+  partner_category: number | null;
+  created_at: string;
+  accepted_at: string | null;
+  player: PublicProfile | null;
+  partner: PublicProfile | null;
+};
+export type ClubPhoto = Tables<"club_photos">;

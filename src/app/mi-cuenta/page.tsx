@@ -6,6 +6,7 @@ import {
   CircleCheck,
   History,
   KeyRound,
+  Building2,
   LayoutDashboard,
   LogOut,
   type LucideIcon,
@@ -335,6 +336,18 @@ export default async function AccountPage({
                 <ButtonLink href="/admin" size="sm" className="mt-3">
                   <LayoutDashboard className="size-4" aria-hidden="true" />
                   Abrir panel
+                </ButtonLink>
+              </Card>
+            )}
+            {user.clubIds.length > 0 && (
+              <Card className="border-pista-200 bg-pista-50 p-4">
+                <p className="font-semibold">Mi club</p>
+                <p className="text-sm text-muted-foreground">
+                  Creá los torneos de tu club y confirmá a las parejas.
+                </p>
+                <ButtonLink href="/mi-club" size="sm" className="mt-3">
+                  <Building2 className="size-4" aria-hidden="true" />
+                  Abrir mi club
                 </ButtonLink>
               </Card>
             )}

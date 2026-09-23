@@ -39,8 +39,13 @@ type TournamentFormProps = {
   tournament?: Tournament;
   /** Parejas ya anotadas, para que la vista previa muestre los lugares libres reales. */
   taken?: number;
-  /** Clubes cargados, para elegir la sede. */
+  /** Clubes que se pueden elegir como sede. */
   clubs: Club[];
+  /**
+   * Panel del club: sin "Destacar en el inicio" (es del admin), el club es
+   * obligatorio y el flyer se sube a la carpeta del dueño.
+   */
+  clubOwnerId?: string;
   submitLabel: string;
 };
 
@@ -249,18 +254,24 @@ export function TournamentForm({
   tournament,
   taken,
   clubs,
+  clubOwnerId,
   submitLabel,
 }: TournamentFormProps) {
   const { state, errors, pending, onSubmit } = useAdminForm(action);
   const hasErrors = Object.keys(errors).length > 0;
 
+  // En el panel del club, con un solo club, el torneo nuevo ya arranca en ese club.
+  const defaultClub =
+    !tournament && clubOwnerId && clubs.length === 1 ? clubs[0] : undefined;
   const [draft, setDraft] = useState<Draft>(() => ({
     name: tournament?.name ?? "",
     starts_on: tournament?.starts_on ?? "",
     ends_on: tournament?.ends_on ?? "",
-    city: tournament?.city ?? "",
-    venue: tournament?.venue ?? "",
-    club_id: tournament?.club_id?.toString() ?? "",
+    city: tournament?.city ?? defaultClub?.city ?? "",
+    venue: tournament?.venue ?? defaultClub?.name ?? "",
+    club_id:
+      tournament?.club_id?.toString() ??
+      (defaultClub ? String(defaultClub.id) : ""),
     category:
       tournament && !tournament.category_min && !tournament.category_sum
         ? tournament.category
@@ -398,7 +409,8 @@ export function TournamentForm({
           <Field
             name="club_id"
             label="Club"
-            optional
+            optional={!clubOwnerId}
+            error={errors.club_id}
             className="sm:col-span-2"
             hint={
               clubs.length > 0
@@ -423,7 +435,10 @@ export function TournamentForm({
                 }
               }}
             >
-              <option value="">Sin club (sede libre)</option>
+              {!clubOwnerId && <option value="">Sin club (sede libre)</option>}
+              {clubOwnerId && clubs.length > 1 && (
+                <option value="">Elegí el club</option>
+              )}
               {clubs.map((club) => (
                 <option key={club.id} value={club.id}>
                   {club.name} · {club.city}
@@ -716,51 +731,54 @@ export function TournamentForm({
         <Card className="space-y-5 p-5 sm:p-6">
           <FormSection
             step={4}
-            title="Flyer y destacado"
+            title={clubOwnerId ? "Flyer" : "Flyer y destacado"}
             description="Opcional. Sin flyer, la tarjeta muestra la fecha y la ciudad sobre una cancha (mirá la vista previa)."
           />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field
-              name="featured"
-              label="Destacar en el inicio"
-              error={errors.featured}
-              hint="Sale grande arriba de todo, con el flyer. Si hay varios, el más cercano."
-            >
-              <Select
-                {...fieldProps("featured", errors.featured)}
-                {...bind("featured")}
-              >
-                <option value="">No destacar</option>
-                {featuredOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {draft.featured === "sponsor" && (
+          {!clubOwnerId && (
+            <div className="grid gap-5 sm:grid-cols-2">
               <Field
-                name="sponsor_name"
-                label="Sponsor"
-                optional
-                error={errors.sponsor_name}
-                hint="Se lee “Sponsoreado por …”."
+                name="featured"
+                label="Destacar en el inicio"
+                error={errors.featured}
+                hint="Sale grande arriba de todo, con el flyer. Si hay varios, el más cercano."
               >
-                <Input
-                  {...fieldProps("sponsor_name", errors.sponsor_name)}
-                  {...bind("sponsor_name")}
-                  maxLength={80}
-                  placeholder="Ej. Bandeja Club"
-                  autoComplete="off"
-                />
+                <Select
+                  {...fieldProps("featured", errors.featured)}
+                  {...bind("featured")}
+                >
+                  <option value="">No destacar</option>
+                  {featuredOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
               </Field>
-            )}
-          </div>
+              {draft.featured === "sponsor" && (
+                <Field
+                  name="sponsor_name"
+                  label="Sponsor"
+                  optional
+                  error={errors.sponsor_name}
+                  hint="Se lee “Sponsoreado por …”."
+                >
+                  <Input
+                    {...fieldProps("sponsor_name", errors.sponsor_name)}
+                    {...bind("sponsor_name")}
+                    maxLength={80}
+                    placeholder="Ej. Bandeja Club"
+                    autoComplete="off"
+                  />
+                </Field>
+              )}
+            </div>
+          )}
           <div>
             <ImageUpload
               name="cover_url"
               label="Imagen"
-              folder="flyers"
+              folder={clubOwnerId ? "flyers-club" : "flyers"}
+              subfolder={clubOwnerId}
               ratio="flyer"
               defaultValue={tournament?.cover_url}
               hint="Ideal 1080 × 1350 (formato Instagram)"
