@@ -36,19 +36,19 @@ const METALS: Record<number, Metal> = {
     name: "Oro",
     color: "#ffd84d",
     step: "linear-gradient(180deg, #ffe27a 0%, #e0b62a 100%)",
-    height: "h-28 sm:h-36 md:h-40",
+    height: "h-32 sm:h-40 md:h-44",
   },
   2: {
     name: "Plata",
     color: "#d9dee8",
     step: "linear-gradient(180deg, #eef1f6 0%, #a9b1c2 100%)",
-    height: "h-20 sm:h-26 md:h-28",
+    height: "h-24 sm:h-32 md:h-36",
   },
   3: {
     name: "Bronce",
     color: "#e0a06a",
     step: "linear-gradient(180deg, #eab287 0%, #b56f3a 100%)",
-    height: "h-14 sm:h-18 md:h-20",
+    height: "h-20 sm:h-24 md:h-28",
   },
 };
 
@@ -225,18 +225,20 @@ export function Podium({
                 {/* El escalón. */}
                 <div
                   className={cn(
-                    "relative flex w-full items-start justify-center rounded-t-md pt-2 shadow-[inset_0_2px_0_rgb(255_255_255/0.45)] sm:pt-3",
+                    // El número y el metal van uno debajo del otro: el escalón más bajo
+                    // (el 3) tiene que tener lugar para los dos sin que se pisen.
+                    "flex w-full flex-col items-center gap-1 rounded-t-md pt-2 shadow-[inset_0_2px_0_rgb(255_255_255/0.45)] sm:pt-3",
                     metal.height,
                   )}
                   style={{ background: metal.step }}
                 >
                   <span
-                    className="font-titulo text-4xl leading-none font-extrabold text-vidrio-noche/85 sm:text-5xl md:text-6xl"
+                    className="font-titulo text-3xl leading-none font-extrabold text-vidrio-noche/85 sm:text-4xl md:text-5xl"
                     aria-label={`Puesto ${position}`}
                   >
                     {position}
                   </span>
-                  <span className="absolute bottom-2 font-dato text-[9px] font-bold tracking-[0.2em] text-vidrio-noche/60 uppercase sm:text-[10px]">
+                  <span className="font-dato text-[9px] leading-none font-bold tracking-[0.2em] text-vidrio-noche/60 uppercase sm:text-[10px]">
                     {metal.name}
                   </span>
                 </div>

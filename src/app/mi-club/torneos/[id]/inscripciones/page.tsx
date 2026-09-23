@@ -1,4 +1,10 @@
-import { Check, ClipboardList, RotateCcw, X } from "lucide-react";
+import {
+  Check,
+  ClipboardList,
+  MessageCircle,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,7 +22,8 @@ import { categoryRulesLabel } from "@/lib/categories";
 import { getClubRegistrations, getTournamentById } from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
 import { registrationStatus, spotsInfo } from "@/lib/labels";
-import { cn, firstParam } from "@/lib/utils";
+import { siteConfig } from "@/lib/site";
+import { cn, firstParam, whatsappUrl } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Inscripciones" };
 
@@ -30,7 +37,8 @@ const FILTERS = [
 
 /**
  * Las inscripciones de un torneo del club. El dueño ve nombre, usuario, foto,
- * categoría y rama de cada jugador; nunca teléfono, email ni notas.
+ * categoría y rama de cada jugador, y el teléfono de contacto de la pareja.
+ * Nunca emails ni notas.
  */
 export default async function ClubRegistrationsPage({
   params,
@@ -123,6 +131,7 @@ export default async function ClubRegistrationsPage({
             <thead>
               <tr>
                 <Th>Pareja</Th>
+                <Th>Contacto</Th>
                 <Th>Estado</Th>
                 <Th className="text-right">Acciones</Th>
               </tr>
@@ -152,6 +161,20 @@ export default async function ClubRegistrationsPage({
                         {registration.accepted_at &&
                           ` · aceptó el ${formatDate(registration.accepted_at)}`}
                       </p>
+                    </Td>
+                    <Td>
+                      <a
+                        href={whatsappUrl(
+                          registration.contact_phone,
+                          `¡Hola ${(registration.player?.full_name || "").split(" ")[0]}! Te escribimos de ${tournament.venue || siteConfig.name} por tu inscripción al ${tournament.name}.`,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-medium whitespace-nowrap text-success hover:underline"
+                      >
+                        <MessageCircle className="size-4" aria-hidden="true" />
+                        {registration.contact_phone}
+                      </a>
                     </Td>
                     <Td>
                       <Badge tone={status.tone}>{status.label}</Badge>

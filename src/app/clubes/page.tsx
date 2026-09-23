@@ -23,7 +23,7 @@ export default async function ClubsPage() {
       <PageHeader
         eyebrow="Dónde se juega"
         title="Clubes"
-        description={`Las canchas de ${siteConfig.region}. Entrá a cada club para ver cómo llegar y sus próximos torneos.`}
+        description="Todos los clubes de la zona."
       />
 
       <Container className="py-12 sm:py-16">

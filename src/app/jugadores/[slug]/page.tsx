@@ -102,7 +102,7 @@ export default async function PlayerPage({
               {position ? (
                 <>
                   <p className="text-xs font-semibold tracking-[0.2em] text-noche-400 uppercase">
-                    Ranking {rankingTitle(player.category, player.gender)}
+                    Puesto en {rankingTitle(player.category, player.gender)}
                   </p>
                   <p className="font-display text-7xl leading-none font-bold text-oro-400 tabular-nums">
                     #{position}

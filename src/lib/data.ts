@@ -930,8 +930,8 @@ export async function getMyClubTournaments(): Promise<
 
 /**
  * Las inscripciones de un torneo del club, con los perfiles públicos de los
- * dos jugadores (nombre, usuario, foto, categoría y rama). Sin teléfono,
- * email ni notas: la función de la base no los devuelve.
+ * dos jugadores (nombre, usuario, foto, categoría y rama) y el teléfono de
+ * contacto que dejaron al anotarse. Sin emails ni notas.
  */
 export async function getClubRegistrations(
   tournamentId: number,

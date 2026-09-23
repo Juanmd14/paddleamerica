@@ -44,7 +44,7 @@ const vidrioColors = [
 const netUsage: Record<NetSize, string> = {
   hero: "18px, con postes. Reservada para separadores fuertes.",
   seccion: "separador entre bloques del home y del perfil.",
-  tabla: "corta el ranking cada 10 puestos. Nunca entre filas seguidas.",
+  tabla: "la más finita. Hoy no se usa: la tabla del ranking va sin cortes.",
 };
 
 const semanticColors = [
@@ -134,9 +134,7 @@ export default async function DesignSystemPage() {
           />
 
           <div>
-            <h3 className="mb-3 text-sm font-semibold">
-              Tabla del ranking · la red corta cada 10 puestos
-            </h3>
+            <h3 className="mb-3 text-sm font-semibold">Tabla del ranking</h3>
             <RankingTable players={topPlayers} startAt={4} />
           </div>
 

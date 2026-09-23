@@ -30,7 +30,15 @@ export type Database = {
           created_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "club_owners_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       club_photos: {
         Row: {
@@ -60,7 +68,22 @@ export type Database = {
           tournament_id?: number | null
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "club_photos_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_photos_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clubs: {
         Row: {
@@ -562,7 +585,6 @@ export type Database = {
       }
       category_from_label: { Args: { p_label: string }; Returns: number }
       category_name: { Args: { p_category: number }; Returns: string }
-      delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
       club_set_registration_status: {
         Args: { p_registration_id: number; p_status: string }
         Returns: undefined
@@ -571,6 +593,7 @@ export type Database = {
         Args: { p_tournament_id: number }
         Returns: {
           accepted_at: string
+          contact_phone: string
           created_at: string
           id: number
           partner_category: number
@@ -581,6 +604,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
       get_player_account_avatar: {
         Args: { p_player_id: number }
         Returns: string
@@ -597,6 +621,8 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      is_any_club_owner: { Args: never; Returns: boolean }
+      is_club_owner: { Args: { p_club_id: number }; Returns: boolean }
       is_in_tournament: {
         Args: {
           p_except_id?: number
@@ -666,11 +692,11 @@ export type Database = {
           username: string
         }[]
       }
-      set_my_gender: { Args: { p_gender: string }; Returns: undefined }
       set_club_owner: {
         Args: { p_club_id: number; p_owner: boolean; p_user_id: string }
         Returns: undefined
       }
+      set_my_gender: { Args: { p_gender: string }; Returns: undefined }
       set_profile_admin: {
         Args: { p_is_admin: boolean; p_user_id: string }
         Returns: undefined
@@ -694,6 +720,10 @@ export type Database = {
           player_slug: string
           registration_id: number
         }[]
+      }
+      tournament_has_registrations: {
+        Args: { p_tournament_id: number }
+        Returns: boolean
       }
       tournament_spots: {
         Args: never

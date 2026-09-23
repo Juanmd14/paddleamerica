@@ -80,8 +80,8 @@ export default async function EditClubPage({
           <p className="mt-1 text-sm text-muted-foreground">
             Desde “Mi club” pueden crear y editar los torneos de este club y
             confirmar o rechazar a las parejas. Ven el nombre, el usuario, la
-            categoría y la rama de los jugadores, pero no emails ni teléfonos, y
-            no entran al panel.
+            categoría y la rama de los jugadores y el teléfono que dejaron al
+            anotarse (para escribirles), pero no emails, y no entran al panel.
           </p>
         </div>
         {owners.length > 0 && (

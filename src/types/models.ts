@@ -40,7 +40,7 @@ export type PlayedTournament = {
   partnerName: string;
   partnerSlug: string | null;
 };
-/** Una inscripción vista desde el panel del club: sin teléfono, email ni notas. */
+/** Una inscripción vista desde el panel del club: con el teléfono de contacto, sin emails ni notas. */
 export type ClubRegistration = {
   id: number;
   status: string;
@@ -48,6 +48,8 @@ export type ClubRegistration = {
   partner_id: string | null;
   partner_name: string;
   player_category: number | null;
+  /** El teléfono que dejó la pareja al anotarse, para que el club le escriba. */
+  contact_phone: string;
   partner_category: number | null;
   created_at: string;
   accepted_at: string | null;

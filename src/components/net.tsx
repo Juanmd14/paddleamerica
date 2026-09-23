@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
  *
  *   hero    18px  borde de la media cancha. La única que lleva postes.
  *   seccion 12px  separador entre bloques del home y del perfil.
- *   tabla    7px  corta el ranking cada 10 puestos. Nunca entre filas seguidas.
+ *   tabla    7px  la más finita. Hoy no se usa: la tabla del ranking va sin cortes.
  */
 export type NetSize = "hero" | "seccion" | "tabla";
 
