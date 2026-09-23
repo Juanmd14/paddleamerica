@@ -368,7 +368,12 @@ export async function joinWaitlist(slug: string): Promise<void> {
   });
   if (error) {
     if (error.code !== "P0001") console.error("[lista de espera]", error);
-    throw new Error(registrationErrorMessage(error.message));
+    throw new Error(
+      registrationErrorMessage(error.message, {
+        rules: categoryRulesLabel(tournament),
+        tournamentGender: tournament.gender,
+      }),
+    );
   }
   revalidatePath(`/torneos/${slug}`);
 }

@@ -484,62 +484,22 @@ function OpenRegistration({
     );
   }
 
-  if (spots?.full) {
-    // Cupo lleno: se puede esperar un lugar. Al liberarse, le avisamos al
-    // primero de la lista (el trigger notify_waitlist de la base).
-    if (!user) {
-      const next = encodeURIComponent(
-        `/torneos/${tournament.slug}#inscripcion`,
-      );
-      return (
-        <div className="space-y-3">
-          <ButtonLink
-            href={`/login?next=${next}`}
-            size="lg"
-            variant="outline"
-            className="w-full"
-          >
-            Entrá para anotarte en la lista de espera
-          </ButtonLink>
-          <p className="text-center text-sm text-muted-foreground">
-            Si se libera un lugar, le avisamos al primero de la lista.
-          </p>
-        </div>
-      );
-    }
-    if (waitlistPosition) {
-      return (
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 rounded-lg bg-oro-50 p-4 text-oro-800">
-            <Clock className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-            <p className="font-medium">
-              Estás en la lista de espera (puesto {waitlistPosition}). Si se
-              libera un lugar y te toca, te avisamos en tu cuenta.
-            </p>
-          </div>
-          <form action={leaveWaitlist.bind(null, tournament.slug)}>
-            <ConfirmSubmitButton
-              variant="ghost"
-              size="sm"
-              pendingLabel="Saliendo…"
-              confirmMessage="¿Salir de la lista de espera? Perdés tu puesto."
-            >
-              Salir de la lista
-            </ConfirmSubmitButton>
-          </form>
-        </div>
-      );
-    }
+  // Cupo lleno: se puede esperar un lugar. Al liberarse, le avisamos al
+  // primero de la lista (el trigger notify_waitlist de la base).
+  if (spots?.full && !user) {
+    const next = encodeURIComponent(`/torneos/${tournament.slug}#inscripcion`);
     return (
       <div className="space-y-3">
-        <form action={joinWaitlist.bind(null, tournament.slug)}>
-          <SubmitButton size="lg" className="w-full" pendingLabel="Anotando…">
-            Anotarme en la lista de espera
-          </SubmitButton>
-        </form>
+        <ButtonLink
+          href={`/login?next=${next}`}
+          size="lg"
+          variant="outline"
+          className="w-full"
+        >
+          Entrá para anotarte en la lista de espera
+        </ButtonLink>
         <p className="text-center text-sm text-muted-foreground">
-          Te anotás solo, sin pareja. Si se libera un lugar, le avisamos al
-          primero de la lista para que se anote.
+          Si se libera un lugar, le avisamos al primero de la lista.
         </p>
       </div>
     );
@@ -587,6 +547,8 @@ function OpenRegistration({
     </p>
   );
 
+  // Quien no cumple la rama o la categoría ve el motivo, tanto para anotarse
+  // como para la lista de espera (join_waitlist lo vuelve a chequear).
   if (ownErrors.length > 0) {
     return (
       <div className="space-y-4">
@@ -609,6 +571,45 @@ function OpenRegistration({
             Elegir mi rama
           </ButtonLink>
         )}
+      </div>
+    );
+  }
+
+  if (spots?.full) {
+    if (waitlistPosition) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-lg bg-oro-50 p-4 text-oro-800">
+            <Clock className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p className="font-medium">
+              Estás en la lista de espera (puesto {waitlistPosition}). Si se
+              libera un lugar y te toca, te avisamos en tu cuenta.
+            </p>
+          </div>
+          <form action={leaveWaitlist.bind(null, tournament.slug)}>
+            <ConfirmSubmitButton
+              variant="ghost"
+              size="sm"
+              pendingLabel="Saliendo…"
+              confirmMessage="¿Salir de la lista de espera? Perdés tu puesto."
+            >
+              Salir de la lista
+            </ConfirmSubmitButton>
+          </form>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        <form action={joinWaitlist.bind(null, tournament.slug)}>
+          <SubmitButton size="lg" className="w-full" pendingLabel="Anotando…">
+            Anotarme en la lista de espera
+          </SubmitButton>
+        </form>
+        <p className="text-center text-sm text-muted-foreground">
+          Te anotás solo, sin pareja. Si se libera un lugar, le avisamos al
+          primero de la lista para que se anote.
+        </p>
       </div>
     );
   }

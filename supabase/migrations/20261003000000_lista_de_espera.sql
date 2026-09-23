@@ -1,7 +1,8 @@
 -- =====================================================================
 -- Lista de espera para torneos con el cupo lleno.
 --
--- Cada persona se anota sola (sin pareja). Cuando se libera un lugar
+-- Cada persona se anota sola (sin pareja), y solo si su rama y su categoría
+-- le permiten jugar el torneo. Cuando se libera un lugar
 -- (cancelación, rechazo o "Liberar"), un trigger le avisa al primero de la
 -- lista que todavía no fue avisado; si se liberan dos lugares, a los dos
 -- primeros. El lugar no queda reservado: gana el primero que se anota.
@@ -41,6 +42,9 @@ as $$
 declare
   v_uid uuid := (select auth.uid());
   v_tournament public.tournaments;
+  v_category smallint;
+  v_gender text;
+  v_error text;
 begin
   if v_uid is null then
     raise exception 'sin_sesion';
@@ -58,6 +62,29 @@ begin
   end if;
   if public.is_in_tournament(p_tournament_id, v_uid) then
     raise exception 'ya_anotado';
+  end if;
+
+  -- Solo puede esperar un lugar quien podría jugarlo: mismas reglas de rama y
+  -- categoría que al anotarse, pero de la persona sola (la pareja se ve después).
+  select p.category, p.gender into v_category, v_gender
+  from public.profiles p
+  where p.id = v_uid;
+
+  v_error := public.pair_gender_error(v_tournament, v_gender, v_gender);
+  if v_error in ('falta_rama', 'rama_no_corresponde') then
+    raise exception '%', v_error;
+  end if;
+
+  if v_tournament.category_min is not null or v_tournament.category_sum is not null then
+    if v_category is null then
+      raise exception 'falta_categoria';
+    end if;
+    if v_tournament.category_min is not null
+       and v_tournament.category_max is not null
+       and (v_category < v_tournament.category_min
+            or v_category > v_tournament.category_max) then
+      raise exception 'categoria_fuera_de_rango';
+    end if;
   end if;
 
   insert into public.tournament_waitlist (tournament_id, user_id)
