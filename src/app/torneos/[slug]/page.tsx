@@ -15,7 +15,11 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cancelRegistration } from "@/app/torneos/[slug]/actions";
+import {
+  cancelRegistration,
+  joinWaitlist,
+  leaveWaitlist,
+} from "@/app/torneos/[slug]/actions";
 import { ConfirmSubmitButton } from "@/components/admin/confirm-submit-button";
 import { ConfirmedPairs } from "@/components/confirmed-pairs";
 import { Cover } from "@/components/cover";
@@ -27,11 +31,12 @@ import {
   RegistrationToggle,
 } from "@/components/registration-toggle";
 import { SpotsBar } from "@/components/spots-bar";
+import { SubmitButton } from "@/components/submit-button";
 import { FlyerPlaceholder } from "@/components/tournament-card";
 import { TournamentMap } from "@/components/tournament-map";
 import { TournamentStatusBadge } from "@/components/tournament-status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink, buttonStyles } from "@/components/ui/button";
+import { ButtonLink, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { type CurrentUser, getCurrentUser } from "@/lib/auth";
@@ -46,6 +51,7 @@ import {
   getClubById,
   getConfirmedPairs,
   getMyProfile,
+  getMyWaitlistPosition,
   getMyTournamentEntry,
   getTournament,
   getTournamentSpots,
@@ -104,6 +110,10 @@ export default async function TournamentPage({
     : [{ registration: null, invitations: [] }, null];
 
   const spots = spotsInfo(tournament.capacity, spotsMap.get(tournament.id));
+  const waitlistPosition =
+    user && tournament.status === "inscripciones" && spots?.full
+      ? await getMyWaitlistPosition(tournament.id)
+      : null;
   const dates = formatDateRange(tournament.starts_on, tournament.ends_on);
   const isOpen = tournament.status === "inscripciones";
   const showMobileBar =
@@ -225,6 +235,7 @@ export default async function TournamentPage({
               user={user}
               entry={entry}
               profile={profile}
+              waitlistPosition={waitlistPosition}
             />
           </div>
         </aside>
@@ -341,6 +352,8 @@ type RegistrationCardProps = {
   user: CurrentUser | null;
   entry: MyTournamentEntry;
   profile: Profile | null;
+  /** Puesto en la lista de espera (solo con el cupo lleno), o null. */
+  waitlistPosition: number | null;
 };
 
 /** Tarjeta de inscripción debajo del flyer, según el estado del torneo y del usuario. */
@@ -350,6 +363,7 @@ function RegistrationCard({
   user,
   entry,
   profile,
+  waitlistPosition,
 }: RegistrationCardProps) {
   const isOpen = tournament.status === "inscripciones";
   const title = isOpen
@@ -388,6 +402,7 @@ function RegistrationCard({
             user={user}
             entry={entry}
             profile={profile}
+            waitlistPosition={waitlistPosition}
           />
         ) : tournament.status === "proximo" ? (
           <p className="flex items-start gap-3 text-foreground-soft">
@@ -423,6 +438,7 @@ function OpenRegistration({
   user,
   entry,
   profile,
+  waitlistPosition,
 }: RegistrationCardProps) {
   const { registration, invitations } = entry;
 
@@ -469,13 +485,61 @@ function OpenRegistration({
   }
 
   if (spots?.full) {
+    // Cupo lleno: se puede esperar un lugar. Al liberarse, le avisamos al
+    // primero de la lista (el trigger notify_waitlist de la base).
+    if (!user) {
+      const next = encodeURIComponent(
+        `/torneos/${tournament.slug}#inscripcion`,
+      );
+      return (
+        <div className="space-y-3">
+          <ButtonLink
+            href={`/login?next=${next}`}
+            size="lg"
+            variant="outline"
+            className="w-full"
+          >
+            Entrá para anotarte en la lista de espera
+          </ButtonLink>
+          <p className="text-center text-sm text-muted-foreground">
+            Si se libera un lugar, le avisamos al primero de la lista.
+          </p>
+        </div>
+      );
+    }
+    if (waitlistPosition) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-lg bg-oro-50 p-4 text-oro-800">
+            <Clock className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p className="font-medium">
+              Estás en la lista de espera (puesto {waitlistPosition}). Si se
+              libera un lugar y te toca, te avisamos en tu cuenta.
+            </p>
+          </div>
+          <form action={leaveWaitlist.bind(null, tournament.slug)}>
+            <ConfirmSubmitButton
+              variant="ghost"
+              size="sm"
+              pendingLabel="Saliendo…"
+              confirmMessage="¿Salir de la lista de espera? Perdés tu puesto."
+            >
+              Salir de la lista
+            </ConfirmSubmitButton>
+          </form>
+        </div>
+      );
+    }
     return (
       <div className="space-y-3">
-        <Button size="lg" className="w-full" disabled>
-          Cupo completo
-        </Button>
+        <form action={joinWaitlist.bind(null, tournament.slug)}>
+          <SubmitButton size="lg" className="w-full" pendingLabel="Anotando…">
+            Anotarme en la lista de espera
+          </SubmitButton>
+        </form>
         <p className="text-center text-sm text-muted-foreground">
-          Si se libera un lugar, vas a poder anotarte desde acá.
+          Te anotás solo, sin pareja. Si se libera un lugar, le avisamos al
+          primero de la lista para que se anote.
         </p>
       </div>
     );

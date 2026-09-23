@@ -97,6 +97,33 @@ export async function getRanking({
   return data;
 }
 
+/** Minúsculas y sin tildes, para comparar nombres ("Gómez" = "gomez"). */
+function normalizeName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Jugadores activos de todas las categorías y ramas cuyo nombre contenga la
+ * búsqueda (sin importar tildes ni mayúsculas). Se filtra acá y no en la base
+ * porque Postgres compara con tildes; el padrón entra entero sin problema.
+ */
+export async function searchPlayers(query: string, limit = 30) {
+  const words = normalizeName(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const players = await getRanking();
+  return players
+    .filter((player) => {
+      const name = normalizeName(`${player.first_name} ${player.last_name}`);
+      return words.every((word) => name.includes(word));
+    })
+    .slice(0, limit);
+}
+
 /** Cambios de puntos del último mes (uno por request, lo usan las dos ramas del inicio). */
 const getRecentPointChanges = cache(async () => {
   const since = new Date(
@@ -815,6 +842,31 @@ export async function getMyTournamentEntry(
       ) ?? null,
     invitations: rows.filter(isInvitation),
   };
+}
+
+/** Puesto del usuario en la lista de espera del torneo (1 = primero), o null. */
+export async function getMyWaitlistPosition(
+  tournamentId: number,
+): Promise<number | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("my_waitlist_position", {
+    p_tournament_id: tournamentId,
+  });
+  if (error) throw error;
+  return data ?? null;
+}
+
+/** Cuántos esperan un lugar. Solo lo ven el admin y el dueño del club (si no, 0). */
+export async function getWaitlistCount(tournamentId: number): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("tournament_waitlist_count", {
+    p_tournament_id: tournamentId,
+  });
+  if (error) throw error;
+  return data ?? 0;
 }
 
 /** Invitaciones a jugar que el usuario todavía no respondió. */

@@ -19,7 +19,11 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireClubOwner } from "@/lib/auth";
 import { categoryRulesLabel } from "@/lib/categories";
-import { getClubRegistrations, getTournamentById } from "@/lib/data";
+import {
+  getClubRegistrations,
+  getTournamentById,
+  getWaitlistCount,
+} from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
 import { registrationStatus, spotsInfo } from "@/lib/labels";
 import { siteConfig } from "@/lib/site";
@@ -52,8 +56,9 @@ export default async function ClubRegistrationsPage({
   );
   if (!tournament) notFound();
 
-  const [registrations, query] = await Promise.all([
+  const [registrations, waiting, query] = await Promise.all([
     getClubRegistrations(tournament.id),
+    getWaitlistCount(tournament.id),
     searchParams,
   ]);
   const filter = firstParam(query.estado);
@@ -94,6 +99,14 @@ export default async function ClubRegistrationsPage({
       {spots && (
         <Card className="p-5 sm:p-6">
           <SpotsBar spots={spots} />
+          {waiting > 0 && (
+            <p className="mt-3 text-sm font-semibold text-oro-800">
+              {waiting === 1
+                ? "1 persona en lista de espera"
+                : `${waiting} personas en lista de espera`}
+              . Si se libera un lugar, le avisamos al primero.
+            </p>
+          )}
           <p className="mt-3 text-xs text-muted-foreground">
             Cuentan las pendientes y las confirmadas. Con el cupo lleno, el
             sitio no deja anotarse.

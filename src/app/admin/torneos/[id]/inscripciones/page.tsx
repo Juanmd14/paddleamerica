@@ -24,7 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { requireAdmin } from "@/lib/auth";
-import { getTournamentById, getTournamentRegistrations } from "@/lib/data";
+import {
+  getTournamentById,
+  getTournamentRegistrations,
+  getWaitlistCount,
+} from "@/lib/data";
 import { formatDate, formatDateRange } from "@/lib/format";
 import { categoryRulesLabel } from "@/lib/categories";
 import { registrationStatus, spotsInfo } from "@/lib/labels";
@@ -51,8 +55,9 @@ export default async function TournamentRegistrationsPage({
   const tournament = await getTournamentById(Number(id));
   if (!tournament) notFound();
 
-  const [registrations, query] = await Promise.all([
+  const [registrations, waiting, query] = await Promise.all([
     getTournamentRegistrations(tournament.id),
+    getWaitlistCount(tournament.id),
     searchParams,
   ]);
   const filter = firstParam(query.estado);
@@ -105,6 +110,14 @@ export default async function TournamentRegistrationsPage({
       {spots && (
         <Card className="p-5 sm:p-6">
           <SpotsBar spots={spots} />
+          {waiting > 0 && (
+            <p className="mt-3 text-sm font-semibold text-oro-800">
+              {waiting === 1
+                ? "1 persona en lista de espera"
+                : `${waiting} personas en lista de espera`}
+              . Si se libera un lugar, le avisamos al primero.
+            </p>
+          )}
           <p className="mt-3 text-xs text-muted-foreground">
             Cuentan las pendientes y las confirmadas. Con el cupo lleno, el
             sitio no deja anotarse; si confirmás de más, el cupo se excede.

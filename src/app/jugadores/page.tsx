@@ -1,12 +1,15 @@
+import { Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EN_EL_PODIO, Podium } from "@/components/podium";
+import { PlayerSearchResults } from "@/components/player-search-results";
 import { RankingTable } from "@/components/ranking-table";
 import {
   getCategoryCounts,
   getRanking,
   getRankingTrends,
   getRankingUpdatedAt,
+  searchPlayers,
 } from "@/lib/data";
 import { currentYear, formatDate } from "@/lib/format";
 import {
@@ -26,16 +29,18 @@ const GENDERS = ["masculino", "femenino"] as const;
 export default async function PlayersPage({
   searchParams,
 }: PageProps<"/jugadores">) {
-  const { rama, categoria } = await searchParams;
+  const { rama, categoria, q } = await searchParams;
 
   const gender = firstParam(rama) === "femenino" ? "femenino" : "masculino";
   const raw = firstParam(categoria);
   const category = isCategory(raw) ? raw : CATEGORIES[0];
+  const query = (firstParam(q) ?? "").trim().slice(0, 60);
 
-  const [players, counts, updatedAt] = await Promise.all([
+  const [players, counts, updatedAt, results] = await Promise.all([
     getRanking({ gender, category }),
     getCategoryCounts(gender),
     getRankingUpdatedAt(),
+    query ? searchPlayers(query) : Promise.resolve(null),
   ]);
   const actualizado = updatedAt ? formatDate(updatedAt) : null;
 
@@ -49,7 +54,7 @@ export default async function PlayersPage({
     `/jugadores?rama=${next.rama ?? gender}&categoria=${next.categoria ?? category}`;
 
   return (
-    <div className="bg-vidrio-noche pb-20 text-vidrio-texto">
+    <div className="flex-1 bg-vidrio-noche pb-20 text-vidrio-texto">
       <div className="mx-auto w-full max-w-5xl">
         <h1 className="sr-only">Categorías del circuito</h1>
 
@@ -65,6 +70,40 @@ export default async function PlayersPage({
               Temporada {currentYear()}
             </p>
           </div>
+
+          {/* Buscador: busca en todas las categorías y ramas. Sin JS: Enter envía. */}
+          <form
+            action="/jugadores"
+            role="search"
+            className="mt-5 flex items-center gap-2 rounded-lg border border-vidrio-linea bg-vidrio-panel px-3 focus-within:border-vidrio-tenue"
+          >
+            <input type="hidden" name="rama" value={gender} />
+            <input type="hidden" name="categoria" value={category} />
+            <Search
+              className="size-4 shrink-0 text-vidrio-tenue"
+              aria-hidden="true"
+            />
+            <label htmlFor="buscar-jugador" className="sr-only">
+              Buscar jugador
+            </label>
+            <input
+              id="buscar-jugador"
+              type="search"
+              name="q"
+              defaultValue={query}
+              placeholder="Buscar jugador por nombre"
+              autoComplete="off"
+              enterKeyHint="search"
+              maxLength={60}
+              className="h-11 min-w-0 flex-1 bg-transparent font-dato text-sm text-vidrio-texto placeholder:text-vidrio-tenue focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="shrink-0 rounded-md px-2 py-1.5 font-dato text-xs font-bold tracking-[0.08em] text-vidrio-pelota uppercase hover:bg-vidrio-noche"
+            >
+              Buscar
+            </button>
+          </form>
 
           {/*
             La rama es la decisión de más arriba: son dos rankings distintos, no
@@ -143,39 +182,71 @@ export default async function PlayersPage({
           </div>
         </section>
 
-        <Podium
-          players={podio}
-          title={rankingTitle(category, gender)}
-          eyebrow={actualizado ? `Actualizado al ${actualizado}` : undefined}
-          trends={trends}
-        />
+        {results ? (
+          <section aria-label="Resultados de la búsqueda">
+            <div className="flex items-start justify-between gap-4 px-4 pt-6 pb-4 sm:px-6">
+              <h2 className="min-w-0 font-titulo text-lg leading-tight font-extrabold break-words uppercase sm:text-xl">
+                Resultados para «{query}»
+              </h2>
+              <Link
+                href={href({})}
+                className="mt-1 shrink-0 font-dato text-xs font-bold tracking-[0.08em] text-vidrio-pelota uppercase hover:underline"
+              >
+                Ver categorías
+              </Link>
+            </div>
+            {results.length > 0 ? (
+              <div className="border-t border-vidrio-linea">
+                <PlayerSearchResults players={results} />
+              </div>
+            ) : (
+              <p className="border-t border-vidrio-linea px-4 py-10 text-center font-dato text-sm text-vidrio-tenue sm:px-6">
+                No encontramos jugadores con ese nombre.
+              </p>
+            )}
+          </section>
+        ) : (
+          <>
+            <Podium
+              players={podio}
+              title={rankingTitle(category, gender)}
+              eyebrow={
+                actualizado ? `Actualizado al ${actualizado}` : undefined
+              }
+              trends={trends}
+            />
 
-        {players.length === 0 ? (
-          <p className="border-t border-vidrio-linea px-4 py-10 text-center font-dato text-sm text-vidrio-tenue sm:px-6">
-            Todavía no hay jugadores cargados en{" "}
-            {rankingTitle(category, gender)}.
-          </p>
-        ) : null}
+            {players.length === 0 ? (
+              <p className="border-t border-vidrio-linea px-4 py-10 text-center font-dato text-sm text-vidrio-tenue sm:px-6">
+                Todavía no hay jugadores cargados en{" "}
+                {rankingTitle(category, gender)}.
+              </p>
+            ) : null}
 
-        {resto.length > 0 ? (
-          <RankingTable
-            players={resto}
-            startAt={EN_EL_PODIO + 1}
-            trends={trends}
-            className="border-t border-vidrio-linea"
-          />
-        ) : null}
+            {resto.length > 0 ? (
+              <RankingTable
+                players={resto}
+                startAt={EN_EL_PODIO + 1}
+                trends={trends}
+                className="border-t border-vidrio-linea"
+              />
+            ) : null}
 
-        {/* Ficha de cierre: los datos que hacen falta para confiar en la tabla. */}
-        <dl className="grid grid-cols-2 border-t border-vidrio-linea md:grid-cols-4">
-          <Dato termino="Jugadores" valor={String(players.length)} />
-          <Dato termino="Categoría" valor={rankingTitle(category, gender)} />
-          <Dato termino="Actualizado" valor={actualizado ?? "—"} />
-          <Dato
-            termino="Se actualiza"
-            valor="Después de cada torneo del circuito"
-          />
-        </dl>
+            {/* Ficha de cierre: los datos que hacen falta para confiar en la tabla. */}
+            <dl className="grid grid-cols-2 border-t border-vidrio-linea md:grid-cols-4">
+              <Dato termino="Jugadores" valor={String(players.length)} />
+              <Dato
+                termino="Categoría"
+                valor={rankingTitle(category, gender)}
+              />
+              <Dato termino="Actualizado" valor={actualizado ?? "—"} />
+              <Dato
+                termino="Se actualiza"
+                valor="Después de cada torneo del circuito"
+              />
+            </dl>
+          </>
+        )}
       </div>
     </div>
   );

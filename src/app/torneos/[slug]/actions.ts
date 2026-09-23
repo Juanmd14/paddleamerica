@@ -68,6 +68,8 @@ function registrationErrorMessage(
       "Se completó el cupo. Si se libera un lugar, vas a poder anotarte.",
     invitacion_no_encontrada: "Esta invitación ya no está disponible.",
     inscripcion_no_encontrada: "Esta inscripción ya no está disponible.",
+    hay_lugar: "Ya se liberó un lugar: anotate con tu pareja.",
+    ya_anotado: "Ya estás anotado en este torneo.",
   };
   return messages[code] ?? "No pudimos guardar los cambios. Probá de nuevo.";
 }
@@ -351,4 +353,39 @@ export async function cancelRegistration(
   }
 
   revalidateRegistration(slug);
+}
+
+/** Entra a la lista de espera de un torneo con el cupo lleno. */
+export async function joinWaitlist(slug: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const tournament = await getTournament(slug);
+  if (!tournament) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("join_waitlist", {
+    p_tournament_id: tournament.id,
+  });
+  if (error) {
+    if (error.code !== "P0001") console.error("[lista de espera]", error);
+    throw new Error(registrationErrorMessage(error.message));
+  }
+  revalidatePath(`/torneos/${slug}`);
+}
+
+export async function leaveWaitlist(slug: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  const tournament = await getTournament(slug);
+  if (!tournament) return;
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("leave_waitlist", {
+    p_tournament_id: tournament.id,
+  });
+  if (error) {
+    console.error("[salir de la lista de espera]", error);
+    throw new Error("No pudimos sacarte de la lista. Probá de nuevo.");
+  }
+  revalidatePath(`/torneos/${slug}`);
 }

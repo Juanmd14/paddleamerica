@@ -469,6 +469,27 @@ export type Database = {
           },
         ]
       }
+      tournament_waitlist: {
+        Row: {
+          created_at: string
+          notified_at: string | null
+          tournament_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          notified_at?: string | null
+          tournament_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          notified_at?: string | null
+          tournament_id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       tournaments: {
         Row: {
           address: string | null
@@ -623,6 +644,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_any_club_owner: { Args: never; Returns: boolean }
       is_club_owner: { Args: { p_club_id: number }; Returns: boolean }
+      join_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       is_in_tournament: {
         Args: {
           p_except_id?: number
@@ -631,9 +653,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      leave_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       link_profile_player: {
         Args: { p_player_id?: number; p_user_id: string }
         Returns: undefined
+      }
+      my_waitlist_position: {
+        Args: { p_tournament_id: number }
+        Returns: number
       }
       open_scheduled_registrations: { Args: never; Returns: number }
       pair_category_error: {
@@ -724,6 +751,10 @@ export type Database = {
       tournament_has_registrations: {
         Args: { p_tournament_id: number }
         Returns: boolean
+      }
+      tournament_waitlist_count: {
+        Args: { p_tournament_id: number }
+        Returns: number
       }
       tournament_spots: {
         Args: never
