@@ -488,7 +488,15 @@ export type Database = {
           tournament_id?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tournament_waitlist_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tournaments: {
         Row: {
@@ -644,7 +652,6 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_any_club_owner: { Args: never; Returns: boolean }
       is_club_owner: { Args: { p_club_id: number }; Returns: boolean }
-      join_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       is_in_tournament: {
         Args: {
           p_except_id?: number
@@ -653,6 +660,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      join_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       leave_waitlist: { Args: { p_tournament_id: number }; Returns: undefined }
       link_profile_player: {
         Args: { p_player_id?: number; p_user_id: string }
@@ -752,10 +760,6 @@ export type Database = {
         Args: { p_tournament_id: number }
         Returns: boolean
       }
-      tournament_waitlist_count: {
-        Args: { p_tournament_id: number }
-        Returns: number
-      }
       tournament_spots: {
         Args: never
         Returns: {
@@ -764,6 +768,10 @@ export type Database = {
         }[]
       }
       tournament_taken: { Args: { p_tournament_id: number }; Returns: number }
+      tournament_waitlist_count: {
+        Args: { p_tournament_id: number }
+        Returns: number
+      }
       undo_last_points_import: { Args: never; Returns: Json }
       unique_username: { Args: { p_base: string }; Returns: string }
     }
