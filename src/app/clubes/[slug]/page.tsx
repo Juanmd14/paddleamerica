@@ -54,9 +54,21 @@ export default async function ClubPage({
 
   return (
     <>
-      <section className="bg-noche-950 text-white">
-        <Container className="grid gap-8 py-10 sm:py-14 lg:grid-cols-12 lg:items-center lg:gap-12">
-          <div className="lg:col-span-7">
+      <section className="relative isolate overflow-hidden bg-noche-950 text-white">
+        {/* La foto ocupa todo el banner; los degradés dejan leer el texto. */}
+        <Cover
+          src={club.cover_url}
+          alt={`Foto de ${club.name}`}
+          seed={club.id}
+          preload
+          className="absolute inset-0 -z-10 aspect-auto"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-linear-to-t from-noche-950 via-noche-950/60 to-noche-950/20 lg:bg-linear-to-r lg:from-noche-950/95 lg:via-noche-950/60 lg:to-transparent"
+        />
+        <Container className="flex min-h-[22rem] items-end py-10 sm:min-h-[26rem] sm:py-14 lg:min-h-[30rem] lg:items-center">
+          <div className="max-w-2xl">
             <Link
               href="/clubes"
               className="inline-flex items-center gap-2 text-sm font-medium text-noche-300 transition-colors hover:text-white"
@@ -101,16 +113,6 @@ export default async function ClubPage({
                 </a>
               </div>
             ) : null}
-          </div>
-          <div className="lg:col-span-5">
-            <Cover
-              src={club.cover_url}
-              alt={`Foto de ${club.name}`}
-              seed={club.id}
-              preload
-              className="rounded-card shadow-xl shadow-black/30"
-              sizes="(min-width: 1024px) 480px, 100vw"
-            />
           </div>
         </Container>
       </section>
