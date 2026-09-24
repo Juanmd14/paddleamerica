@@ -284,8 +284,8 @@ export default async function AdminUserPage({
                 </div>
                 <p className="mt-5 text-sm text-muted-foreground">
                   {profile.birthdate
-                    ? "Fecha de nacimiento: la usa solo para los torneos con límite de edad. No se muestra en el sitio."
-                    : "Todavía no cargó su fecha de nacimiento: no se puede anotar en torneos con límite de edad (+30, -20)."}
+                    ? "Fecha de nacimiento: solo se usa para los torneos con límite de edad. No se muestra en el sitio."
+                    : "Todavía no cargó su fecha de nacimiento: no se puede anotar en torneos con límite de edad."}
                 </p>
                 <div className="mt-3">
                   <ProfileBirthdateForm

@@ -119,10 +119,9 @@ export function ageErrorMessage(
 ): string | null {
   const label = ageRulesLabel(rules) ?? "";
   const messages: Record<AgeErrorCode, string> = {
-    falta_fecha_nacimiento:
-      "Este torneo tiene límite de edad y todavía no cargaste tu fecha de nacimiento. Cargala en Mi cuenta → Mis datos para poder anotarte.",
+    falta_fecha_nacimiento: `Este torneo es ${label}: cargá tu edad en Mi cuenta para poder anotarte.`,
     edad_no_corresponde: `Por tu edad no entrás en este torneo (es ${label}).`,
-    pareja_sin_fecha_nacimiento: `${partnerName} todavía no cargó su fecha de nacimiento, y este torneo tiene límite de edad. Pedile que la cargue en Mi cuenta → Mis datos.`,
+    pareja_sin_fecha_nacimiento: `${partnerName} todavía no cargó su edad, y este torneo es ${label}. Pedile que la cargue en Mi cuenta.`,
     pareja_edad_no_corresponde: `${partnerName} no entra en este torneo por su edad (es ${label}).`,
   };
   return code in messages ? messages[code as AgeErrorCode] : null;

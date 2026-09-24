@@ -509,12 +509,8 @@ function FirstSteps({
     },
     {
       done: Boolean(birthdate),
-      title: birthdate
-        ? "Ya cargaste tu fecha de nacimiento"
-        : "Cargá tu fecha de nacimiento",
-      text: birthdate
-        ? "Define si entrás en los torneos por edad (+30, -20). No se muestra en ningún lado."
-        : "Hace falta solo para los torneos con límite de edad (+30, -20). No se muestra en ningún lado.",
+      title: birthdate ? "Ya cargaste tu edad" : "Cargá tu edad",
+      text: "Solo se usa para los torneos con límite de edad. No se muestra en tu perfil.",
       action: birthdate
         ? null
         : { href: `${sectionHref("datos")}#nacimiento`, label: "Cargar" },

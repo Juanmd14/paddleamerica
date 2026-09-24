@@ -70,7 +70,8 @@ export async function updateProfile(
     if (birthdateError && birthdateError.message !== "fecha_ya_cargada") {
       return {
         errors: {
-          birthdate: "No pudimos guardar tu fecha de nacimiento. Probá de nuevo.",
+          birthdate:
+            "No pudimos guardar tu fecha de nacimiento. Probá de nuevo.",
         },
       };
     }

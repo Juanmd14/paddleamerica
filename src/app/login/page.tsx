@@ -110,8 +110,8 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
               id="signup-birthdate-hint"
               className="mt-1.5 text-xs text-muted-foreground"
             >
-              Solo para los torneos con límite de edad (+30, -20). No se
-              muestra en ningún lado.
+              Solo se usa para los torneos con límite de edad. No se muestra en
+              tu perfil.
             </p>
           </div>
           <div>

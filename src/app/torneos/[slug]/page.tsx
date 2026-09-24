@@ -590,7 +590,7 @@ function OpenRegistration({
             variant="outline"
             className="w-full"
           >
-            Cargar mi fecha de nacimiento
+            Cargar mi edad
           </ButtonLink>
         )}
       </div>

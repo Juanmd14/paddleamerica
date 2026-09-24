@@ -84,7 +84,6 @@ const SUM_OPTIONS = Array.from({ length: 15 }, (_, index) => index + 2);
 
 /** Los límites de edad de siempre, con un toque. */
 const AGE_PRESETS = [
-  { label: "Sin límite", min: "", max: "" },
   { label: "+30", min: "30", max: "" },
   { label: "+40", min: "40", max: "" },
   { label: "-20", min: "", max: "20" },
@@ -116,7 +115,9 @@ type Draft = {
   category_min: string;
   category_max: string;
   category_sum: string;
-  /** Límite de edad, vacío = sin límite. */
+  /** Tildado: el torneo tiene límite de edad y se muestran los dos campos. */
+  age_limited: boolean;
+  /** Vacío = ese lado no tiene tope (un +30 solo tiene mínimo). */
   age_min: string;
   age_max: string;
   featured: string;
@@ -165,7 +166,7 @@ function draftCategoryLabel(draft: Draft) {
     : (categoryRulesLabel(draftRules(draft)) ?? "");
 }
 
-type TextKey = Exclude<keyof Draft, "category_mode">;
+type TextKey = Exclude<keyof Draft, "category_mode" | "age_limited">;
 
 function parseCapacity(value: string) {
   return /^\d+$/.test(value) && Number(value) > 0 ? Number(value) : null;
@@ -321,6 +322,7 @@ export function TournamentForm({
     category_min: tournament?.category_min?.toString() ?? "",
     category_max: tournament?.category_max?.toString() ?? "",
     category_sum: tournament?.category_sum?.toString() ?? "13",
+    age_limited: Boolean(tournament?.age_min || tournament?.age_max),
     age_min: tournament?.age_min?.toString() ?? "",
     age_max: tournament?.age_max?.toString() ?? "",
     featured: tournament?.featured ?? "",
@@ -638,66 +640,92 @@ export function TournamentForm({
             <legend className="mb-1.5 text-sm font-medium text-foreground-soft">
               Edad
             </legend>
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
-              <Field
-                name="age_min"
-                label="Desde"
-                optional
-                hint="Un +30 es desde 30."
-              >
-                <Input
-                  {...fieldProps("age_min", errors.age)}
-                  {...bind("age_min")}
-                  type="number"
-                  inputMode="numeric"
-                  min={MIN_AGE}
-                  max={MAX_AGE}
-                  placeholder="Sin límite"
-                  autoComplete="off"
-                />
-              </Field>
-              <Field
-                name="age_max"
-                label="Hasta"
-                optional
-                hint="Un -20 es hasta 20, incluido."
-              >
-                <Input
-                  {...fieldProps("age_max", errors.age)}
-                  {...bind("age_max")}
-                  type="number"
-                  inputMode="numeric"
-                  min={MIN_AGE}
-                  max={MAX_AGE}
-                  placeholder="Sin límite"
-                  autoComplete="off"
-                />
-              </Field>
-              <div className="flex flex-wrap gap-2 sm:pt-7">
-                {AGE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() =>
-                      setDraft((current) => ({
-                        ...current,
-                        age_min: preset.min,
-                        age_max: preset.max,
-                      }))
-                    }
-                    className="rounded-full border border-border-strong px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-muted"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+            <label className="flex items-center gap-3 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={draft.age_limited}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    age_limited: event.target.checked,
+                    // Destildar borra los límites: así no se guardan sin querer.
+                    age_min: event.target.checked ? current.age_min : "",
+                    age_max: event.target.checked ? current.age_max : "",
+                  }))
+                }
+                className="size-5 accent-noche-950"
+              />
+              Poner límite de edad
+            </label>
+            {!draft.age_limited && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Se puede anotar cualquiera, tenga la edad que tenga.
+              </p>
+            )}
+            {draft.age_limited && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
+                <Field
+                  name="age_min"
+                  label="Desde"
+                  optional
+                  hint="Un +30 es desde 30."
+                >
+                  <Input
+                    {...fieldProps("age_min", errors.age)}
+                    {...bind("age_min")}
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_AGE}
+                    max={MAX_AGE}
+                    placeholder="Sin límite"
+                    autoComplete="off"
+                  />
+                </Field>
+                <Field
+                  name="age_max"
+                  label="Hasta"
+                  optional
+                  hint="Un -20 es hasta 20, incluido."
+                >
+                  <Input
+                    {...fieldProps("age_max", errors.age)}
+                    {...bind("age_max")}
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_AGE}
+                    max={MAX_AGE}
+                    placeholder="Sin límite"
+                    autoComplete="off"
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2 sm:pt-7">
+                  {AGE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          age_min: preset.min,
+                          age_max: preset.max,
+                        }))
+                      }
+                      className="rounded-full border border-border-strong px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-muted"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <FieldError id="age-error">{errors.age}</FieldError>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              {ageRulesHelp(draftAgeRules(draft)) ||
-                "Sin límite de edad: se puede anotar cualquiera."}{" "}
-              La fecha de nacimiento la carga cada jugador en su cuenta.
-            </p>
+            {draft.age_limited && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {ageRulesHelp(draftAgeRules(draft)) ||
+                  "Completá al menos uno de los dos."}{" "}
+                La edad la carga cada jugador en su cuenta.
+              </p>
+            )}
           </fieldset>
 
           <div className="sm:col-span-2">

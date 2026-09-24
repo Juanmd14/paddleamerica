@@ -76,7 +76,10 @@ function readAge(formData: FormData, field: "age_min" | "age_max") {
   const age = Number(value);
   return Number.isInteger(age) && age >= MIN_AGE && age <= MAX_AGE
     ? { value: age }
-    : { value: null, error: `Poné una edad de ${MIN_AGE} a ${MAX_AGE}, o dejalo vacío.` };
+    : {
+        value: null,
+        error: `Poné una edad de ${MIN_AGE} a ${MAX_AGE}, o dejalo vacío.`,
+      };
 }
 
 export function readTournament(formData: FormData) {

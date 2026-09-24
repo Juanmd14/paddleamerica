@@ -84,6 +84,7 @@ Hay dos tipos de email y los dos necesitan **un dominio propio verificado en Res
    - _Reset password_ → asunto "Elegí una contraseña nueva", cuerpo `supabase/templates/recovery.html`.
 
    Los links van a `/auth/confirm` con `token_hash`, así funcionan aunque el mail se abra en otro dispositivo. Si Supabase no acepta la URL de redirección, arman el link con la _Site URL_.
+
 6. **Authentication → URL Configuration**: _Site URL_ `https://tudominio` (sin barra final) y en _Redirect URLs_ `https://tudominio/**`, `https://paddleamerica.vercel.app/**` y `http://localhost:3000/**`.
 7. En Vercel → Domains, agregá el dominio.
 8. Probá con dos cuentas de prueba: recuperar contraseña (tiene que llegar el mail y el link tiene que funcionar), invitar, aceptar y confirmar desde el panel.

@@ -155,7 +155,8 @@ export function ProfileForm({
             id="profile-birthdate-hint"
             className="mt-1.5 text-xs text-muted-foreground"
           >
-            Si está mal, pedíle al organizador que te la corrija.
+            Solo se usa para los torneos con límite de edad. No se muestra en tu
+            perfil. Si está mal, pedíle al organizador que te la corrija.
           </p>
         </div>
       ) : (
@@ -178,9 +179,8 @@ export function ProfileForm({
               id="profile-birthdate-hint"
               className="mt-1.5 text-xs font-medium text-oro-800"
             >
-              Hace falta para los torneos con límite de edad (+30, -20). No se
-              muestra en ningún lado. Se carga una sola vez: después la corrige
-              el organizador.
+              Solo se usa para los torneos con límite de edad. No se muestra en
+              tu perfil.
             </p>
           )}
         </div>
